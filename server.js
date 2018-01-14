@@ -2,13 +2,9 @@ const moment = require('moment');
 const express = require('express');
 const fileUpload = require('express-fileupload');
 const bodyParser = require('body-parser');
-//const zip = require('express-easy-zip');
 const crypto = require('crypto');
 const fs = require('fs-extra');
 const compress = require('node-zstd').compress;
-//const counter = require('node-persist');
-//const serveIndex = require('serve-index');
-//const { exec } = require('child_process');
 const MongoClient = require('mongodb').MongoClient;
 const Long = require('mongodb').Long;
 const ObjectId = require('mongodb').ObjectID;
@@ -28,10 +24,6 @@ var cachematches = new Cacheman('matches');
 var fastClientsMap = new Map;
 
 app.set('view engine', 'pug')
-
-//console.log( parseInt("0x" + crypto.randomBytes(8).toString('hex')).toString() );
-
-//console.log( "Testing: " + Long( crypto.randomBytes(4).readUInt32BE(), crypto.randomBytes(4).readUInt32BE() ).toString() );;
 
 // This shouldn't be needed but now and then when I restart test server, I see an uncaught ECONNRESET and I'm not sure
 // where it is coming from. In case a server restart did the same thing, this should prevent a crash that would stop nodemon.
@@ -90,7 +82,6 @@ function checksum (str, algorithm, encoding) {
 }
 
 function seed_from_mongolong (seed) {
-    //console.log("Convert this 0x" + (new Uint32Array([seed.getHighBits()]))[0].toString(16)+(new Uint32Array([seed.getLowBitsUnsigned()]))[0].toString(16).padStart(8, "0") );
     return converter.hexToDec(
         "0x"
         + (new Uint32Array([seed.getHighBits()]))[0].toString(16)
@@ -101,19 +92,10 @@ function seed_from_mongolong (seed) {
 //console.log("Small int test 777: " + seed_from_mongolong(Long.fromString("777", 10)));
 //console.log("Broken int test 883863265504794200: " + seed_from_mongolong(Long.fromString("883863265504794200", 10)));
 
-//function readAsync(file, callback) {
-//    fs.readFile(file, 'utf8', callback);
-//}
-
 function objectIdFromDate (date) {
     //return Math.floor(date.getTime() / 1000).toString(16) + "0000000000000000";
     return safeObjectId( Math.floor(date / 1000).toString(16) + "0000000000000000" );
 }
-
-//function dateFromObjectId (objectId) {
-//    return new Date(parseInt(objectId.substring(0, 8), 16) * 1000);
-//}
-
 
 // This comes from https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
 //
@@ -138,7 +120,6 @@ async function get_fast_clients () {
             { $group: { _id: "$ip", total: { $sum: 1 }}},
             { $match: { total: { $gt: 5 }}}
         ] ).forEach( (match) => {
-            //console.log("Fast Client " + match._id);
             fastClientsMap.set(match._id, true);
         }, (err) => {
             if (err) {
@@ -174,7 +155,6 @@ async function get_pending_matches () {
             //
             switch(SPRT(match.network1_wins, match.network1_losses)) {
                 case false:
-                    //console.log("SPRT: Skipping a bad network: " + JSON.stringify(match));
                     break;
                 case true:
                     pending_matches.unshift( match );
@@ -203,7 +183,6 @@ async function get_best_network_hash () {
             if (err) return reject(err);
 
             if (!best_network_hash || best_network_mtimeMs != stats.mtimeMs) {
-                //console.log("Not cached");
                 fs.readFile(__dirname + '/network/best-network.gz', (err, data) => {
                     if (err) {
                         console.error("Error opening best-network.gz: " + err);
@@ -264,8 +243,6 @@ function SPRT(W,L)
     var LA = Math.log(beta/(1-alpha));
     var LB = Math.log((1-beta)/alpha);
 
-    //console.log(LLR_ + " " + LA + " " + LB);
-
     if (LLR_ > LB) {
         return true;
     } else if (LLR_ < LA) {
@@ -282,18 +259,15 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
     var games_left = max_games - w_obs - l_obs;
 
     if (SPRT(w_obs, l_obs) === true) {
-        //console.log("passed already ");
         return games_left + QUEUE_BUFFER;
     }
 
     if (SPRT(w_obs, l_obs) === false) {
-        //console.log("failed already ");
         return 0;
     }
 
     for (var queued_games=0; queued_games < games_left; queued_games++) {
         if (SPRT(w_obs+queued_games*pessimistic_rate, l_obs+queued_games*(1-pessimistic_rate)) === false) {
-            //console.log("returning " + queued_games + QUEUE_BUFFER);
             return queued_games + QUEUE_BUFFER;
         }
     }
@@ -304,19 +278,8 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
 app.enable('trust proxy');
 
 app.use(bodyParser.urlencoded({extended: true}));
-//app.use(zip());
 app.use(fileUpload());
 
-// TODO
-// /networks to show list of date sorted networks for download?
-//
-// To make networks list sorted by date instead of filename, I manually hacked in a change to node_modules/serve-index/index.js
-// from https://github.com/expressjs/serve-index/pull/54/commits/171400fea8bb3b78689cb8c283f78da0172faac4
-// to the fileSort function
-//
-// /networks is now served by nginx directly
-//
-//app.use('/networks', express.static('network'), serveIndex('network', {'view' : 'details', 'icons' : true}));
 app.use('/view/player', express.static('eidogo-player-1.2/player'));
 app.use('/viewmatch/player', express.static('eidogo-player-1.2/player'));
 app.use('/view/wgo', express.static('wgo'));
@@ -339,8 +302,6 @@ setInterval( () => {
 // submissions for a while.
 //
 setInterval( () => {
-    //console.log("Interval check!");
-
     var now = Date.now();
 
     // In case all queue matches are disconencted or super slow, lets start fresh after timing out
@@ -386,7 +347,6 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         .then()
         .catch();
 
-        //console.log("I got back " + res[0].total + " from " + JSON.stringify(res, null, 4));
         counter = res[0].total;
         console.log ( counter + " games.");
 
@@ -400,52 +360,16 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
             console.log('listening on 8080')
         })
     });
-
-/*
-    db.collection("games").count()
-    .then((count) => {
-        counter = count;
-        console.log ( count + " games.");
-
-        app.listen(8080, () => {
-            console.log('listening on 8080')
-        })
-    });
-*/
-
 });
-
-//counter.initSync();
-
-//counter.forEach( (key, value) => {
-//    console.log("Network " + key + " has " + value + " games");
-//});
 
 app.use('/best-network-hash', asyncMiddleware( async (req, res, next) => {
     var hash = await get_best_network_hash();
-//var start = new Date();
-//var hrstart = process.hrtime();
-//var end = new Date() - start, hrend = process.hrtime(hrstart);
-//console.info("Execution time: %dms", end);
-//console.info("Execution time (hr): %ds %dms", hrend[0], hrend[1]/1000000);
-    //console.log("Got: " + hash);
 
     res.write(hash);
     res.write("\n");
     // Expected client version
     res.write("8");
     res.end();
-
-/*
-    fs.readFile(__dirname + '/network/best-network', (err, data) => {
-        hash = checksum(data, 'sha256');
-        res.write(hash);
-	    res.write("\n");
-	    // Expected client version
-	    res.write("4");
-	    res.end();
-    });
-*/
 }));
 
 // Server will copy a new best-network to the proper location if validation testing of an uploaded network shows
@@ -474,53 +398,8 @@ app.use('/best-network', asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " downloaded /best-network");
 }));
 
-// Prior way we served best networks.
-//
-app.use('/best-network-old', (req, res) => {
-    var hash;
-
-    fs.readFile(__dirname + '/network/best-network', (err, data) => {
-        hash = checksum(data, 'sha256');
-
-    	zlib.gzip(data, (error, result) => {
-	        res.setHeader('Content-Disposition', 'attachment; filename=' + hash + ".gz");
-	        res.setHeader('Content-Transfer-Encoding', 'binary');
-	        res.setHeader('Content-Type', 'application/octet-stream');
-	        res.write(result);
-	        res.end();
-	    });
-
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " downloaded /best-network");
-	    //res.setHeader('Content-Disposition', 'attachment; filename=' + hash + ".gz");
-	    //res.setHeader('Content-Transfer-Encoding', 'binary');
-        //res.setHeader('Content-Type', 'application/octet-stream');
-
-        // console.log("Filename is " + hash);
-    	//let readStream = fs.createReadStream(__dirname + '/network/best-network');
-
-        // When the stream is done being read, end the response
-        //readStream.on('close', () => {
-        //   res.end()
-        //})
-
-        // Stream chunks to response
-        //readStream.pipe(zlib.CreateGzip()).pipe(res);
-
-        //res.zip({
-        //    files: [
-        //        { path: __dirname + '/network/best-network', name: filename + ".txt" } 
-        //    ],
-        //    filename: hash + ".zip"
-        //});
-    });
-});
-
-// { "_id" : ObjectId("5a25e0d8d1a106cd03ff749c"), "network1" : "92c658d7325fe38f0c8adbbb1444ed17afd891b9f208003c272547a7bcb87909", "network2" : "223737476718d58a4a5b0f317a1eeeb4b38f0c06af5ab65cb9d76d68d9abadb6", "network1_losses" : 17, "game_count" : 30, "network1_wins" : 13, "options_hash" : "3e4e92", "options" : { "playouts" : 1000, "resignation_percent" : 3, "noise" : false, "randomcnt" : 0 }, "number_to_play" : 200 }
-
 app.post('/request-match', (req, res) => {
-    //console.log("/requset-match: " + JSON.stringify(req) );
-
-// "number_to_play" : 400, "options" : { "playouts" : 1600, "resignation_percent" : 1, "randomcnt" : 0, "noise" : "false" }
+    // "number_to_play" : 400, "options" : { "playouts" : 1600, "resignation_percent" : 1, "randomcnt" : 0, "noise" : "false" }
 
     if (!req.body.key || req.body.key != auth_key) {
         console.log("AUTH FAIL: '" + String(req.body.key) + "' VS '" + String(auth_key) + "'");
@@ -533,7 +412,6 @@ app.post('/request-match', (req, res) => {
 
     if (!req.body.network2)
         req.body.network2 = null;
-    //  return res.status(400).send('No network2 hash specified.');
 
     // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing. Don't allow both to be set.
     //
@@ -612,8 +490,6 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
     var network;
     var hash;
-    //var hash = checksum(req.files.weights.data, 'sha256');
-
     var networkbuffer = Buffer.from(req.files.weights.data);
 
     zlib.unzip(networkbuffer,  asyncMiddleware( async (err, networkbuffer, next) => {
@@ -637,8 +513,6 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
             var training_steps = req.body.training_steps ? Number(req.body.training_steps) : null;
 
-            //console.log("Network hash is: " + hash + " (" + training_count + ")");
-
             db.collection("networks").updateOne(
                 { hash: hash },
                 // Weights data is too large, store on disk and just store hashes in the database?
@@ -652,17 +526,8 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
                     } else {
                         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded network " + hash + " (" + training_count + ")");
                     }
-                    //res.send('Network hash ' + hash + ' uploaded!\n');
             });
 
-/*
-            db.collection("networks").findOne( {}, (err, res) => {
-                if (err) throw err;
-
-                console.log("Fetched: " + res.hash + " --> " + res.weights);
-            });
-*/
-        
             // If we serve a listing from database instead and query as needed, this can be removed.
             //
             var networkpath = __dirname + '/network/';
@@ -725,7 +590,6 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
 
     if (!req.body.movescount) {
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No movescount provided.');
-        //return res.status(400).send('***** No movescount provided. Please update your /next client. *****');
     }
 
     if (!req.body.score) {
@@ -881,11 +745,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
         .then( (match) => { 
             if (match && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count > 0.55) ) ) {
                 fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
-                //fs.copyFile(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz', (err) => {
-                //    if (err) console.log("ERROR: Couldn't copy " + __dirname + '/network/' + req.body.winnerhash + '.gz to ' + __dirname + '/network/best-network.gz');
-
-                    console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
-                //});
+                console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
             }
         }).catch( err => {
             console.log("ERROR: " + req.body.winnerhash + " " + best_network_hash + " " + req.body.options_hash);
@@ -912,16 +772,11 @@ app.post('/submit', (req, res) => {
     if (!req.files.trainingdata)
         return res.status(400).send('No trainingdata file provided.');
 
-//console.log(req.ip + " got raw seed: " + req.body.random_seed);
-
-    if (!req.body.random_seed) 
+    if (!req.body.random_seed) {
         req.body.random_seed = null;
-    else  { req.body.random_seed = Long.fromString(req.body.random_seed, 10);
-
-//console.log(req.ip + " got seed: " + req.body.random_seed);
-
-//console.log("fix seed: " + seed_from_mongolong(req.body.random_seed));
-}
+    } else {
+        req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    }
 
     let clientversion;
 
@@ -932,9 +787,6 @@ app.post('/submit', (req, res) => {
     }
     
     var networkhash = req.body.networkhash;
-    //var trainingdatafile = req.files.trainingdata;
-    //var sgffile = req.files.sgf;
-    //var sgfhash = checksum(req.files.sgf.data, 'sha256');
     var trainingdatafile;
     var sgffile;
     var sgfhash;
@@ -951,8 +803,6 @@ app.post('/submit', (req, res) => {
         if (err) {
             console.error("Error decompressing sgffile: " + err);
         } else { 
-            //console.log("UNZIP: " + sgfbuffer.toString());
-            //console.log("Hash after decompression: " + checksum(sbfbuffer.toString(), 'sha256'));
             sgffile = sgfbuffer.toString();
             sgfhash = checksum(sgffile, 'sha256');
 
@@ -1001,96 +851,10 @@ app.post('/submit', (req, res) => {
     });
 
     }
-
-    //if (counter % 5 == 0) {
-    if (counter == 9245) {
-        // .toArray was a bad bad idea
-        //
-        //db.collection("games").find({}, { _id: 0, data: 1 }).sort({_id: -1}).limit(500000).toArray( (err, res) => {
-        var writeStream = fs.createWriteStream( __dirname + "/train.out." + counter );
-
-        writeStream.on('finish', () => { 
-            console.log("Wrote training data to train.out");
-        });
-
-        db.collection("games").find({}, { _id: 0, data: 1 }).sort({_id: -1}).limit(500000).forEach( (item) => {
-            writeStream.write(item.data);
-        }, (err) => {
-            if (err) throw err;
-
-            console.log("Writing data didn't crash server, yay");
-            writeStream.end();
-        });
-    }
-
-/*
-    db.collection("games").updateOne(
-        { sgfhash: sgfhash },
-        { $set: { networkhash: networkhash, sgf: req.files.sgf.data, data: req.files.trainingdata.data }}, { upsert: true },
-        (err, res) => {
-            // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
-            //
-            if (err) throw err;
-
-            console.log("Game data " + sgfhash + " stored in database");
-    });
-*/
-
-    // Below is the original purely filesystem driven initial approach
-    //
-/*
-    var sgfpath = __dirname + '/sgf/' + networkhash + '/';
-
-    fs.mkdirs(sgfpath)
-    .then(() => {
-        // Append file.data to the appropriate file
-        //
-        var c = counter.getItemSync(networkhash);
-
-        if (!c) {
-            console.log('First SGF for network ' + networkhash);
-            c = 0;
-            counter.setItemSync(networkhash, 0);
-        }
-
-        counter.setItemSync(networkhash, ++c);
-
-        var networkbucket = Math.floor(c / 25000);
-
-        if (!streams[networkhash]) {
-            streams[networkhash] = fs.createWriteStream(sgfpath + networkbucket, {flags:'a'});
-        }
-
-        streams[networkhash].write(req.files.sgf.data + "\n");
-
-        console.log('SGF hash ' + sgfhash + ' uploaded!');
-        console.log('Network ' + networkhash + ' now has ' + c + ' games. Bucket: ' + networkbucket);
-        res.send('SGF hash ' + sgfhash + ' uploaded!\n');
-
-        if (c % 25000 == 0) {
-            // Every 25000 games, create a new 500,000 game sgf file of most recent games from most recent networks
-            //
-            exec('ls -t network | xargs -I{} find sgf/{} -type f | xargs cat | head -n 500000 > sgf/training_games',
-                    (error, stdout, stderr) => {
-                if (error) {
-                    console.error('exec error: ' + error);
-                    return;
-                }
-                console.log("New training game file created.");
-                //console.log(`stdout: ${stdout}`);
-                //console.log(`stderr: ${stderr}`);
-            })
-        }
-    })
-    .catch(err => {
-        console.error("Cannot make directory error: " + err)
-    });
-*/
 });
 
 app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
-    //res.sendFile(__dirname + '/index.html')
 
     var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=4>Best Network Hash (100 Most Recent)</th></tr>\n";
     network_table += "<tr><th>Upload Date</th><th>Hash</th><th>Games</th><th>Training #</th></tr>\n";
@@ -1105,10 +869,6 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     var best_network_hash = await get_best_network_hash();
 
     Promise.all([
-//        db.collection("games").distinct('ip')
-//        .then((list) => {
-//            return(list.length + " total clients seen. (");
-//        }),
         cacheIP24hr.wrap('IP24hr', '5m', () => { return Promise.resolve(
         db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })
         )})
@@ -1121,10 +881,6 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((list) => { 
             return (list.length + " in past hour.<br>");
         }),
-//        db.collection("games").distinct('sgfhash')
-//        .then((list) => {
-//            return(list.length + 15036 + " total submitted games. (");
-//        }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
         .then((count) => { 
             return (counter + " total selfplay games. (" + count + " in past 24 hours, ");
@@ -1145,7 +901,6 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((count) => { 
             return (count + " in past hour.)<br>");
         }),
-        // db.networks.find({}, { _id: 0, hash: 1, game_count: 1 }).sort( { _id: -1 } );
         db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } )
         .limit(100).toArray()
         .then((list) => { 
@@ -1201,7 +956,6 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
 
             return "";
         }),
-        //db.collection("matches").find({}).sort( { _id: -1 } )
         cachematches.wrap('matches', '1d', () => { return Promise.resolve(
         db.collection("matches").aggregate([ { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "merged1" } }, { "$unwind": "$merged1" }, { "$sort": { "merged.training_count": -1, _id: -1 } }, { "$limit": 100 } ])
         .toArray()
@@ -1345,15 +1099,9 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         }
 
         page += "<br><br>";
-        //page += "The 19,000 game network had a 63% win rate over the 9,000 game network.<br>";
-        //page += "The 62,000 game network had a 80% win rate over the 19,000 game network.<br>";
-        //page += "The 107,000 game network had a 57% win rate over the 62,000 game network.<br>";
-        //page += "The 137,000 game network had a 66% win rate over the 107,000 game network.<br>";
-        //page += "<a href=\"http://zero.sjeng.org/networks\">Archive of past networks</a>.<br>";
         page += "<a href=\"https://sjeng.org/zero/\">Raw SGF files</a>.<br>";
         page += "<a href=\"https://docs.google.com/spreadsheets/d/e/2PACX-1vTsHu7T9vbfLsYOIANnUX9rHAYu7lQ4AlpVIvCfn60G7BxNZ0JH4ulfbADEedPVgwHxaH5MczdH853l/pubchart?oid=286613333&format=interactive\">Original strength graph</a>. (Mostly obsolete.)<br>";
         page += "<br>";
-        //page += "<iframe width=\"987\" height=\"638\" seamless frameborder=\"0\" scrolling=\"no\" src=\"https://docs.google.com/spreadsheets/d/e/2PACX-1vTsHu7T9vbfLsYOIANnUX9rHAYu7lQ4AlpVIvCfn60G7BxNZ0JH4ulfbADEedPVgwHxaH5MczdH853l/pubchart?oid=286613333&format=interactive\"></iframe>";
         page += "<iframe width=\"950\" height=\"655\" seamless frameborder=\"0\" scrolling=\"no\" src=\"/static/elo.html\"></iframe>";
         page += "<br><br>Times are in GMT+0100 (CET)<br>\n";
         page += network_table;
@@ -1361,28 +1109,6 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "</body></html>";
         res.send(page);
     });
-
-/*
-    page += "Leela Zero is available from: <a href=\"https://github.com/gcp/leela-zero\">Github</a>.<br>";
-
-    page += "A total of " + counter + " games have been submitted.<br>";
-
-    db.collection("games").distinct('ip')
-    .then((list) => {
-        page += list.length + " clients have submitted games.<br>";
-        page += "<br>The 19K game network beats the 9k game network 63% of the time. A 38K network is training now.<br>";
-        res.send(page);
-    });
-*/
-
-// Games in past 24 hours:
-// db.games.find({_id:{$gt:ObjectId.fromDate(new Date(ISODate().getTime() - 1000 * 60 * 60 * 24))}}).count();
-//
-// Clients in past 24 hours:
-// > db.games.distinct("ip", {_id:{$gt:ObjectId.fromDate(new Date(ISODate().getTime() - 1000 * 60 * 60 * 24))}}).length;
-
-    //res.send("A total of " + counter + " games have been submitted.<br>");
-    //res.send("Leela Zero is available from: <a href=\"https://github.com/gcp/leela-zero\">Github</a>.<br>");
 }));
 
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
@@ -1396,11 +1122,8 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
-    //console.log("Length is " + pending_matches.length);
-    //console.log("Fast is " + fastClientsMap.get(req.ip));
-
     if (pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip)
-        && (
+          && (
             how_many_games_to_queue(
                 pending_matches[pending_matches.length - 1].number_to_play,
                 pending_matches[pending_matches.length - 1].network1_wins,
@@ -1410,7 +1133,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             pending_matches[pending_matches.length - 1].game_count
             - pending_matches[pending_matches.length - 1].network1_wins
             - pending_matches[pending_matches.length - 1].network1_losses
-        )
+          )
         ) {
         var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : "0.9"};
         var match = pending_matches[pending_matches.length - 1];
@@ -1455,7 +1178,6 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         if (pending_matches[pending_matches.length - 1].game_count >= match.number_to_play) pending_matches.pop();
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: match " + match.network1.slice(0,8) + " vs " + match.network2.slice(0,8) + " " + match.game_count + " of " + match.number_to_play);
-        //console.log("Pending: " + JSON.stringify(pending_matches));
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
         var task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : "0.9",};
@@ -1528,7 +1250,6 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
     var ipMap = new Map();
 
     var html = "<html><head>";
-    //html += "<script type=\"text/javascript\" src=\"/static/timeago.js\"></script>\n";
     html += "</head><body>\n";
     html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th></tr>\n";
 
@@ -1597,11 +1318,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     var totalgames = await cursor.next();
 
     var ratingsMap = new Map();
-    //var best_networks = [];
     var networks = [];
 
     Promise.all([
-        //db.collection("networks").find().sort({training_count: -1}).toArray()
         db.collection("networks").find().sort({_id: -1}).toArray()
         .then((list) => { 
             for (let item of list) {
@@ -1612,8 +1331,6 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 )
 
                 if (item.game_count) {
-                    //best_networks.push({ "hash": item.hash, "game_count": item.game_count,
-                    //    "net": totalgames.count });
                     networks.push({ "hash": item.hash, "game_count": item.game_count,
                         "net": mycount, "best": "true" });
                 } else {
@@ -1624,7 +1341,6 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
 
             return;
         }),
-        //db.collection("matches").find().sort({_id: 1}).toArray()
         db.collection("matches").aggregate([
             { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$sort": { "merged._id": 1 } }
         ]).toArray()
@@ -1641,7 +1357,6 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 } else {
                     var fakecount = match.game_count;
                     var fakewins = match.network1_wins;
-                    //var fakelosses = match.network1_losses;
 
                     if (fakewins == 0) {
                         fakewins++;
@@ -1672,28 +1387,14 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                     "rating": elo + network2_rating,
                     "sprt": sprt
                 };
-//console.log("Setting " + match.network1 + " to " + JSON.stringify(info) + " from " + elo + " + " + network2_rating);
-                //if (match.network1_wins == 0 || match.network1_losses == 0) {
-                //    info.rating = -1;
-                //}
 
                 ratingsMap.set(match.network1, info);
             }
 
             return;
-            //return (list.length + " clients in past 24 hours, ");
         })
     ]).then((responses) => {
-        //responses.map( response => page += response );
-        //page += "</div></body></html>\n";
         var elograph_data;
-
-        //var best_json = best_networks.map( (item) => {
-        //    var rating = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).rating : 0;
-        //    var sprt = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).sprt : "???";
-        //    var result_item = { "rating": rating, "net": item.net, "sprt": sprt, "hash": item.hash.slice(0,6) };
-        //    return JSON.stringify(result_item);
-        //}).join(",");
 
         var json = networks.map( (item) => {
             var rating;
@@ -1708,7 +1409,6 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             return JSON.stringify(result_item);
         }).join(",");
 
-        //res.send("[ " + best_json + "," + json + " ]");
         res.send("[ " + json + " ]");
     }).catch( err => {
         console.log("ERROR data/elograph.json: " + err);
