@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Embedding Vega-Lite</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vega/3.0.8/vega.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/2.0.3/vega-lite.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/3.0.0-rc7/vega-embed.min.js"></script>
+  <!-- Vega Tooltip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-tooltip/0.4.4/vega-tooltip.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vega-tooltip/0.4.4/vega-tooltip.min.css">
+</head>
+<body>
+
+  <div id="vis"></div>
+
+  <script type="text/javascript">
+    var vlSpec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
+      "description": "Leela Zero Elo rating",
+      "config": { 
+        "point": { "size": 80 }
+      }, 
+      "data": {
+        "url": "/data/elograph.json"
+      },
+      "layer": [
+        {
+          "transform": [
+            { "filter": { "field": "best", "equal": "true" } }
+          ],
+          "mark": {
+            "type": "line",
+            "interpolate": "monotone"
+          },
+          "encoding": {
+            "x": {
+              "field": "net", 
+              "type": "quantitative",
+              "axis": {
+                "title": "Number of accumulated games",
+              }
+            },
+            "y": {
+              "field": "rating", 
+              "type": "quantitative",
+              "axis": {
+                "title": "Elo rating (0 = random play)"
+              }
+            },
+            "color": {
+              "value": "blue"
+            }
+          }
+        },
+        {
+          "transform": [
+            { "filter": "datum.rating > -1" }
+          ],
+          "mark": {"type": "point", "filled": true},
+          "encoding": {
+            "x": {
+              "field": "net", 
+              "type": "quantitative",
+              "axis": {
+                "title": "Number of accumulated games",
+              }
+            },
+            "y": {
+              "field": "rating", 
+              "type": "quantitative",
+              "axis": {
+                "title": "Elo rating (0 = random play)"
+              }
+            },
+            "color": {
+              "field": "sprt", "type": "nominal",
+              "scale": {"range": ["#59E817", "#C11B17", "blue"]}
+            },
+            "shape": {
+              "field": "sprt", "type": "nominal",
+              "scale": {"range": ["circle", "triangle-down", "circle"]}
+            }
+          }
+        } 
+      ]
+    }
+
+    var opt = {
+      mode: "vega-lite",
+      actions: false,
+      width: 800,
+      height: 600
+      // "width": 800,
+      // "height": 600,
+      // "actions" : {
+      //   "export": false,
+      //   "source": false,
+      //   "editor": false
+      // }
+    };
+
+    var tooltipOpt = {
+      showAllFields: false,
+      fields: [
+        {field: "net", title: "Number of trained games", format: ",d"},
+        {field: "rating", title: "Elo rating (0 = random play)"},
+        {field: "sprt", title: "SPRT"},
+        {field: "hash", title: "Hash"}
+      ]
+    };
+
+    vegaEmbed("#vis", vlSpec, opt)
+    .then(function (result){
+      vegaTooltip.vegaLite(result.view, vlSpec, tooltipOpt)
+    }).catch(console.error);
+    
+    // function (error, result) {
+    //   var tooltipOption = {
+    //     showAllFields: false,
+    //     fields: [
+    //       {field: "net", title: "Number of games"},
+    //       {field: "rating", title: "Elo rating"},
+    //       {field: "sprt", title: "SPRT result"}
+    //     ]
+    //   };
+    //   vegaToolTip.vegaLite(result.view, vlSpec, tooltipOption)
+    // };
+  </script>
+  </div>
+</body>
+</html>
+

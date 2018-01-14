@@ -1,0 +1,30 @@
+// games
+db.games.createIndex({"_id":1,"ip":1}, {"name":"_id_1_ip_1"});
+db.games.createIndex({"_id":1}, {"name":"_id_"});
+db.games.createIndex({"ip":-1,"_id":-1}, {"name":"ip_-1__id_-1","background":true});
+db.games.createIndex({"ip":1}, {"name":"ip_1"});
+db.games.createIndex({"networkhash":1}, {"name":"networkhash_1"});
+db.games.createIndex({"sgfhash":1}, {"unique":true,"name":"sgfhash_1"});
+
+// match-games
+db.match-games.createIndex({"_id":1}, {"name":"_id_"});
+
+// match_games
+db.match_games.createIndex({"_id":1}, {"name":"_id_"});
+db.match_games.createIndex({"ip":1}, {"name":"ip_1"});
+db.match_games.createIndex({"sgfhash":1}, {"unique":true,"name":"sgfhash_1","background":true});
+db.match_games.createIndex({"winnerhash":1,"loserhash":1,"options_hash":1,"_id":1}, {"name":"winnerhash_1_loserhash_1_options_hash_1__id_1","background":true});
+
+// matches
+db.matches.createIndex({"_id":1}, {"name":"_id_"});
+db.matches.createIndex({"game_count":1}, {"name":"game_count_1"});
+db.matches.createIndex({"network1":1,"network2":1,"options_hash":1}, {"unique":true,"name":"network1_1_network2_1_options_hash_1"});
+db.matches.createIndex({"network2":1}, {"name":"network2_1"});
+db.matches.createIndex({"number_to_play":1,"game_count":1}, {"name":"number_to_play_1_game_count_1"});
+
+// networks
+db.networks.createIndex({"_id":1}, {"name":"_id_"});
+db.networks.createIndex({"hash":1}, {"unique":true,"name":"hash_1"});
+db.networks.createIndex({"ip":1}, {"name":"ip_1"});
+db.networks.createIndex({"training_count":1}, {"name":"training_count_1"});
+
