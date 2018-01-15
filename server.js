@@ -362,13 +362,15 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
     });
 });
 
+// Obsolete
+//
 app.use('/best-network-hash', asyncMiddleware( async (req, res, next) => {
     var hash = await get_best_network_hash();
 
     res.write(hash);
     res.write("\n");
-    // Expected client version
-    res.write("8");
+    // Can remove if autogtp no longer reads this. Required client and leelza versions are in get-task now.
+    res.write("11");
     res.end();
 }));
 
@@ -1074,7 +1076,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Match games are played at full strength (only 1600 playouts).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
-        page += "2018-01-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.10 + AutoGTP v11</a>. <b>Update required soon.</b><br>";
+        page += "2018-01-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.10 + AutoGTP v11</a>. <b>Update required.</b><br>";
         page += "2017-12-08 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.9 + AutoGTP v8</a>. <b>Update required.</b><br>";
         page += "2017-12-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.8 + AutoGTP v7</a>.<br>";
         page += "2017-12-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.7 + AutoGTP v6</a>.<br>";
@@ -1112,7 +1114,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
 }));
 
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
-    var required_client_version = String(10);
+    var required_client_version = String(11);
+    var required_leelaz_version = String("0.10");
 
     var random_seed = converter.hexToDec( "0x"+crypto.randomBytes(8).toString('hex') ).toString();
 
@@ -1135,7 +1138,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             - pending_matches[pending_matches.length - 1].network1_losses
           )
         ) {
-        var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : "0.9"};
+        var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
         var match = pending_matches[pending_matches.length - 1];
 
         last_match_sent_ts = Date.now();
@@ -1186,7 +1189,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        var task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : "0.9",};
+        var task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         var options = {"playouts": "1600", "resignation_percent": "1", "noise": "true", "randomcnt": "30"};
