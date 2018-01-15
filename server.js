@@ -1112,6 +1112,24 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
 }));
 
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
+
+    //Here you store the data from the client
+/*
+    
+    db.collection("clients").updateOne(
+            { id: req.myid },
+            { $set: { timexgame: req.timexgame, ip: req.headers['x-real-ip']}}, 
+            { upsert: true },
+            (err, dbres) => {
+                // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
+                //
+                if (err) {
+                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " get-task ERROR: " + err);
+                    res.send("Match data " + sgfhash + " stored in database\n");
+                }
+            }
+        );
+*/
     var required_client_version = String(10);
 
     var random_seed = converter.hexToDec( "0x"+crypto.randomBytes(8).toString('hex') ).toString();
@@ -1122,6 +1140,15 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
+    //
+    //here you look in the table with all the unique id given by the clients threads
+    //
+    //if the id is in the fastThreadsMap you have found a fast client
+    //if it is not in the fastThreadsMap but it is in the table allThreadsMap then you found a slow one
+    //if you do not find in bot maps then you have found an old client and you have to search per ip like you did till now
+    //  if   ((fastThreadsMap.get(rep.myid) && !allThreadsMap(rep.myid)) ||
+    //       fastClientsMap.get(req.ip))
+
     if (pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip)
           && (
             how_many_games_to_queue(
