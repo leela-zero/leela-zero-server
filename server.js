@@ -987,7 +987,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
                     + "<span class=\"tooltiptextleft\">"
                     + abbreviateNumber(item.merged1.training_count, 2)
-                    + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 0) : "")
+                    + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 2) : "")
                     + "</span></div>"
                     + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
 
@@ -996,7 +996,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                         + "<a href=\"/networks/" + item.network2 + ".gz\">" + item.network2.slice(0,8) + "</a>"
                         + "<span class=\"tooltiptextright\">"
                         + abbreviateNumber(item.merged.training_count, 2)
-                        + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 0) : "")
+                        + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 2) : "")
                         + "</span></div>"
                 } else {
                     match_table += "BEST";
