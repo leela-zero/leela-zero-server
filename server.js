@@ -67,7 +67,7 @@ function abbreviateNumber(number, length) {
     var scaled = number / scale;
 
     // format number and add prefix as suffix
-    return scaled.toFixed(length) + prefix;
+    return scaled.toPrecision(length) + prefix;
 }
 
 function CalculateEloFromPercent(percentage) {
@@ -986,8 +986,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "<div class=\"tooltip\">"
                     + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
                     + "<span class=\"tooltiptextleft\">"
-                    + abbreviateNumber(item.merged1.training_count, 2)
-                    + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 2) : "")
+                    + abbreviateNumber(item.merged1.training_count, 3)
+                    + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
                     + "</span></div>"
                     + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
 
@@ -995,8 +995,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     match_table += "<div class=\"tooltip\">"
                         + "<a href=\"/networks/" + item.network2 + ".gz\">" + item.network2.slice(0,8) + "</a>"
                         + "<span class=\"tooltiptextright\">"
-                        + abbreviateNumber(item.merged.training_count, 2)
-                        + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 2) : "")
+                        + abbreviateNumber(item.merged.training_count, 3)
+                        + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 3) : "")
                         + "</span></div>"
                 } else {
                     match_table += "BEST";
