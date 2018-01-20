@@ -415,9 +415,12 @@ app.post('/request-match', (req, res) => {
     if (!req.body.network2)
         req.body.network2 = null;
 
-    // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing. Don't allow both to be set.
+    // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing? Don't allow both to be set.
     //
-    if (!req.body.playouts)
+    if (req.body.playouts && req.body.visits)
+        return res.status(400).send('Please set only playouts or visits, not both');
+
+    if (!req.body.playouts && !req.body.visits)
         req.body.playouts = 1600;
         //return res.status(400).send('No playouts specified.');
 
@@ -1192,6 +1195,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
         var task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
+
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         var options = {"playouts": "1600", "resignation_percent": "1", "noise": "true", "randomcnt": "30"};
