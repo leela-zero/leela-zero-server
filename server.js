@@ -1076,6 +1076,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Match games are played at full strength (only 1600 playouts).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
+        page += "2018-01-20 We are now on 6 blocks x 128 filters, so the speed of the games will drop.<br>";
         page += "2018-01-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.11 + AutoGTP v13</a>.<br>";
         page += "2018-01-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.10 + AutoGTP v11</a>. <b>Update required.</b><br>";
         page += "2017-12-08 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.9 + AutoGTP v8</a>. <b>Update required.</b><br>";
