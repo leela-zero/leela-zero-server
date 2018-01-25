@@ -989,7 +989,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "<div class=\"tooltip\">"
                     + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
                     + "<span class=\"tooltiptextleft\">"
-                    + abbreviateNumber(item.merged1.training_count, 3)
+                    + abbreviateNumber(item.merged1.training_count, 4)
                     + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
                     + "</span></div>"
                     + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
@@ -998,7 +998,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     match_table += "<div class=\"tooltip\">"
                         + "<a href=\"/networks/" + item.network2 + ".gz\">" + item.network2.slice(0,8) + "</a>"
                         + "<span class=\"tooltiptextright\">"
-                        + abbreviateNumber(item.merged.training_count, 3)
+                        + abbreviateNumber(item.merged.training_count, 4)
                         + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 3) : "")
                         + "</span></div>"
                 } else {
@@ -1059,11 +1059,11 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         //
         page += ".tooltip { position: relative; display: inline-block; border-bottom: 1px dotted black; }\n";
 
-        page += ".tooltip .tooltiptextright { visibility: hidden; width: 120px; background-color: black; color: #fff; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; top: -5px; left: 110%; }\n";
+        page += ".tooltip .tooltiptextright { visibility: hidden; width: 130px; background-color: black; color: #fff; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; top: -5px; left: 110%; }\n";
         page += " .tooltip .tooltiptextright::after { content: \"\"; position: absolute; top: 50%; right: 100%; margin-top: -5px; border-width: 5px; border-style: solid; border-color: transparent black transparent transparent; }\n";
         page += " .tooltip:hover .tooltiptextright { visibility: visible; }\n";
 
-        page += ".tooltip .tooltiptextleft { visibility: hidden; width: 120px; background-color: black; color: #fff; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; top: -5px; right: 110%; }\n";
+        page += ".tooltip .tooltiptextleft { visibility: hidden; width: 130px; background-color: black; color: #fff; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; top: -5px; right: 110%; }\n";
         page += " .tooltip .tooltiptextleft::after { content: \"\"; position: absolute; top: 50%; left: 100%; margin-top: -5px; border-width: 5px; border-style: solid; border-color: transparent transparent transparent black; }\n";
         page += " .tooltip:hover .tooltiptextleft { visibility: visible; }\n";
 
