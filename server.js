@@ -307,9 +307,9 @@ setInterval( () => {
     // In case all queue matches are disconencted or super slow, lets start fresh after timing out
     //
     //if (!pending_matches.length && now > (last_match_sent_ts + 1000 * 60 * 25)) {
-    if (now > (last_match_sent_ts + 1000 * 60 * 15)) {
-        //console.log("No matches sent in 15 minutes and list empty. Updating pending list.");
-        console.log("No matches sent in 15 minutes. Updating pending list.");
+    if (now > (last_match_sent_ts + 1000 * 60 * 30)) {
+        //console.log("No matches sent in 30 minutes and list empty. Updating pending list.");
+        console.log("No matches sent in 30 minutes. Updating pending list.");
 
         last_match_sent_ts = now;
 
