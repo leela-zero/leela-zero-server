@@ -266,8 +266,9 @@ function canReachLimit(w, l, max, aim) {
 }
 
 function SPRT(w, l) {
-  if(w+l>=400&&w/(w+l)>=0.55) return true;
-  if (!canReachLimit(w, l, 400, 220)) return false;
+  var max = 400, aim = 220;
+  if(w+l>=max&&w/(w+l)>=(aim/max)) return true;
+  if (!canReachLimit(w, l, max, aim)) return false;
   return SPRTold(w,l);
 }
 
