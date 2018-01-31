@@ -118,7 +118,7 @@ async function get_fast_clients () {
         db.collection("games").aggregate( [
             { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60)}}},
             { $group: { _id: "$ip", total: { $sum: 1 }}},
-            { $match: { total: { $gt: 5 }}}
+            { $match: { total: { $gt: 4 }}}
         ] ).forEach( (match) => {
             fastClientsMap.set(match._id, true);
         }, (err) => {
@@ -272,7 +272,7 @@ function SPRT(w, l) {
   return SPRTold(w,l);
 }
 
-var QUEUE_BUFFER = 20;
+var QUEUE_BUFFER = 25;
 var PESSIMISTIC_RATE = 0.2;
 
 function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
