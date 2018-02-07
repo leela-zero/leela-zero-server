@@ -253,7 +253,7 @@ function SPRTold(W,L)
 }
 
 function stDev(n) {
-  return Math.sqrt(Math.pow(n/2,2)/n);
+  return Math.sqrt(n/4);
 }
 
 function canReachLimit(w, l, max, aim) {
@@ -266,7 +266,8 @@ function canReachLimit(w, l, max, aim) {
 }
 
 function SPRT(w, l) {
-  var max = 400, aim = 220;
+  var max = 400;
+  var aim = max / 2 + 2 * stDev(max);
   if(w+l>=max&&w/(w+l)>=(aim/max)) return true;
   if (!canReachLimit(w, l, max, aim)) return false;
   return SPRTold(w,l);
