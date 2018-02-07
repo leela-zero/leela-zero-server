@@ -233,8 +233,8 @@ function LLR(W, L, elo0, elo1) {
     return (s1-s0)*(2*s-s0-s1)/variance_s/2.0;
 }
 
-//function SPRT(W,L,elo0,elo1)
-function SPRT(W,L)
+//function SPRTold(W,L,elo0,elo1)
+function SPRTold(W,L)
 {
     var elo0 = 0, elo1 = 35;
     var alpha = .05, beta = .05;
@@ -250,6 +250,27 @@ function SPRT(W,L)
     } else {
         return null;
     }
+}
+
+function stDev(n) {
+  return Math.sqrt(n/4);
+}
+
+function canReachLimit(w, l, max, aim) {
+  var aimPerc = aim/max;
+  var remaining = max-w-l;
+  var expected = remaining*aimPerc;
+  var maxExpected = expected+3*stDev(remaining)
+  var needed = aim-w;
+  return maxExpected>needed;
+}
+
+function SPRT(w, l) {
+  var max = 400;
+  var aim = max / 2 + 2 * stDev(max);
+  if(w+l>=max&&w/(w+l)>=(aim/max)) return true;
+  if (!canReachLimit(w, l, max, aim)) return false;
+  return SPRTold(w,l);
 }
 
 var QUEUE_BUFFER = 25;
