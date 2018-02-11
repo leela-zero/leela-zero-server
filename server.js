@@ -676,7 +676,6 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                 if (err) {
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " INCREMENT ERROR: " + err);
                 } else {
-                    pending_matches[pending_matches.length - 1].requests.shift() // remove one match from the request list as we got a result.
                     if (dbres.modifiedCount == 0) {
                         db.collection("matches").updateOne(
                             { network1: req.body.loserhash, network2: req.body.winnerhash, options_hash: req.body.options_hash },
@@ -690,6 +689,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                                         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " ERROR: No match found to update from " + JSON.stringify(req.body));
                                     } else {
                                         // network1 was the loser
+                                        pending_matches[pending_matches.length - 1].requests.shift() // remove one match from the request list as we got a result.
                                         if (pending_matches.length &&
                                             pending_matches[pending_matches.length - 1].network1 == req.body.loserhash &&
                                             pending_matches[pending_matches.length - 1].network2 == req.body.winnerhash &&
@@ -712,6 +712,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                         );
                     } else {
                         // network1 was the winner
+                        pending_matches[pending_matches.length - 1].requests.shift() // remove one match from the request list as we got a result.
                         if (pending_matches.length &&
                             pending_matches[pending_matches.length - 1].network1 == req.body.winnerhash &&
                             pending_matches[pending_matches.length - 1].network2 == req.body.loserhash &&
@@ -1146,10 +1147,6 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
     var best_network_hash = await get_best_network_hash();
-    var match = pending_matches[pending_matches.length - 1];
-    var now = Date.now();
-    // Remove requests older than MATCH_EXPIRE_TIME from the request list.
-    match.requests = match.requests.filter(e => e > now - MATCH_EXPIRE_TIME);
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
@@ -1164,6 +1161,10 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             match.requests.length
           )
         ) {
+        var match = pending_matches[pending_matches.length - 1];
+        var now = Date.now();
+        // Remove requests older than MATCH_EXPIRE_TIME from the request list.
+        match.requests = match.requests.filter(e => e > now - MATCH_EXPIRE_TIME);
         var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
         
         task.options = match.options;
