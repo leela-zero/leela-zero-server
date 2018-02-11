@@ -372,14 +372,14 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         console.log ( counter + " games.");
 
         app.listen(8080, () => {
-            console.log('listening on 8081')
-        })
+            console.log('listening on 8080')
+        });
 
         // Listening to both ports while /next people are moving over to real server adddress
         //
-        app.listen(8081, () => {
-            console.log('listening on 8080')
-        })
+        //app.listen(8081, () => {
+        //    console.log('listening on 8081')
+        //});
     });
 });
 
