@@ -39,7 +39,6 @@ process.on('uncaughtException', (err) => {
 var counter;
 var best_network_hash = null;
 var best_network_mtimeMs = 0;
-var last_match_sent_ts = Date.now();
 var db;
 
 // TODO Make a map to store pending match info, use mapReduce to find who to serve out, only 
@@ -320,6 +319,24 @@ setInterval( () => {
     .then()
     .catch();
 }, 1000 * 60 * 10);
+
+var last_match_db_check = Date.now();
+
+setInterval( () => {
+    var now = Date.now();
+
+    // In case we have no matches scheduled, we check the db.
+    //
+    if (pending_matches.length === 0 && now > last_match_db_check + 30 * 60 * 1000)) {
+        console.log("No matches scheduled. Updating pending list.");
+
+        last_match_db_check = now;
+        
+        get_pending_matches()
+        .then()
+        .catch();
+    }
+}, 1000 * 60 * 1);
 
 MongoClient.connect('mongodb://localhost/test', (err, database) => {
     if (err) return console.log(err);
@@ -643,7 +660,6 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " ERROR: " + err);
                     res.send("Match data " + sgfhash + " stored in database\n");
                 } else {
-                    //last_match_sent_ts = Date.now();
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
                     res.send("Match data " + sgfhash + " stored in database\n");
                 }
@@ -1150,8 +1166,6 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         ) {
         var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
         
-        last_match_sent_ts = Date.now();
-
         task.options = match.options;
         task.options_hash = match.options_hash;
 
