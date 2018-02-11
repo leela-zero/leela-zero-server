@@ -676,6 +676,11 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                 if (err) {
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " INCREMENT ERROR: " + err);
                 } else {
+                    pending_matches
+                      .filter(e => ((e.network1 === req.body.winnerhash && e.network2 === req.body.loserhash) ||
+                                    (e.network2 === req.body.winnerhash && e.network1 === req.body.loserhash)) &&
+                                     e.options_hash === req.body.options_hash))
+                      .forEach(e => e.requests.shift()) // remove one match from the request list as we got a result.
                     if (dbres.modifiedCount == 0) {
                         db.collection("matches").updateOne(
                             { network1: req.body.loserhash, network2: req.body.winnerhash, options_hash: req.body.options_hash },
@@ -689,7 +694,6 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                                         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " ERROR: No match found to update from " + JSON.stringify(req.body));
                                     } else {
                                         // network1 was the loser
-                                        pending_matches[pending_matches.length - 1].requests.shift() // remove one match from the request list as we got a result.
                                         if (pending_matches.length &&
                                             pending_matches[pending_matches.length - 1].network1 == req.body.loserhash &&
                                             pending_matches[pending_matches.length - 1].network2 == req.body.winnerhash &&
@@ -712,7 +716,6 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                         );
                     } else {
                         // network1 was the winner
-                        pending_matches[pending_matches.length - 1].requests.shift() // remove one match from the request list as we got a result.
                         if (pending_matches.length &&
                             pending_matches[pending_matches.length - 1].network1 == req.body.winnerhash &&
                             pending_matches[pending_matches.length - 1].network2 == req.body.loserhash &&
