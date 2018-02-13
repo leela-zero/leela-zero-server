@@ -328,7 +328,7 @@ setInterval( () => {
 
     // In case we have no matches scheduled, we check the db.
     //
-    if (pending_matches.length === 0 && now > last_match_db_check + 30 * 60 * 1000)) {
+    if (pending_matches.length === 0 && now > last_match_db_check + 30 * 60 * 1000) {
         console.log("No matches scheduled. Updating pending list.");
 
         last_match_db_check = now;
@@ -680,8 +680,11 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                     pending_matches
                       .filter(e => ((e.network1 === req.body.winnerhash && e.network2 === req.body.loserhash) ||
                                     (e.network2 === req.body.winnerhash && e.network1 === req.body.loserhash)) &&
-                                     e.options_hash === req.body.options_hash))
-                      .forEach(e => e.requests.shift()) // remove one match from the request list as we got a result.
+                                     e.options_hash === req.body.options_hash)
+                      .forEach(e => {
+                        e.requests.shift(); // remove one match from the request list as we got a result.
+                        e.game_count++;
+                      })
                     if (dbres.modifiedCount == 0) {
                         db.collection("matches").updateOne(
                             { network1: req.body.loserhash, network2: req.body.winnerhash, options_hash: req.body.options_hash },
@@ -1201,7 +1204,9 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             });
         }
 
-        if (match.game_count % 2) {
+        match.game_color = !match.game_color
+        
+        if (match.game_color) {
             task.white_hash = match.network1;
             task.black_hash = match.network2;
         } else {
@@ -1211,9 +1216,6 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         res.send(JSON.stringify(task));
 
-        // Not the most robust, but if we have completed and send out more than X requests for this match, stop requesting it.
-        //
-        match.game_count++;
         match.requests.push(now);
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
