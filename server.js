@@ -46,7 +46,8 @@ var db;
 // all matches except just the current one (end of queue).
 //
 var pending_matches = [];
-var MATCH_EXPIRE_TIME = 30 * 60 * 1000 // matches expire after 30 minutes. After that they are requested again.
+var MATCH_IGNORE_TIME = 30 * 60 * 1000 // matches are ignored after 30 minutes. After that they are requested again.
+var MATCH_EXPIRE_TIME = 60 * 60 * 1000 // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
 const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 
@@ -1047,13 +1048,13 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
 
                         var color;
 
-                        //if (width < 15) {
-                        //    color = "C11B17";
-                        //} else if (width > 85) {
-                        //    color = "0000FF";
-                        //} else {
+                        // if (width < 15) {
+                        //     color = "C11B17";
+                        // } else if (width > 85) {
+                        //     color = "0000FF";
+                        // } else {
                             color = "59E817";
-                        //}
+                        // }
 
                         styles += ".n" + item.network1.slice(0,8) + "{ width: " + width + "%; background-color: #" + color + ";}\n";
                         match_table += "<div class=\"n" + item.network1.slice(0,8) + "\">&nbsp;</div>";
@@ -1141,6 +1142,28 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     });
 }));
 
+function shouldScheduleMatch (req, now) {
+  if (!(pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip))) {
+    return false;
+  }
+  
+  var match = pending_matches[pending_matches.length - 1];
+  var requested = match.requests.length;
+  var ignored = match.requests.filter(e => e < now - MATCH_IGNORE_TIME).length
+  var deleted = match.requests.filter(e => e < now - MATCH_EXPIRE_TIME).length
+  var oldest = match.requests.length > 0 ? ((Date.now() - match.requests[0]) / 1000 / 60).toFixed(2): "0"
+  match.requests.splice(0,deleted) // here we modify the array for next time.
+  var needed = how_many_games_to_queue(
+                match.number_to_play,
+                match.network1_wins,
+                match.network1_losses,
+                PESSIMISTIC_RATE)
+  var result = needed > requested - ignored // ignored is including deleted so no need to subtract that.
+  console.log(`Need ${needed} match games. Requested ${requested}, ignored ${ignored}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`)
+  
+  return result
+}
+
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     var required_client_version = String(11);
     var required_leelaz_version = String("0.10");
@@ -1150,24 +1173,12 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
     var best_network_hash = await get_best_network_hash();
+    var now = Date.now();
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
-    if (pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip)
-          && (
-            how_many_games_to_queue(
-                match.number_to_play,
-                match.network1_wins,
-                match.network1_losses,
-                PESSIMISTIC_RATE)
-            >
-            match.requests.length
-          )
-        ) {
+    if (shouldScheduleMatch(req, now)) {
         var match = pending_matches[pending_matches.length - 1];
-        var now = Date.now();
-        // Remove requests older than MATCH_EXPIRE_TIME from the request list.
-        match.requests = match.requests.filter(e => e > now - MATCH_EXPIRE_TIME);
         var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
         
         task.options = match.options;
