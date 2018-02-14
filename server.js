@@ -769,7 +769,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     if (!new_best_network_flag && req.body.loserhash == best_network_hash) {
         db.collection("matches").findOne({ network1: req.body.winnerhash, network2: best_network_hash, options_hash: req.body.options_hash})
         .then( (match) => { 
-            if (match && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count > 0.55) ) ) {
+            if (match && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
                 fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
                 console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
             }
@@ -998,7 +998,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 var itemmoment = new moment(item._id.getTimestamp());
 
                 if (win_percent) {
-                    if (win_percent > 55) {
+                    if (win_percent >= 55) {
                         win_percent = "<b>" + win_percent + "</b>";
                     }
                     win_percent = " (" + win_percent + "%)";
