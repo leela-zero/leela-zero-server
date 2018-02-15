@@ -4,7 +4,6 @@ const fileUpload = require('express-fileupload');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const fs = require('fs-extra');
-const compress = require('node-zstd').compress;
 const MongoClient = require('mongodb').MongoClient;
 const Long = require('mongodb').Long;
 const ObjectId = require('mongodb').ObjectID;
@@ -39,7 +38,6 @@ process.on('uncaughtException', (err) => {
 var counter;
 var best_network_hash = null;
 var best_network_mtimeMs = 0;
-var last_match_sent_ts = Date.now();
 var db;
 
 // TODO Make a map to store pending match info, use mapReduce to find who to serve out, only 
@@ -47,6 +45,8 @@ var db;
 // all matches except just the current one (end of queue).
 //
 var pending_matches = [];
+var MATCH_IGNORE_TIME = 30 * 60 * 1000 // matches are ignored after 30 minutes. After that they are requested again.
+var MATCH_EXPIRE_TIME = 60 * 60 * 1000 // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
 const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 
@@ -145,6 +145,8 @@ async function get_pending_matches () {
                     "$$KEEP", "$$PRUNE"
                 ] } }
         ] ).sort({_id:-1}).forEach( (match) => {
+            match.requests = [] // init request list.
+            
             // Client only accepts strings for now
             //
             Object.keys(match.options).map( (key, index) => {
@@ -318,22 +320,18 @@ setInterval( () => {
     .catch();
 }, 1000 * 60 * 10);
 
-// I thought about setting timers for each request sent and removing the timers as games come back, Map'ed by
-// random seed perhaps, but it may be good enough to just refresh the pending list if we're idle on match
-// submissions for a while.
-//
+var last_match_db_check = Date.now();
+
 setInterval( () => {
     var now = Date.now();
 
-    // In case all queue matches are disconencted or super slow, lets start fresh after timing out
+    // In case we have no matches scheduled, we check the db.
     //
-    //if (!pending_matches.length && now > (last_match_sent_ts + 1000 * 60 * 25)) {
-    if (now > (last_match_sent_ts + 1000 * 60 * 30)) {
-        //console.log("No matches sent in 30 minutes and list empty. Updating pending list.");
-        console.log("No matches sent in 30 minutes. Updating pending list.");
+    if (pending_matches.length === 0 && now > last_match_db_check + 30 * 60 * 1000) {
+        console.log("No matches scheduled. Updating pending list.");
 
-        last_match_sent_ts = now;
-
+        last_match_db_check = now;
+        
         get_pending_matches()
         .then()
         .catch();
@@ -377,9 +375,9 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
 
         // Listening to both ports while /next people are moving over to real server adddress
         //
-        //app.listen(8081, () => {
+        // app.listen(8081, () => {
         //    console.log('listening on 8081')
-        //});
+        // });
     });
 });
 
@@ -662,7 +660,6 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " ERROR: " + err);
                     res.send("Match data " + sgfhash + " stored in database\n");
                 } else {
-                    //last_match_sent_ts = Date.now();
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
                     res.send("Match data " + sgfhash + " stored in database\n");
                 }
@@ -679,6 +676,14 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                 if (err) {
                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " INCREMENT ERROR: " + err);
                 } else {
+                    pending_matches
+                      .filter(e => ((e.network1 === req.body.winnerhash && e.network2 === req.body.loserhash) ||
+                                    (e.network2 === req.body.winnerhash && e.network1 === req.body.loserhash)) &&
+                                     e.options_hash === req.body.options_hash)
+                      .forEach(e => {
+                        e.requests.shift(); // remove one match from the request list as we got a result.
+                        e.game_count++;
+                      })
                     if (dbres.modifiedCount == 0) {
                         db.collection("matches").updateOne(
                             { network1: req.body.loserhash, network2: req.body.winnerhash, options_hash: req.body.options_hash },
@@ -1045,13 +1050,13 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
 
                         var color;
 
-                        //if (width < 15) {
-                        //    color = "C11B17";
-                        //} else if (width > 85) {
-                        //    color = "0000FF";
-                        //} else {
+                        // if (width < 15) {
+                        //     color = "C11B17";
+                        // } else if (width > 85) {
+                        //     color = "0000FF";
+                        // } else {
                             color = "59E817";
-                        //}
+                        // }
 
                         styles += ".n" + item.network1.slice(0,8) + "{ width: " + width + "%; background-color: #" + color + ";}\n";
                         match_table += "<div class=\"n" + item.network1.slice(0,8) + "\">&nbsp;</div>";
@@ -1139,6 +1144,28 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     });
 }));
 
+function shouldScheduleMatch (req, now) {
+  if (!(pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip))) {
+    return false;
+  }
+  
+  var match = pending_matches[pending_matches.length - 1];
+  var requested = match.requests.length;
+  var ignored = match.requests.filter(e => e < now - MATCH_IGNORE_TIME).length
+  var deleted = match.requests.filter(e => e < now - MATCH_EXPIRE_TIME).length
+  var oldest = match.requests.length > 0 ? ((Date.now() - match.requests[0]) / 1000 / 60).toFixed(2): "0"
+  match.requests.splice(0,deleted) // here we modify the array for next time.
+  var needed = how_many_games_to_queue(
+                match.number_to_play,
+                match.network1_wins,
+                match.network1_losses,
+                PESSIMISTIC_RATE)
+  var result = needed > requested - ignored // ignored is including deleted so no need to subtract that.
+  console.log(`Need ${needed} match games. Requested ${requested}, ignored ${ignored}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`)
+  
+  return result
+}
+
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     var required_client_version = String(11);
     var required_leelaz_version = String("0.10");
@@ -1148,33 +1175,19 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
     var best_network_hash = await get_best_network_hash();
+    var now = Date.now();
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
-    if (pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip)
-          && (
-            how_many_games_to_queue(
-                pending_matches[pending_matches.length - 1].number_to_play,
-                pending_matches[pending_matches.length - 1].network1_wins,
-                pending_matches[pending_matches.length - 1].network1_losses,
-                PESSIMISTIC_RATE)
-            >
-            pending_matches[pending_matches.length - 1].game_count
-            - pending_matches[pending_matches.length - 1].network1_wins
-            - pending_matches[pending_matches.length - 1].network1_losses
-          )
-        ) {
-        var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
+    if (shouldScheduleMatch(req, now)) {
         var match = pending_matches[pending_matches.length - 1];
-
-        last_match_sent_ts = Date.now();
-
+        var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
+        
         task.options = match.options;
         task.options_hash = match.options_hash;
 
         if (match.network2 == null) {
             match.network2 = best_network_hash;
-            pending_matches[pending_matches.length - 1].network2 = best_network_hash;
 
             db.collection("matches").updateOne(
                 { network1: match.network1, network2: null, options_hash: match.options_hash },
@@ -1190,7 +1203,9 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             });
         }
 
-        if (pending_matches[pending_matches.length - 1].game_count % 2) {
+        match.game_color = !match.game_color
+        
+        if (match.game_color) {
             task.white_hash = match.network1;
             task.black_hash = match.network2;
         } else {
@@ -1200,11 +1215,9 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         res.send(JSON.stringify(task));
 
-        // Not the most robust, but if we have completed and send out more than X requests for this match, stop requesting it.
-        //
-        pending_matches[pending_matches.length - 1].game_count++;
+        match.requests.push(now);
 
-        if (pending_matches[pending_matches.length - 1].game_count >= match.number_to_play) pending_matches.pop();
+        if (match.game_count >= match.number_to_play) pending_matches.pop();
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: match " + match.network1.slice(0,8) + " vs " + match.network2.slice(0,8) + " " + match.game_count + " of " + match.number_to_play);
     } else if ( req.params.version==1 && Math.random() > .2 ) {
