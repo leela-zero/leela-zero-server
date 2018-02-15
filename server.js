@@ -4,7 +4,6 @@ const fileUpload = require('express-fileupload');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const fs = require('fs-extra');
-const compress = require('node-zstd').compress;
 const MongoClient = require('mongodb').MongoClient;
 const Long = require('mongodb').Long;
 const ObjectId = require('mongodb').ObjectID;
