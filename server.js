@@ -145,7 +145,7 @@ async function get_pending_matches () {
                     "$$KEEP", "$$PRUNE"
                 ] } }
         ] ).sort({_id:-1}).forEach( (match) => {
-            match.requests = [] // init request list.
+            match.requests = []; // init request list.
             
             // Client only accepts strings for now
             //
@@ -475,7 +475,8 @@ app.post('/request-match', (req, res) => {
         "network2": req.body.network2, "network1_losses": 0,
         "network1_wins": 0,
         "game_count": 0, "number_to_play": Number(req.body.number_to_play),
-        "options": options, "options_hash": get_options_hash(options) };
+        "options": options, "options_hash": get_options_hash(options),
+        "requests": [] };
 
     db.collection("matches").insertOne( match )
     .then( () => {
