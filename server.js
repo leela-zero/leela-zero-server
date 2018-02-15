@@ -145,7 +145,7 @@ async function get_pending_matches () {
                     "$$KEEP", "$$PRUNE"
                 ] } }
         ] ).sort({_id:-1}).forEach( (match) => {
-            match.requests = [] // init request list.
+            match.requests = []; // init request list.
             
             // Client only accepts strings for now
             //
@@ -484,6 +484,7 @@ app.post('/request-match', (req, res) => {
             match.options[key] = String(match.options[key]);
         });
 
+        match.requests = []; // init request list.
         pending_matches.unshift( match );
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " Match added!");
