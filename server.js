@@ -1220,7 +1220,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: match " + match.network1.slice(0,8) + " vs " + match.network2.slice(0,8) + " " + match.game_count + " of " + match.number_to_play);
+        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: match " + match.network1.slice(0,8) + " vs " + match.network2.slice(0,8) + " " + (match.game_count + match.requests.length) + " of " + match.number_to_play);
     } else if ( req.params.version==1 && Math.random() > .2 ) {
         var task = { "cmd": "wait", "minutes": "5" };
 
