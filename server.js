@@ -45,8 +45,7 @@ var db;
 // all matches except just the current one (end of queue).
 //
 var pending_matches = [];
-var MATCH_IGNORE_TIME = 30 * 60 * 1000 // matches are ignored after 30 minutes. After that they are requested again.
-var MATCH_EXPIRE_TIME = 60 * 60 * 1000 // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
+var MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
 const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 
@@ -681,9 +680,12 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                       .filter(e => ((e.network1 === req.body.winnerhash && e.network2 === req.body.loserhash) ||
                                     (e.network2 === req.body.winnerhash && e.network1 === req.body.loserhash)) &&
                                      e.options_hash === req.body.options_hash)
-                      .forEach(e => {
-                        e.requests.shift(); // remove one match from the request list as we got a result.
-                        e.game_count++;
+                      .forEach(match => {
+                        var index = match.requests.findIndex(e => e.seed === req.body.random_seed);
+                        if (index !== -1) {
+                          match.requests.splice(index, 1); // remove the match from the requests array.
+                        }
+                        match.game_count++;
                       })
                     if (dbres.modifiedCount == 0) {
                         db.collection("matches").updateOne(
@@ -1151,20 +1153,19 @@ function shouldScheduleMatch (req, now) {
   }
   
   var match = pending_matches[pending_matches.length - 1];
+  var deleted = match.requests.filter(e => e.timestamp < now - MATCH_EXPIRE_TIME).length;
+  var oldest = (match.requests.length > 0 ? (now - match.requests[0].timestamp) / 1000 / 60 : 0).toFixed(2);
+  match.requests.splice(0, deleted);
   var requested = match.requests.length;
-  var ignored = match.requests.filter(e => e < now - MATCH_IGNORE_TIME).length
-  var deleted = match.requests.filter(e => e < now - MATCH_EXPIRE_TIME).length
-  var oldest = match.requests.length > 0 ? ((Date.now() - match.requests[0]) / 1000 / 60).toFixed(2): "0"
-  match.requests.splice(0,deleted) // here we modify the array for next time.
   var needed = how_many_games_to_queue(
                 match.number_to_play,
                 match.network1_wins,
                 match.network1_losses,
-                PESSIMISTIC_RATE)
-  var result = needed > requested - ignored // ignored is including deleted so no need to subtract that.
-  console.log(`Need ${needed} match games. Requested ${requested}, ignored ${ignored}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`)
+                PESSIMISTIC_RATE);
+  var result = needed > requested;
+  console.log(`Need ${needed} match games. Requested ${requested}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`);
   
-  return result
+  return result;
 }
 
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
@@ -1216,7 +1217,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         res.send(JSON.stringify(task));
 
-        match.requests.push(now);
+        match.requests.push({timestamp: now, seed: random_seed});
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
