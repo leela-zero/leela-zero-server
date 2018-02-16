@@ -366,7 +366,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         .then()
         .catch();
 
-        counter = res[0].total;
+        counter =  res[0] && res[0].total;
         console.log ( counter + " games.");
 
         app.listen(8080, () => {
