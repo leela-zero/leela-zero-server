@@ -681,7 +681,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                                     (e.network2 === req.body.winnerhash && e.network1 === req.body.loserhash)) &&
                                      e.options_hash === req.body.options_hash)
                       .forEach(match => {
-                        var index = match.requests.findIndex(e => e.seed === req.body.random_seed);
+                        var index = match.requests.findIndex(e => e.seed === seed_from_mongolong(req.body.random_seed));
                         if (index !== -1) {
                           match.requests.splice(index, 1); // remove the match from the requests array.
                         }
