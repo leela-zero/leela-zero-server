@@ -891,7 +891,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
     var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=4>Best Network Hash (100 Most Recent)</th></tr>\n";
-    network_table += "<tr><th>Upload Date</th><th>Hash</th><th>Games</th><th>Training #</th></tr>\n";
+    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
     var iprecentselfplayhash = "";
@@ -935,8 +935,9 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((count) => { 
             return (count + " in past hour.)<br>");
         }),
-        db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } )
-        .limit(100).toArray()
+        db.collection("networks").aggregate( [ { $match: { game_count: { $gt: 0 } } }, { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count" } } } }, {$unwind: {path: '$networks', includeArrayIndex: 'networkID'}}, { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", networkID: 1 } }, { $sort: { networkID: -1 } }, { $limit: 100 }] )
+        //db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } ).limit(100)
+        .toArray()
         .then((list) => { 
             for (let item of list) {
                 var itemmoment = new moment(item._id.getTimestamp());
@@ -944,6 +945,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 totalgames.count -= item.game_count;
 
                 network_table += "<tr><td>" 
+                    + item.networkID
+                    + "</td><td>"
                     + itemmoment.format("YYYY-MM-DD HH:mm")
                     + "</td><td><a href=\"/networks/"
                     + item.hash
