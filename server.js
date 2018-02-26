@@ -244,7 +244,7 @@ function SPRTold(W,L)
     var LA = Math.log(beta/(1-alpha));
     var LB = Math.log((1-beta)/alpha);
 
-    if (LLR_ > LB) {
+    if (LLR_ > LB && W + L > 100) {
         return true;
     } else if (LLR_ < LA) {
         return false;
