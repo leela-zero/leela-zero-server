@@ -439,11 +439,12 @@ app.post('/request-match', (req, res) => {
         return res.status(400).send('Please set only playouts or visits, not both');
 
     if (!req.body.playouts && !req.body.visits)
-        req.body.playouts = 1600;
+        //req.body.playouts = 1600;
+        req.body.visits = 3200;
         //return res.status(400).send('No playouts specified.');
 
     if (!req.body.resignation_percent)
-        req.body.resignation_percent = 1;
+        req.body.resignation_percent = 10;
         //return res.status(400).send('No resignation_percent specified.');
 
     if (!req.body.noise)
@@ -1109,7 +1110,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Network 1e2b85cf is best_v1 tested as a reference point. It isn't a normal LZ network. Not a bug.<br>\n";
         page += "<br>Autogtp will automatically download better networks once found.<br>";
         page += "Not each trained network will be a strength improvement over the prior one. Patience please. :)<br>";
-        page += "Match games are played at full strength (only 1600 playouts).<br>";
+        page += "Match games are played at full strength (only 3200 visits).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
         page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
@@ -1190,6 +1191,8 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         var match = pending_matches[pending_matches.length - 1];
         var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
 
+        if (match.options.visits) match.options.playouts = "0";
+
         task.options = match.options;
         task.options_hash = match.options_hash;
 
@@ -1239,7 +1242,8 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
-        var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
+        //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
+        var options = {"playouts": "0", "visits": "3200", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
