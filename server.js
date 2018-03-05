@@ -891,7 +891,7 @@ app.post('/submit', (req, res) => {
 app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
-    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=4>Best Network Hash (100 Most Recent)</th></tr>\n";
+    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=5>Best Network Hash (100 Most Recent)</th></tr>\n";
     network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
@@ -1054,16 +1054,17 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     default:
                         // -2.9444389791664403 2.9444389791664403 == range of 5.88887795833
                         var width = Math.round(100 * (2.9444389791664403 + LLR(item.network1_wins, item.network1_losses, 0, 35)) / 5.88887795833);
-
                         var color;
 
-                        // if (width < 15) {
-                        //     color = "C11B17";
-                        // } else if (width > 85) {
-                        //     color = "0000FF";
-                        // } else {
+                        if (width < 0) {
+                            color = "C11B17";
+                            width = 0;
+                        } else if (width > 100) {
+                            color = "0000FF";
+                            width = 100;
+                        } else {
                             color = "59E817";
-                        // }
+                        }
 
                         styles += ".n" + item.network1.slice(0,8) + "{ width: " + width + "%; background-color: #" + color + ";}\n";
                         match_table += "<div class=\"n" + item.network1.slice(0,8) + "\">&nbsp;</div>";
@@ -1113,6 +1114,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Match games are played at full strength (only 3200 visits).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
+        page += "2018-03-05 We moved to 10 blocks x 128 filters.<br>";
         page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
         page += "2018-01-20 We moved to 6 blocks x 128 filters.<br>";
         page += "2017-11-21 We moved to 5 blocks x 64 filters.<br>";
