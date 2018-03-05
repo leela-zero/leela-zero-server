@@ -1115,13 +1115,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "<br>";
         page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
         page += "2018-01-20 We moved to 6 blocks x 128 filters.<br>";
-        page += "2018-01-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.11 + AutoGTP v13</a>. Tree re-use code makes 0.11 slower but stronger than 0.10.<br>";
-        page += "2018-01-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.10 + AutoGTP v11</a>. <b>Update required.</b><br>";
-        page += "2017-12-08 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.9 + AutoGTP v8</a>. <b>Update required.</b><br>";
-        page += "2017-12-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.8 + AutoGTP v7</a>.<br>";
-        page += "2017-12-07 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.7 + AutoGTP v6</a>.<br>";
-        page += "2017-11-21 We are now on 5 blocks x 64 filters, so the speed of the games will drop.<br>";
-        page += "2017-11-20 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.6 + AutoGTP v4</a>.<br>";
+        page += "2017-11-21 We moved to 5 blocks x 64 filters.<br>";
         page += "<br>";
 
         responses.map( response => page += response );
