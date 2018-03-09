@@ -183,11 +183,14 @@ async function get_best_network_hash () {
     return new Promise( (resolve, reject) => {
         // Check if file has changed. If not, send casched version instead.
         //
+      console.log("LOCK requested get_best_network_hash");
       lock.acquire("hash", () => {
+        console.log("LOCK acquired get_best_network_hash");
         fs.stat(__dirname + '/network/best-network.gz', (err, stats) => {
             if (err) return reject(err);
 
             if (!best_network_hash || best_network_mtimeMs != stats.mtimeMs) {
+                console.log("best-network.gz has changed");
                 fs.readFile(__dirname + '/network/best-network.gz', (err, data) => {
                     if (err) {
                         console.error("Error opening best-network.gz: " + err);
@@ -196,7 +199,9 @@ async function get_best_network_hash () {
 
                     var networkbuffer = Buffer.from(data);
 
+                    console.log("Begin zlib.unzip");
                     zlib.unzip(networkbuffer, (err, networkbuffer) => {
+                        console.log("End zlib.unzip");
                         if (err) {
                             console.error("Error decompressing best-network.gz: " + err);
                             return reject(err);
