@@ -191,23 +191,44 @@ async function get_best_network_hash () {
 
             if (!best_network_hash || best_network_mtimeMs != stats.mtimeMs) {
                 console.log("best-network.gz has changed");
+                var used = process.memoryUsage();
+                for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+
                 fs.readFile(__dirname + '/network/best-network.gz', (err, data) => {
                     if (err) {
                         console.error("Error opening best-network.gz: " + err);
                         return reject(err);
                     }
 
+                    console.log("File read.");
+                    used = process.memoryUsage();
+                    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+
                     var networkbuffer = Buffer.from(data);
+
+                    console.log("Buffer.from(data) complete.");
+                    used = process.memoryUsage();
+                    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
 
                     console.log("Begin zlib.unzip");
                     zlib.unzip(networkbuffer, (err, networkbuffer) => {
+                        console.log("zlib.unzip loaded.");
+                        used = process.memoryUsage();
+                        for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+
                         console.log("End zlib.unzip");
                         if (err) {
                             console.error("Error decompressing best-network.gz: " + err);
                             return reject(err);
                         } else {
                             var network = networkbuffer.toString();
+                            console.log("networkbuffer.toString() complete.");
+                            used = process.memoryUsage();
+                            for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
                             best_network_hash = checksum(network, 'sha256');
+                            console.log("checksum(network) complete.");
+                            used = process.memoryUsage();
+                            for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
                             best_network_mtimeMs = stats.mtimeMs;
                             resolve( best_network_hash );
                         }
