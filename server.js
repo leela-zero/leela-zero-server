@@ -190,10 +190,36 @@ async function get_best_network_hash () {
             if (err) return reject(err);
 
             if (!best_network_hash || best_network_mtimeMs != stats.mtimeMs) {
-                console.log("best-network.gz has changed");
                 var used = process.memoryUsage();
                 for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
 
+                var rstream = fs.createReadStream(__dirname + '/network/best-network.gz');
+                var gunzip = zlib.createGunzip();
+                var hash = crypto.createHash('sha256')
+
+                hash.setEncoding('hex');
+
+                console.log("Streams prepared.");
+                used = process.memoryUsage();
+                for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+
+                rstream
+                .pipe(gunzip)
+                .pipe(hash)
+                .on('error', () => {
+                    console.error("Error opening/gunzip/hash best-network.gz: " + err);
+                    err => reject(err);
+                })
+                .on('finish', () => {
+                    best_network_hash = hash.read();
+                    best_network_mtimeMs = stats.mtimeMs;
+                    console.log(best_network_hash);
+                    console.log("Streams completed.");
+                    used = process.memoryUsage();
+                    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+                    resolve(best_network_hash);
+                });
+/*
                 fs.readFile(__dirname + '/network/best-network.gz', (err, data) => {
                     if (err) {
                         console.error("Error opening best-network.gz: " + err);
@@ -234,6 +260,7 @@ async function get_best_network_hash () {
                         }
                     });
                 });
+*/
             } else {
                 resolve( best_network_hash );
             }
