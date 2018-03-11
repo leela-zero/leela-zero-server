@@ -188,7 +188,7 @@ async function get_best_network_hash () {
     //
     return fs.stat(__dirname + '/network/best-network.gz')
     .then((stats) => {
-        if (!best_network_hash || !best_network_hash_promise || best_network_mtimeMs != stats.mtimeMs) {
+        if (!best_network_hash_promise || best_network_mtimeMs != stats.mtimeMs) {
             best_network_mtimeMs = stats.mtimeMs;
 
             best_network_hash_promise = new Promise( (resolve, reject) => {
