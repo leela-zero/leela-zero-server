@@ -38,6 +38,7 @@ process.on('uncaughtException', (err) => {
 var counter;
 var best_network_hash = null;
 var best_network_mtimeMs = 0;
+var best_network_promise = null;
 var db;
 
 // TODO Make a map to store pending match info, use mapReduce to find who to serve out, only 
@@ -176,16 +177,22 @@ async function get_pending_matches () {
     });
 };
 
-async function get_best_network_hash () {
-    return new Promise( (resolve, reject) => {
-        // Check if file has changed. If not, send casched version instead.
-        //
-        fs.stat(__dirname + '/network/best-network.gz', (err, stats) => {
-            if (err) return reject(err);
+function log_memory_stats (string) {
+    console.log(string);
+    const used = process.memoryUsage();
+    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+};
 
-            if (!best_network_hash || best_network_mtimeMs != stats.mtimeMs) {
-                var used = process.memoryUsage();
-                for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+async function get_best_network_hash () {
+    // Check if file has changed. If not, send casched version instead.
+    //
+    return fs.stat(__dirname + '/network/best-network.gz')
+    .then((stats) => {
+        if (!best_network_hash || !best_network_hash_promise || best_network_mtimeMs != stats.mtimeMs) {
+            best_network_mtimeMs = stats.mtimeMs;
+
+            best_network_hash_promise = new Promise( (resolve, reject) => {
+                log_memory_stats("best_network_hash_promise begins");
 
                 var rstream = fs.createReadStream(__dirname + '/network/best-network.gz');
                 var gunzip = zlib.createGunzip();
@@ -193,9 +200,7 @@ async function get_best_network_hash () {
 
                 hash.setEncoding('hex');
 
-                console.log("Streams prepared.");
-                used = process.memoryUsage();
-                for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+                log_memory_stats("Streams prepared");
 
                 rstream
                 .pipe(gunzip)
@@ -206,60 +211,17 @@ async function get_best_network_hash () {
                 })
                 .on('finish', () => {
                     best_network_hash = hash.read();
-                    best_network_mtimeMs = stats.mtimeMs;
                     console.log(best_network_hash);
-                    console.log("Streams completed.");
-                    used = process.memoryUsage();
-                    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+                    log_memory_stats("Streams completed");
                     resolve(best_network_hash);
                 });
-/*
-                fs.readFile(__dirname + '/network/best-network.gz', (err, data) => {
-                    if (err) {
-                        console.error("Error opening best-network.gz: " + err);
-                        return reject(err);
-                    }
+            });
 
-                    console.log("File read.");
-                    used = process.memoryUsage();
-                    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+        }
 
-                    var networkbuffer = Buffer.from(data);
-
-                    console.log("Buffer.from(data) complete.");
-                    used = process.memoryUsage();
-                    for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
-
-                    console.log("Begin zlib.unzip");
-                    zlib.unzip(networkbuffer, (err, networkbuffer) => {
-                        console.log("zlib.unzip loaded.");
-                        used = process.memoryUsage();
-                        for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
-
-                        console.log("End zlib.unzip");
-                        if (err) {
-                            console.error("Error decompressing best-network.gz: " + err);
-                            return reject(err);
-                        } else {
-                            var network = networkbuffer.toString();
-                            console.log("networkbuffer.toString() complete.");
-                            used = process.memoryUsage();
-                            for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
-                            best_network_hash = checksum(network, 'sha256');
-                            console.log("checksum(network) complete.");
-                            used = process.memoryUsage();
-                            for (let key in used) { console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
-                            best_network_mtimeMs = stats.mtimeMs;
-                            resolve( best_network_hash );
-                        }
-                    });
-                });
-*/
-            } else {
-                resolve( best_network_hash );
-            }
-        });
-    });
+        return best_network_hash_promise;
+    })
+    .catch(err => console.error(err));
 };
 
 //SPRT
