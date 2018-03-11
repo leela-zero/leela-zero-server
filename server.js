@@ -183,7 +183,7 @@ function log_memory_stats (string) {
 };
 
 async function get_best_network_hash () {
-    // Check if file has changed. If not, send casched version instead.
+    // Check if file has changed. If not, send cached version instead.
     //
     return fs.stat(__dirname + '/network/best-network.gz')
     .then((stats) => {
