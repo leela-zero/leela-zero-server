@@ -11,11 +11,8 @@ const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 const zlib = require('zlib');
 const converter = require('hex2dec');
 const Cacheman = require('cacheman');
-const AsyncLock = require('async-lock');
 
 const app = express();
-
-var lock = new AsyncLock();
 
 var auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 
@@ -183,9 +180,6 @@ async function get_best_network_hash () {
     return new Promise( (resolve, reject) => {
         // Check if file has changed. If not, send casched version instead.
         //
-      console.log("LOCK requested get_best_network_hash");
-      lock.acquire("hash", () => {
-        console.log("LOCK acquired get_best_network_hash");
         fs.stat(__dirname + '/network/best-network.gz', (err, stats) => {
             if (err) return reject(err);
 
@@ -265,7 +259,6 @@ async function get_best_network_hash () {
                 resolve( best_network_hash );
             }
         });
-      });
     });
 };
 
