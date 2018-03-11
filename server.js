@@ -36,9 +36,8 @@ process.on('uncaughtException', (err) => {
 // https://blog.tompawlak.org/measure-execution-time-nodejs-javascript
 
 var counter;
-var best_network_hash = null;
 var best_network_mtimeMs = 0;
-var best_network_promise = null;
+var best_network_hash_promise = null;
 var db;
 
 // TODO Make a map to store pending match info, use mapReduce to find who to serve out, only 
@@ -210,9 +209,8 @@ async function get_best_network_hash () {
                     err => reject(err);
                 })
                 .on('finish', () => {
-                    best_network_hash = hash.read();
-                    console.log(best_network_hash);
-                    log_memory_stats("Streams completed");
+                    var best_network_hash = hash.read();
+                    log_memory_stats("Streams completed: " + best_network_hash);
                     resolve(best_network_hash);
                 });
             });
