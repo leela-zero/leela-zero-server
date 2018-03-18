@@ -726,6 +726,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                                             {
                                                 console.log("SPRT: Early fail pop: " + JSON.stringify(pending_matches[pending_matches.length - 1]));
                                                 pending_matches.pop();
+                                                console.log("SPRT: Early fail post-pop: " + JSON.stringify(pending_matches));
                                             }
                                         }
                                     }
