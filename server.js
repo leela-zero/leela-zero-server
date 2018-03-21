@@ -1355,7 +1355,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
 });
 
-app.get('/viewmatch/:hash(\\w+)\\.sgf', (req, res) => {
+app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
     Promise.all([
         db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
         .then((game) => {
