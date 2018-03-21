@@ -1319,7 +1319,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
     var html = "<html><head>";
     html += "</head><body>\n";
-    html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th></tr>\n";
+    html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr>\n";
 
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
     .then((match) => {
@@ -1339,7 +1339,8 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
                 html += "<td>" + ipMap.get(item.ip) + "</td>";
                 html += "<td><a href=\"/viewmatch/" + item.sgfhash + "?viewer=wgo\">" + item.sgfhash + "</a></td>";
                 html += "<td>" + item.winnerhash.slice(0,8) + "</td>";
-                html += "<td>" + item.score + "</td><td>" + item.movescount + "</td></tr>\n";
+                html += "<td>" + item.score + "</td><td>" + item.movescount + "</td>";
+				html += "<td><a href=\"/viewmatch/" + item.sgfhash + ".sgf\">sgf</a></td></tr>\n";
             }
 
             html += "</table></body></html>\n";
@@ -1352,6 +1353,24 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
         res.send("No match found for id " + req.params.hash);
     });
 
+});
+
+app.get('/viewmatch/:hash(\\w+)\\.sgf', (req, res) => {
+	Promise.all([
+        db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+        .then((game) => { 
+            return (game.sgf);
+        }),
+    ]).then((responses) => {
+        sgf = responses[0].replace(/(\n|\r)+/g, '');
+
+        res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
+        res.setHeader("Content-Type", "application/x-go-sgf");
+
+		res.send(sgf);
+    }).catch( err => {
+        res.send("No match was found with hash " + req.params.hash);
+    });
 });
 
 app.get('/viewmatch/:hash(\\w+)', (req, res) => {
