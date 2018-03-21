@@ -40,7 +40,7 @@ var best_network_mtimeMs = 0;
 var best_network_hash_promise = null;
 var db;
 
-// TODO Make a map to store pending match info, use mapReduce to find who to serve out, only 
+// TODO Make a map to store pending match info, use mapReduce to find who to serve out, only
 // delete when SPRT fail or needed games have all arrived? Then we can update stats easily on
 // all matches except just the current one (end of queue).
 //
@@ -145,7 +145,7 @@ async function get_pending_matches () {
                 ] } }
         ] ).sort({_id:-1}).forEach( (match) => {
             match.requests = []; // init request list.
-            
+
             // Client only accepts strings for now
             //
             Object.keys(match.options).map( (key, index) => {
@@ -341,7 +341,7 @@ setInterval( () => {
         console.log("No matches scheduled. Updating pending list.");
 
         last_match_db_check = now;
-        
+
         get_pending_matches()
         .then()
         .catch();
@@ -418,7 +418,7 @@ app.use('/best-network', asyncMiddleware( async (req, res, next) => {
         console.error("ERROR /best-network : " + err);
     });
 
-    readStream.on('open', () => { 
+    readStream.on('open', () => {
         res.setHeader('Content-Disposition', 'attachment; filename=' + hash + ".gz");
         res.setHeader('Content-Transfer-Encoding', 'binary');
         res.setHeader('Content-Type', 'application/octet-stream');
@@ -437,7 +437,7 @@ app.post('/request-match', (req, res) => {
 
         return res.status(400).send('Incorrect key provided.');
     }
- 
+
     if (!req.body.network1)
         return res.status(400).send('No network1 hash specified.');
 
@@ -476,11 +476,11 @@ app.post('/request-match', (req, res) => {
 
     if (req.body.playouts) {
         options.playouts = Number(req.body.playouts);
-    } 
+    }
 
     if (req.body.visits) {
         options.visits = Number(req.body.visits);
-    } 
+    }
 
     var match = { "network1": req.body.network1,
         "network2": req.body.network2, "network1_losses": 0,
@@ -520,7 +520,7 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
         return res.status(400).send('Incorrect key provided.');
     }
- 
+
     if (!req.files)
         return res.status(400).send('No weights file was uploaded.');
 
@@ -576,7 +576,7 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
                         req.files.weights.mv(networkpath + hash + ".gz", (err) => {
                             if (err)
                                 return res.status(500).send(err);
-        
+
                             console.log('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!');
                             res.send('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!\n');
                         })
@@ -641,7 +641,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     if (!req.body.random_seed) {
         req.body.random_seed = null;
     } else {
-        req.body.random_seed = Long.fromString(req.body.random_seed, 10);   
+        req.body.random_seed = Long.fromString(req.body.random_seed, 10);
     }
 
     var best_network_hash = await get_best_network_hash();
@@ -663,7 +663,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                       movescount: (req.body.movescount ? Number(req.body.movescount) : null),
                       score: req.body.score,
                       random_seed: req.body.random_seed
-                    }}, 
+                    }},
             { upsert: true },
             (err, dbres) => {
                 // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
@@ -721,7 +721,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
 
                                             // Adding a loss might make us fail SPRT
                                             //
-                                            if (SPRT(pending_matches[pending_matches.length - 1].network1_wins, 
+                                            if (SPRT(pending_matches[pending_matches.length - 1].network1_wins,
                                                     pending_matches[pending_matches.length - 1].network1_losses) === false)
                                             {
                                                 console.log("SPRT: Early fail pop: " + JSON.stringify(pending_matches[pending_matches.length - 1]));
@@ -745,7 +745,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                             // Adding a win might make us pass SPRT.
                             //
                             //if (pending_matches.length > 1 &&
-                            if (SPRT(pending_matches[pending_matches.length - 1].network1_wins, 
+                            if (SPRT(pending_matches[pending_matches.length - 1].network1_wins,
                                      pending_matches[pending_matches.length - 1].network1_losses) === true)
                             {
                                 // Check > 1 since we'll run to 400 even on a SPRT pass, but will do it at end.
@@ -789,7 +789,7 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     //
     if (!new_best_network_flag && req.body.loserhash == best_network_hash) {
         db.collection("matches").findOne({ network1: req.body.winnerhash, network2: best_network_hash, options_hash: req.body.options_hash})
-        .then( (match) => { 
+        .then( (match) => {
             if (match && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
                 fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
                 console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
@@ -828,11 +828,11 @@ app.post('/submit', (req, res) => {
     let clientversion;
 
     if (!req.body.clientversion) {
-    	clientversion = 0;
+      clientversion = 0;
     } else {
-    	clientversion = req.body.clientversion;
+      clientversion = req.body.clientversion;
     }
-    
+
     var networkhash = req.body.networkhash;
     var trainingdatafile;
     var sgffile;
@@ -849,7 +849,7 @@ app.post('/submit', (req, res) => {
     zlib.unzip(sgfbuffer, (err, sgfbuffer) => {
         if (err) {
             console.error("Error decompressing sgffile: " + err);
-        } else { 
+        } else {
             sgffile = sgfbuffer.toString();
             sgfhash = checksum(sgffile, 'sha256');
 
@@ -863,9 +863,9 @@ app.post('/submit', (req, res) => {
                         { sgfhash: sgfhash },
                         { $set: { ip: req.ip, networkhash: networkhash, sgf: sgffile, options_hash: req.body.options_hash,
                                     movescount: (req.body.movescount ? Number(req.body.movescount) : null),
-   			                        data: trainingdatafile, clientversion: Number(clientversion),
-                                    winnercolor: req.body.winnercolor, random_seed: req.body.random_seed }}, 
-			            { upsert: true },
+                                data: trainingdatafile, clientversion: Number(clientversion),
+                                    winnercolor: req.body.winnercolor, random_seed: req.body.random_seed }},
+                  { upsert: true },
                         (err, dbres) => {
                             // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
                             //
@@ -919,45 +919,45 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         cacheIP24hr.wrap('IP24hr', '5m', () => { return Promise.resolve(
         db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })
         )})
-        .then((list) => { 
+        .then((list) => {
             return (list.length + " clients in past 24 hours, ");
         }),
         cacheIP1hr.wrap('IP1hr', '30s', () => { return Promise.resolve(
         db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })
         )})
-        .then((list) => { 
+        .then((list) => {
             return (list.length + " in past hour.<br>");
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
-        .then((count) => { 
+        .then((count) => {
             return (counter + " total selfplay games. (" + count + " in past 24 hours, ");
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
-        .then((count) => { 
+        .then((count) => {
             return (count + " in past hour.)<br>");
         }),
         db.collection("match_games").find().count()
-        .then((count) => { 
+        .then((count) => {
             return (count + " total match games. (");
         }),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
-        .then((count) => { 
+        .then((count) => {
             return (count + " match games in past 24 hours, ");
         }),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
-        .then((count) => { 
+        .then((count) => {
             return (count + " in past hour.)<br>");
         }),
         db.collection("networks").aggregate( [ { $match: { game_count: { $gt: 0 } } }, { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count" } } } }, {$unwind: {path: '$networks', includeArrayIndex: 'networkID'}}, { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", networkID: 1 } }, { $sort: { networkID: -1 } }, { $limit: 10000 }] )
         //db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } ).limit(100)
         .toArray()
-        .then((list) => { 
+        .then((list) => {
             for (let item of list) {
                 var itemmoment = new moment(item._id.getTimestamp());
 
                 totalgames.count -= item.game_count;
 
-                network_table += "<tr><td>" 
+                network_table += "<tr><td>"
                     + item.networkID
                     + "</td><td>"
                     + itemmoment.format("YYYY-MM-DD HH:mm")
@@ -970,13 +970,13 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "</td><td>"
                     + ( (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count)
                     + "</td></tr>\n";
-            } 
+            }
 
             network_table += "</table>\n";
             return "";
         }),
         db.collection("games").find({ ip: req.ip }, { _id: 0, sgfhash: 1 }).hint( "ip_-1__id_-1" ).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => { 
+        .then((game) => {
             if (game[0]) {
                 iprecentselfplayhash = game[0].sgfhash;
             }
@@ -987,19 +987,19 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
             { winnerhash: best_network_hash },
             { _id: 0, winnerhash: 1, loserhash: 1, sgfhash: 1 }
         ).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => { 
+        .then((game) => {
             if (game[0]) {
                 return "<br>"
                     + "View most recent match win by best network " + game[0].winnerhash.slice(0,8) + " vs " + game[0].loserhash.slice(0,8) + ": "
                     + "[<a href=\"/viewmatch/" + game[0].sgfhash + "?viewer=eidogo\">EidoGo</a> / "
                     + "<a href=\"/viewmatch/" + game[0].sgfhash + "?viewer=wgo\">WGo</a>] "
                     + "<br>";
-            } else { 
-                return "";  
+            } else {
+                return "";
             }
         }),
         db.collection("games").find({}, { _id: 0, sgfhash: 1 }).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => { 
+        .then((game) => {
             if (game[0]) {
                 mostrecentselfplayhash = game[0].sgfhash;
             }
@@ -1083,7 +1083,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 }
 
                 match_table += "</td></tr>\n";
-            } 
+            }
 
             match_table += "</table>\n";
             return [styles, match_table];
@@ -1165,7 +1165,7 @@ function shouldScheduleMatch (req, now) {
   if (!(pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip))) {
     return false;
   }
-  
+
   var match = pending_matches[pending_matches.length - 1];
   var deleted = match.requests.filter(e => e.timestamp < now - MATCH_EXPIRE_TIME).length;
   var oldest = (match.requests.length > 0 ? (now - match.requests[0].timestamp) / 1000 / 60 : 0).toFixed(2);
@@ -1178,7 +1178,7 @@ function shouldScheduleMatch (req, now) {
                 PESSIMISTIC_RATE);
   var result = needed > requested;
   console.log(`Need ${needed} match games. Requested ${requested}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`);
-  
+
   return result;
 }
 
@@ -1222,7 +1222,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         }
 
         match.game_color = !match.game_color
-        
+
         if (match.game_color) {
             task.white_hash = match.network1;
             task.black_hash = match.network2;
@@ -1287,7 +1287,7 @@ function eidogo_html(title, sgf) {
 app.get('/view/:hash(\\w+)', (req, res) => {
     Promise.all([
         db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => { 
+        .then((game) => {
             return (game.sgf);
         }),
     ]).then((responses) => {
@@ -1319,18 +1319,18 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
     var html = "<html><head>";
     html += "</head><body>\n";
-    html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th></tr>\n";
+    html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr>\n";
 
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
     .then((match) => {
         db.collection("match_games").aggregate([
-            { "$match": { "$or": [ 
+            { "$match": { "$or": [
                { winnerhash: match.network1, loserhash: match.network2, options_hash: match.options_hash },
                { winnerhash: match.network2, loserhash: match.network1, options_hash: match.options_hash }
             ] } },
             { "$sort": { _id: 1 } }
         ]).toArray()
-        .then((list) => { 
+        .then((list) => {
             for (let item of list) {
                 if (ipMap.get(item.ip) == null) {
                     ipMap.set(item.ip, ipMap.size + 1);
@@ -1339,7 +1339,8 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
                 html += "<td>" + ipMap.get(item.ip) + "</td>";
                 html += "<td><a href=\"/viewmatch/" + item.sgfhash + "?viewer=wgo\">" + item.sgfhash + "</a></td>";
                 html += "<td>" + item.winnerhash.slice(0,8) + "</td>";
-                html += "<td>" + item.score + "</td><td>" + item.movescount + "</td></tr>\n";
+                html += "<td>" + item.score + "</td><td>" + item.movescount + "</td>";
+                html += "<td><a href=\"/viewmatch/" + item.sgfhash + ".sgf\">sgf</a></td></tr>\n";
             }
 
             html += "</table></body></html>\n";
@@ -1354,10 +1355,27 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
 });
 
+app.get('/viewmatch/:hash(\\w+)\\.sgf', (req, res) => {
+    Promise.all([
+        db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+        .then((game) => {
+            return (game.sgf);
+        }),
+    ]).then((responses) => {
+        sgf = responses[0].replace(/(\n|\r)+/g, '');
+
+        res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
+        res.setHeader("Content-Type", "application/x-go-sgf");
+        res.send(sgf);
+    }).catch( err => {
+        res.send("No match was found with hash " + req.params.hash);
+    });
+});
+
 app.get('/viewmatch/:hash(\\w+)', (req, res) => {
     Promise.all([
         db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => { 
+        .then((game) => {
             return (game.sgf);
         }),
     ]).then((responses) => {
@@ -1390,7 +1408,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
 
     Promise.all([
         db.collection("networks").find().sort({_id: -1}).toArray()
-        .then((list) => { 
+        .then((list) => {
             for (let item of list) {
                 totalgames.count -= item.game_count || 0;
 
@@ -1430,11 +1448,11 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                         fakewins++;
                         fakecount++;
                     }
- 
+
                     if (match.network1_losses == 0) {
                         fakecount++;
                     }
- 
+
                     elo = CalculateEloFromPercent( fakewins / fakecount );
                 }
 
