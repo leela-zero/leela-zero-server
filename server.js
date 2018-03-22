@@ -1317,8 +1317,44 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
     var ipMap = new Map();
 
-    var html = "<html><head>";
-    html += "</head><body>\n";
+    var html = "<html>";
+    
+    // add tablesort javacript/css
+    html += `<head><script src="/static/tablesort/tablesort.js"></script>
+    <script src="/static/tablesort/tablesort.number.js"></script>
+    <style>th[role=columnheader]:not(.no-sort) {
+        cursor: pointer;
+    }
+    th[role=columnheader]:not(.no-sort):after {
+        content: '';
+        float: right;
+        margin-top: 7px;
+        border-width: 0 4px 4px;
+        border-style: solid;
+        border-color: #404040 transparent;
+        visibility: hidden;
+        opacity: 0;
+        -ms-user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+    }
+    th[aria-sort=ascending]:not(.no-sort):after {
+        border-bottom: none;
+        border-width: 4px 4px 0;
+    }
+    
+    th[aria-sort]:not(.no-sort):after {
+        visibility: visible;
+        opacity: 0.4;
+    }
+    
+    th[role=columnheader]:not(.no-sort):hover:after {
+        visibility: visible;
+        opacity: 1;
+    }</style></head>`;
+
+    html += "<body>\n";
     html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr>\n";
 
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
@@ -1343,7 +1379,20 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
                 html += "<td><a href=\"/viewmatch/" + item.sgfhash + ".sgf\">sgf</a></td></tr>\n";
             }
 
-            html += "</table></body></html>\n";
+            html += "</table>";
+            
+            // add tablesort before body tag
+            html += `<script>
+                Tablesort.extend('score', function(item) {
+                return item.match(/(?:b|w)\+([\d\.]+|resign)/i);
+                }, function(a, b) {
+                return (a.match(/(?:b|w)\+([\d\.]+)/i) ? RegExp.$1 : 0)
+                    - (b.match(/(?:b|w)\+([\d\.]+)/i) ? RegExp.$1 : 0);
+                });
+                new Tablesort(document.getElementById('sort'));
+            </script>`;
+
+            html += "</body></html>\n";
 
             res.send(html);
         }).catch( err => {
