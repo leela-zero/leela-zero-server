@@ -1267,23 +1267,6 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
     }
 }));
 
-// TODO: Replace this with a pug file
-//
-function eidogo_html(title, sgf) {
-    var page = "<html><head>\n";
-    page += "<title>" + title + "</title>\n";
-    page += "<script type=\"text/javascript\">\n";
-    page += "eidogoConfig = { theme: \"standard\", mode: \"view\", enableShortcuts: true };\n";
-    page += "</script>\n";
-    page += "<script type=\"text/javascript\" src=\"player/js/eidogo.min.js\"></script>\n";
-    page += "</head><body>\n";
-    page += "<div class=\"eidogo-player-auto\">\n";
-    page += sgf;
-    page += "</div></body></html>\n";
-
-    return page;
-}
-
 app.get('/view/:hash(\\w+)', (req, res) => {
     Promise.all([
         db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
@@ -1295,14 +1278,13 @@ app.get('/view/:hash(\\w+)', (req, res) => {
 
         switch (req.query.viewer) {
             case "eidogo":
-                res.send( eidogo_html("View training game" + req.params.hash, sgf) );
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
                 break;
             case "wgo":
                 res.render('wgo', { title: "View training game " + req.params.hash, sgf: sgf });
                 break;
             default:
-                //res.send( eidogo_html("View training game" + req.params.hash, sgf) );
-                res.render('wgo', { title: "View training game " + req.params.hash, sgf: sgf });
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
         }
     }).catch( err => {
         res.send("No selfplay game was found with hash " + req.params.hash);
@@ -1433,13 +1415,13 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
 
         switch (req.query.viewer) {
             case "eidogo":
-                res.send( eidogo_html("View match " + req.params.hash, sgf) );
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
                 break;
             case "wgo":
                 res.render('wgo', { title: "View match " + req.params.hash, sgf: sgf });
                 break;
             default:
-                res.send( eidogo_html("View match " + req.params.hash, sgf) );
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
         }
     }).catch( err => {
         res.send("No match was found with hash " + req.params.hash);
