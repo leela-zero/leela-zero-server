@@ -1,0 +1,8 @@
+doctype html
+html(lang="en")
+  head
+    title #{title}
+    script eidogoConfig = { theme: "standard", mode: "view", enableShortcuts: true };
+    script(src="/static/eidogo-player-1.2/player/js/eidogo.min.js")
+  body
+    .eidogo-player-auto #{sgf}
