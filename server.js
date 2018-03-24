@@ -315,8 +315,8 @@ app.use(fileUpload());
 
 app.use('/view/player', express.static('static/eidogo-player-1.2/player'));
 app.use('/viewmatch/player', express.static('static/eidogo-player-1.2/player'));
-app.use('/view/wgo', express.static('wgo'));
-app.use('/viewmatch/wgo', express.static('wgo'));
+app.use('/view/wgo', express.static('static/wgo'));
+app.use('/viewmatch/wgo', express.static('static/wgo'));
 app.use('/static', express.static('static'));
 
 // This is async but we don't need it to start the server. I'm calling it during startup so it'll get the value cached right away
