@@ -1355,7 +1355,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
     }</style></head>`;
 
     html += "<body>\n";
-    html += "<table border=1><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr>\n";
+    html += "<table id=\"sort\" border=1><thead><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr></thead>\n";
 
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
     .then((match) => {
@@ -1367,6 +1367,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
             { "$sort": { _id: 1 } }
         ]).toArray()
         .then((list) => {
+            html += "<tbody>"
             for (let item of list) {
                 if (ipMap.get(item.ip) == null) {
                     ipMap.set(item.ip, ipMap.size + 1);
@@ -1392,7 +1393,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
                 new Tablesort(document.getElementById('sort'));
             </script>`;
 
-            html += "</body></html>\n";
+            html += "</tbody></body></html>\n";
 
             res.send(html);
         }).catch( err => {
