@@ -1300,92 +1300,36 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
     var ipMap = new Map();
 
-    var html = "<html>";
-    
-    // add tablesort javacript/css
-    html += `<head><script src="/static/tablesort/tablesort.js"></script>
-    <script src="/static/tablesort/tablesort.number.js"></script>
-    <style>th[role=columnheader]:not(.no-sort) {
-        cursor: pointer;
-    }
-    th[role=columnheader]:not(.no-sort):after {
-        content: '';
-        float: right;
-        margin-top: 7px;
-        border-width: 0 4px 4px;
-        border-style: solid;
-        border-color: #404040 transparent;
-        visibility: hidden;
-        opacity: 0;
-        -ms-user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-    }
-    th[aria-sort=ascending]:not(.no-sort):after {
-        border-bottom: none;
-        border-width: 4px 4px 0;
-    }
-    
-    th[aria-sort]:not(.no-sort):after {
-        visibility: visible;
-        opacity: 0.4;
-    }
-    
-    th[role=columnheader]:not(.no-sort):hover:after {
-        visibility: visible;
-        opacity: 1;
-    }</style></head>`;
-
-    html += "<body>\n";
-    html += "<table id=\"sort\" border=1><thead><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr></thead>\n";
-
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
-    .then((match) => {
-        db.collection("match_games").aggregate([
-            { "$match": { "$or": [
-               { winnerhash: match.network1, loserhash: match.network2, options_hash: match.options_hash },
-               { winnerhash: match.network2, loserhash: match.network1, options_hash: match.options_hash }
-            ] } },
-            { "$sort": { _id: 1 } }
-        ]).toArray()
-        .then((list) => {
-            html += "<tbody>"
-            for (let item of list) {
-                if (ipMap.get(item.ip) == null) {
-                    ipMap.set(item.ip, ipMap.size + 1);
-                }
-                html += "<tr>";
-                html += "<td>" + ipMap.get(item.ip) + "</td>";
-                html += "<td><a href=\"/viewmatch/" + item.sgfhash + "?viewer=wgo\">" + item.sgfhash + "</a></td>";
-                html += "<td>" + item.winnerhash.slice(0,8) + "</td>";
-                html += "<td>" + item.score + "</td><td>" + item.movescount + "</td>";
-                html += "<td><a href=\"/viewmatch/" + item.sgfhash + ".sgf\">sgf</a></td></tr>\n";
-            }
+        .then((match) => {
+            db.collection("match_games").aggregate([
+                {
+                    "$match": {
+                        "$or": [
+                            { winnerhash: match.network1, loserhash: match.network2, options_hash: match.options_hash },
+                            { winnerhash: match.network2, loserhash: match.network1, options_hash: match.options_hash }
+                        ]
+                    }
+                },
+                { "$sort": { _id: 1 } }
+            ]).toArray()
+                .then((list) => {
+                    for (let item of list) {
+                        if (ipMap.get(item.ip) == null) {
+                            ipMap.set(item.ip, ipMap.size + 1);
+                        }
+                        // replace IP here before going to pug view
+                        item.ip = ipMap.get(item.ip);
+                    }
 
-            html += "</table>";
-            
-            // add tablesort before body tag
-            html += `<script>
-                Tablesort.extend('score', function(item) {
-                return item.match(/(?:b|w)\+([\d\.]+|resign)/i);
-                }, function(a, b) {
-                return (a.match(/(?:b|w)\+([\d\.]+)/i) ? RegExp.$1 : 0)
-                    - (b.match(/(?:b|w)\+([\d\.]+)/i) ? RegExp.$1 : 0);
+                    // render pug view match-games
+                    res.render("match-games", { data: list });
+                }).catch(err => {
+                    res.send("No matches found for match " + req.params.matchid);
                 });
-                new Tablesort(document.getElementById('sort'));
-            </script>`;
-
-            html += "</tbody></body></html>\n";
-
-            res.send(html);
-        }).catch( err => {
-            res.send("No matches found for match " + req.params.matchid);
+        }).catch(err => {
+            res.send("No match found for id " + req.params.hash);
         });
-    }).catch( err => {
-        res.send("No match found for id " + req.params.hash);
-    });
-
 });
 
 app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {

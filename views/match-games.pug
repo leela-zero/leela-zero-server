@@ -1,0 +1,36 @@
+doctype html
+html(lang="en")
+    head
+        script(src="/static/tablesort/tablesort.js")
+        script(src="/static/tablesort/tablesort.number.js")
+        link(href="/static/tablesort/tablesort.css" rel="stylesheet")
+    body 
+        table(id="sort" border="1")
+            thead
+                tr
+                    th Client
+                    th Match Hash
+                    th Winner
+                    th Score
+                    th Move Count
+                    th Download
+            tbody
+                each item in data
+                    tr
+                        td #{item.ip}
+                        td
+                            a(href="/viewmatch/" + item.sgfhash + "?viewer=wgo")  #{item.sgfhash}
+                        td #{item.winnerhash.slice(0, 8)}
+                        td #{item.score}
+                        td #{item.movescount}
+                        td
+                            a(href="/viewmatch/" + item.sgfhash + ".sgf")  sgf
+        script.
+            Tablesort.extend('score', function(item) {
+                return item.match(/(?:b|w)+([\d.]+|resign)/i);
+            }, function(a, b) {
+                return (a.match(/(?:b|w)+([\d.]+)/i) ? RegExp.$1 : 0)
+                    - (b.match(/(?:b|w)+([\d.]+)/i) ? RegExp.$1 : 0);
+            });
+            new Tablesort(document.getElementById('sort'));
+            
