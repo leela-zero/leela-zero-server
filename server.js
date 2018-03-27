@@ -1375,23 +1375,21 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
 
 
 app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
-
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
-    cachematches.wrap("elograph", "1d", async () => {
-        console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
+    var json = await cachematches.wrap("elograph", "1d", async () => {
+    console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
 
-        var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
-        var totalgames = await cursor.next();
+    var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
+    var totalgames = await cursor.next();
 
-        return Promise.all([
-            db.collection("networks").find().sort({_id: -1}).toArray(),
-            db.collection("matches").aggregate([
-                { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } },
-                { "$unwind": "$merged" },
-                { "$sort": { "merged._id": 1 } }
-            ]).toArray()
-        ]);
-    }).then((dataArray) => {
+    return Promise.all([
+        db.collection("networks").find().sort({_id: -1}).toArray(),
+        db.collection("matches").aggregate([
+            { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } },
+            { "$unwind": "$merged" },
+            { "$sort": { "merged._id": 1 } }
+        ]).toArray()
+    ]).then((dataArray) => {
         var elograph_data;
 
         // prepare networks
@@ -1470,10 +1468,14 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
 
         // shortcut for sending json result using `JSON.stringify`
         // and set `Content-Type: application/json`
-        res.json(json);
+        return json;
     }).catch( err => {
         console.log("ERROR data/elograph.json: " + err);
         res.send("ERROR data/elograph.json: " + err);
     });
+
+    });
+
+    res.json(json);
 }));
 
