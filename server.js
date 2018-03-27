@@ -537,9 +537,19 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             hash = checksum(network, 'sha256');
 
             // Start parsing network weights
-            var weights = network.split("\n"); 
-            var filters = weights.length >= 3 ? (weights[2].split(' ').length) : 0;
-            var blocks = (weights.length - (1 + 4 + 14)) / 8;
+            // Optimization
+            //   - iterate weight file once, counting `space` and `newline`
+            //   - no array creation
+            var space = 0, newline = 0;
+            for(let x = 0 ; x < network.length ; ++x) {
+                var c = network[x];
+        
+                if(c == "\n")
+                    newline++;
+                else if(newline == 2 && c == " ")
+                    space++;
+            }
+            var filters = space + 1, blocks = (newline + 1 - (1 + 4 + 14)) / 8;
             
             if(!Number.isInteger(blocks))
                 blocks = 0;
