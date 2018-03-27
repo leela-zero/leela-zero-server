@@ -536,6 +536,14 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             network = networkbuffer.toString();
             hash = checksum(network, 'sha256');
 
+            // Start parsing network weights
+            var weights = network.split("\n"); 
+            var filters = weights.length >= 3 ? (weights[2].split(' ').length) : 0;
+            var blocks = (weights.length - (1 + 4 + 14)) / 8;
+            
+            if(!Number.isInteger(blocks))
+                blocks = 0;
+
             var training_count;
 
             if (!req.body.training_count) {
@@ -553,7 +561,9 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
                 { hash: hash },
                 // Weights data is too large, store on disk and just store hashes in the database?
                 //
-                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps }}, { upsert: true },
+                // save number of filters and blocks into database
+                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps, filters : filters, blocks : blocks }}, 
+                { upsert: true },
                 (err, dbres) => {
                     // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
                     //
@@ -577,12 +587,12 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
                             if (err)
                                 return res.status(500).send(err);
 
-                            console.log('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!');
-                            res.send('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!\n');
+                            console.log('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!');
+                            res.send('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!\n');
                         })
                     } else {
-                        console.log('Network weights ' + hash + ' already exists.');
-                        res.send('Network weights ' + hash + ' already exists.\n');
+                        console.log('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.');
+                        res.send('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.\n');
                     }
                 })
             })
