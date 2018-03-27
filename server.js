@@ -1373,93 +1373,89 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
     });
 });
 
-// TODO Make this whole thing a function, and cache it. Clear the cache when I clear cachematches (elograph won't
-// change unless a new match result is uploaded.
-//
+
 app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
-    var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
-    var totalgames = await cursor.next();
 
-    var ratingsMap = new Map();
-    var networks = [];
+    // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
+    cachematches.wrap("elograph", "1d", async () => {
+        console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
 
-    Promise.all([
-        db.collection("networks").find().sort({_id: -1}).toArray()
-        .then((list) => {
-            for (let item of list) {
-                totalgames.count -= item.game_count || 0;
+        var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
+        var totalgames = await cursor.next();
 
-                var mycount = (
-                    (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count
-                )
-
-                if (item.game_count) {
-                    networks.push({ "hash": item.hash, "game_count": item.game_count,
-                        "net": mycount, "best": "true" });
-                } else {
-                    networks.push({ "hash": item.hash, "game_count": item.game_count,
-                        "net": mycount, "best": "false" });
-                }
-            }
-
-            return;
-        }),
-        db.collection("matches").aggregate([
-            { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$sort": { "merged._id": 1 } }
-        ]).toArray()
-        .then((list) => {
-            for (let match of list) {
-                var network2_rating = ratingsMap.get(match.network2) ? ratingsMap.get(match.network2).rating : 0;
-                var sprt;
-                var elo;
-
-                // TODO If no ELO info, make rating -1 for graph to just hide it instead of assuming same elo as network 2.
-                //
-                if (match.network1_wins > 0 && match.network1_losses > 0) {
-                    elo = CalculateEloFromPercent( match.network1_wins / match.game_count );
-                } else {
-                    var fakecount = match.game_count;
-                    var fakewins = match.network1_wins;
-
-                    if (fakewins == 0) {
-                        fakewins++;
-                        fakecount++;
-                    }
-
-                    if (match.network1_losses == 0) {
-                        fakecount++;
-                    }
-
-                    elo = CalculateEloFromPercent( fakewins / fakecount );
-                }
-
-                switch (SPRT(match.network1_wins, match.network1_losses)) {
-                    case false:
-                        sprt = "FAIL";
-                        break;
-
-                    case true:
-                        sprt = "PASS";
-                        break;
-
-                    default:
-                        sprt = "???"
-                }
-
-                var info =  {
-                    "rating": elo + network2_rating,
-                    "sprt": sprt
-                };
-
-                ratingsMap.set(match.network1, info);
-            }
-
-            return;
-        })
-    ]).then((responses) => {
+        return Promise.all([
+            db.collection("networks").find().sort({_id: -1}).toArray(),
+            db.collection("matches").aggregate([
+                { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } },
+                { "$unwind": "$merged" },
+                { "$sort": { "merged._id": 1 } }
+            ]).toArray()
+        ]);
+    }).then((dataArray) => {
         var elograph_data;
 
-        var json = networks.map( (item) => {
+        // prepare networks
+        var networks = dataArray[0].map(item => {
+            totalgames.count -= item.game_count || 0;
+
+            return {
+                "hash": item.hash, 
+                "game_count": item.game_count,
+                "net": (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
+                "best": !!item.game_count // !! boolean cast
+            };
+        });
+
+        // prepare ratingsMap
+        var ratingsMap = new Map();
+        dataArray[1].forEach(match => {
+            var network2_rating = ratingsMap.get(match.network2) ? ratingsMap.get(match.network2).rating : 0;
+            var sprt;
+            var elo;
+
+            // TODO If no ELO info, make rating -1 for graph to just hide it instead of assuming same elo as network 2.
+            //
+            if (match.network1_wins > 0 && match.network1_losses > 0) {
+                elo = CalculateEloFromPercent( match.network1_wins / match.game_count );
+            } else {
+                var fakecount = match.game_count;
+                var fakewins = match.network1_wins;
+
+                if (fakewins == 0) {
+                    fakewins++;
+                    fakecount++;
+                }
+
+                if (match.network1_losses == 0) {
+                    fakecount++;
+                }
+
+                elo = CalculateEloFromPercent( fakewins / fakecount );
+            }
+
+            switch (SPRT(match.network1_wins, match.network1_losses)) {
+                case false:
+                    sprt = "FAIL";
+                    break;
+
+                case true:
+                    sprt = "PASS";
+                    break;
+
+                default:
+                    sprt = "???"
+            }
+
+            var info =  {
+                "rating": elo + network2_rating,
+                "sprt": sprt
+            };
+
+            ratingsMap.set(match.network1, info);
+        });
+
+        // prepare json result
+        var json = networks.map((item) => {
             var rating;
 
             if (ratingsMap.get(item.hash) === undefined) {
@@ -1469,10 +1465,12 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             }
             var sprt = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).sprt : "???";
             var result_item = { "rating": rating, "net": Number(item.net + rating/100000), "sprt": sprt, "hash": item.hash.slice(0,6), "best": item.best };
-            return JSON.stringify(result_item);
-        }).join(",");
+            return result_item;
+        });
 
-        res.send("[ " + json + " ]");
+        // shortcut for sending json result using `JSON.stringify`
+        // and set `Content-Type: application/json`
+        res.json(json);
     }).catch( err => {
         console.log("ERROR data/elograph.json: " + err);
         res.send("ERROR data/elograph.json: " + err);
