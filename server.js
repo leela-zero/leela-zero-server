@@ -540,6 +540,10 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             // Optimization
             //   - iterate weight file once, counting `space` and `newline`
             //   - no array creation
+            // Reference:
+            //   - filters, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L207-L212
+            //   - blocks, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L217
+            //
             var space = 0, newline = 0;
             for(let x = 0 ; x < network.length ; ++x) {
                 var c = network[x];
