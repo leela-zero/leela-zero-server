@@ -567,12 +567,16 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
             var training_steps = req.body.training_steps ? Number(req.body.training_steps) : null;
 
+            // Add description of the network, e.g. Regular Network / SWA Network / Test Network
+            //
+            var descrption = req.body.description;
+
             db.collection("networks").updateOne(
                 { hash: hash },
                 // Weights data is too large, store on disk and just store hashes in the database?
                 //
                 // save number of filters and blocks into database
-                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps, filters : filters, blocks : blocks }}, 
+                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps, filters : filters, blocks : blocks, description : description }}, 
                 { upsert: true },
                 (err, dbres) => {
                     // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
