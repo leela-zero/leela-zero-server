@@ -455,7 +455,7 @@ app.post('/request-match', (req, res) => {
         //return res.status(400).send('No playouts specified.');
 
     if (!req.body.resignation_percent)
-        req.body.resignation_percent = 10;
+        req.body.resignation_percent = 5;
         //return res.status(400).send('No resignation_percent specified.');
 
     if (!req.body.noise)
@@ -1280,7 +1280,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        var options = {"playouts": "0", "visits": "3200", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
+        var options = {"playouts": "0", "visits": "3200", "resignation_percent": "5", "noise": "true", "randomcnt": "30"};
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
