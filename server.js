@@ -482,10 +482,20 @@ app.post('/request-match', (req, res) => {
         options.visits = Number(req.body.visits);
     }
 
+    // Sanitize input
+    //   Convert 0, "", "false" , null, NaN and undefined to boolean false
+    //   Otherwise, true
+    //
+    if(req.body.is_test === "false")
+        req.body.is_test = false;
+    else
+        req.body.is_test = !!req.body.is_test;
+
     var match = { "network1": req.body.network1,
         "network2": req.body.network2, "network1_losses": 0,
         "network1_wins": 0,
         "game_count": 0, "number_to_play": Number(req.body.number_to_play),
+        "is_test" : req.body.is_test,
         "options": options, "options_hash": get_options_hash(options) };
 
     db.collection("matches").insertOne( match )
