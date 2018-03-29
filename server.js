@@ -536,6 +536,28 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             network = networkbuffer.toString();
             hash = checksum(network, 'sha256');
 
+            // Start parsing network weights
+            // Optimization
+            //   - iterate weight file once, counting `space` and `newline`
+            //   - no array creation
+            // Reference:
+            //   - filters, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L207-L212
+            //   - blocks, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L217
+            //
+            var space = 0, newline = 0;
+            for(let x = 0 ; x < network.length ; ++x) {
+                var c = network[x];
+        
+                if(c == "\n")
+                    newline++;
+                else if(newline == 2 && c == " ")
+                    space++;
+            }
+            var filters = space + 1, blocks = (newline + 1 - (1 + 4 + 14)) / 8;
+            
+            if(!Number.isInteger(blocks))
+                blocks = 0;
+
             var training_count;
 
             if (!req.body.training_count) {
@@ -549,11 +571,17 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
             var training_steps = req.body.training_steps ? Number(req.body.training_steps) : null;
 
+            // Add description of the network, e.g. Regular Network / SWA Network / Test Network
+            //
+            var description = req.body.description;
+
             db.collection("networks").updateOne(
                 { hash: hash },
                 // Weights data is too large, store on disk and just store hashes in the database?
                 //
-                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps }}, { upsert: true },
+                // save number of filters and blocks into database
+                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps, filters : filters, blocks : blocks, description : description }}, 
+                { upsert: true },
                 (err, dbres) => {
                     // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
                     //
@@ -577,12 +605,12 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
                             if (err)
                                 return res.status(500).send(err);
 
-                            console.log('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!');
-                            res.send('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!\n');
+                            console.log('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!');
+                            res.send('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!\n');
                         })
                     } else {
-                        console.log('Network weights ' + hash + ' already exists.');
-                        res.send('Network weights ' + hash + ' already exists.\n');
+                        console.log('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.');
+                        res.send('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.\n');
                     }
                 })
             })
