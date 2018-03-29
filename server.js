@@ -573,7 +573,7 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
             // Add description of the network, e.g. Regular Network / SWA Network / Test Network
             //
-            var descrption = req.body.description;
+            var description = req.body.description;
 
             db.collection("networks").updateOne(
                 { hash: hash },
