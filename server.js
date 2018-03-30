@@ -931,8 +931,8 @@ app.post('/submit', (req, res) => {
 app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
-    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=5>Best Network Hash</th></tr>\n";
-    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Games</th><th>Training #</th></tr>\n";
+    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=6>Best Network Hash</th></tr>\n";
+    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
     var iprecentselfplayhash = "";
@@ -994,6 +994,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + ".gz\">"
                     + item.hash.slice(0,8)
                     + "</a></td><td>"
+                    + (item.filters && item.blocks ? `${item.filters}x${item.blocks}` : "TBD")
+                    + "</td><td>"
                     + item.game_count
                     + "</td><td>"
                     + ( (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count)
@@ -1064,6 +1066,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "<span class=\"tooltiptextleft\">"
                     + abbreviateNumber(item.merged1.training_count, 4)
                     + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
+                    + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.filters}x${item.merged1.blocks}` : "")
+                    + (item.merged1.description ? `<br/>${item.merged1.description}` : "")
                     + "</span></div>"
                     + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
 
@@ -1073,6 +1077,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                         + "<span class=\"tooltiptextright\">"
                         + abbreviateNumber(item.merged.training_count, 4)
                         + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 3) : "")
+                        + (item.merged.filters && item.merged.blocks ? `<br/>${item.merged.filters}x${item.merged.blocks}` : "")
+                        + (item.merged.description ? `<br/>${item.merged.description}` : "")
                         + "</span></div>"
                 } else {
                     match_table += "BEST";
