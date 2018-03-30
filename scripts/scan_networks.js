@@ -54,9 +54,8 @@ const zlib = require("zlib");
                         filters: filters, blocks: blocks
                     }
                 }
-            );
+            ).then( () => { console.log(`Network ${network.hash} is ${filters}x${blocks} and updated in database`) } );
 
-            console.log(`Network ${network.hash} is ${filters}x${blocks} and updated in database`)
         });
 
         db.close();
