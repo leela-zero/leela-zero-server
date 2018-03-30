@@ -976,7 +976,14 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((count) => {
             return (count + " in past hour.)<br>");
         }),
-        db.collection("networks").aggregate( [ { $match: { game_count: { $gt: 0 } } }, { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count" } } } }, {$unwind: {path: '$networks', includeArrayIndex: 'networkID'}}, { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", networkID: 1 } }, { $sort: { networkID: -1 } }, { $limit: 10000 }] )
+        db.collection("networks").aggregate([
+            { $match: { game_count: { $gt: 0 } } },
+            { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count", filters: "$filters", blocks: "$blocks" } } } },
+            { $unwind: { path: '$networks', includeArrayIndex: 'networkID' } },
+            { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", filters: "$networks.filters", blocks: "$networks.blocks", networkID: 1 } },
+            { $sort: { networkID: -1 } },
+            { $limit: 10000 }
+        ])
         //db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } ).limit(100)
         .toArray()
         .then((list) => {
