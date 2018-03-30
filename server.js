@@ -455,7 +455,7 @@ app.post('/request-match', (req, res) => {
         //return res.status(400).send('No playouts specified.');
 
     if (!req.body.resignation_percent)
-        req.body.resignation_percent = 10;
+        req.body.resignation_percent = 5;
         //return res.status(400).send('No resignation_percent specified.');
 
     if (!req.body.noise)
@@ -536,6 +536,28 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             network = networkbuffer.toString();
             hash = checksum(network, 'sha256');
 
+            // Start parsing network weights
+            // Optimization
+            //   - iterate weight file once, counting `space` and `newline`
+            //   - no array creation
+            // Reference:
+            //   - filters, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L207-L212
+            //   - blocks, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L217
+            //
+            var space = 0, newline = 0;
+            for(let x = 0 ; x < network.length ; ++x) {
+                var c = network[x];
+        
+                if(c == "\n")
+                    newline++;
+                else if(newline == 2 && c == " ")
+                    space++;
+            }
+            var filters = space + 1, blocks = (newline + 1 - (1 + 4 + 14)) / 8;
+            
+            if(!Number.isInteger(blocks))
+                blocks = 0;
+
             var training_count;
 
             if (!req.body.training_count) {
@@ -549,11 +571,17 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
             var training_steps = req.body.training_steps ? Number(req.body.training_steps) : null;
 
+            // Add description of the network, e.g. Regular Network / SWA Network / Test Network
+            //
+            var description = req.body.description;
+
             db.collection("networks").updateOne(
                 { hash: hash },
                 // Weights data is too large, store on disk and just store hashes in the database?
                 //
-                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps }}, { upsert: true },
+                // save number of filters and blocks into database
+                { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps, filters : filters, blocks : blocks, description : description }}, 
+                { upsert: true },
                 (err, dbres) => {
                     // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
                     //
@@ -577,12 +605,12 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
                             if (err)
                                 return res.status(500).send(err);
 
-                            console.log('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!');
-                            res.send('Network weights ' + hash + " (" + training_count + ")" + ' uploaded!\n');
+                            console.log('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!');
+                            res.send('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!\n');
                         })
                     } else {
-                        console.log('Network weights ' + hash + ' already exists.');
-                        res.send('Network weights ' + hash + ' already exists.\n');
+                        console.log('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.');
+                        res.send('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.\n');
                     }
                 })
             })
@@ -903,8 +931,8 @@ app.post('/submit', (req, res) => {
 app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
-    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=5>Best Network Hash</th></tr>\n";
-    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Games</th><th>Training #</th></tr>\n";
+    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=6>Best Network Hash</th></tr>\n";
+    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
     var iprecentselfplayhash = "";
@@ -948,7 +976,14 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((count) => {
             return (count + " in past hour.)<br>");
         }),
-        db.collection("networks").aggregate( [ { $match: { game_count: { $gt: 0 } } }, { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count" } } } }, {$unwind: {path: '$networks', includeArrayIndex: 'networkID'}}, { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", networkID: 1 } }, { $sort: { networkID: -1 } }, { $limit: 10000 }] )
+        db.collection("networks").aggregate([
+            { $match: { game_count: { $gt: 0 } } },
+            { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count", filters: "$filters", blocks: "$blocks" } } } },
+            { $unwind: { path: '$networks', includeArrayIndex: 'networkID' } },
+            { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", filters: "$networks.filters", blocks: "$networks.blocks", networkID: 1 } },
+            { $sort: { networkID: -1 } },
+            { $limit: 10000 }
+        ])
         //db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } ).limit(100)
         .toArray()
         .then((list) => {
@@ -960,12 +995,14 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 network_table += "<tr><td>"
                     + item.networkID
                     + "</td><td>"
-                    + itemmoment.format("YYYY-MM-DD HH:mm")
+                    + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm")
                     + "</td><td><a href=\"/networks/"
                     + item.hash
                     + ".gz\">"
                     + item.hash.slice(0,8)
                     + "</a></td><td>"
+                    + (item.filters && item.blocks ? `${item.filters}x${item.blocks}` : "TBD")
+                    + "</td><td>"
                     + item.game_count
                     + "</td><td>"
                     + ( (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count)
@@ -1029,13 +1066,15 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 }
 
                 match_table += "<tr>"
-                    + "<td>" + itemmoment.format("YYYY-MM-DD HH:mm") + "</td>"
+                    + "<td>" + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm") + "</td>"
                     + "<td>"
                     + "<div class=\"tooltip\">"
                     + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
                     + "<span class=\"tooltiptextleft\">"
                     + abbreviateNumber(item.merged1.training_count, 4)
                     + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
+                    + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.filters}x${item.merged1.blocks}` : "")
+                    + (item.merged1.description ? `<br/>${item.merged1.description}` : "")
                     + "</span></div>"
                     + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
 
@@ -1045,6 +1084,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                         + "<span class=\"tooltiptextright\">"
                         + abbreviateNumber(item.merged.training_count, 4)
                         + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 3) : "")
+                        + (item.merged.filters && item.merged.blocks ? `<br/>${item.merged.filters}x${item.merged.blocks}` : "")
+                        + (item.merged.description ? `<br/>${item.merged.description}` : "")
                         + "</span></div>"
                 } else {
                     match_table += "BEST";
@@ -1126,6 +1167,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Match games are played at full strength (only 3200 visits).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
+        page += "2018-03-24 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.13 + AutoGTP v15</a>.</b><br>";
         page += "2018-03-05 We moved to 10 blocks x 128 filters.<br>";
         page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
         page += "2018-01-20 We moved to 6 blocks x 128 filters.<br>";
@@ -1251,7 +1293,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        var options = {"playouts": "0", "visits": "3200", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
+        var options = {"playouts": "0", "visits": "3200", "resignation_percent": "5", "noise": "true", "randomcnt": "30"};
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
@@ -1299,92 +1341,36 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
     var ipMap = new Map();
 
-    var html = "<html>";
-    
-    // add tablesort javacript/css
-    html += `<head><script src="/static/tablesort/tablesort.js"></script>
-    <script src="/static/tablesort/tablesort.number.js"></script>
-    <style>th[role=columnheader]:not(.no-sort) {
-        cursor: pointer;
-    }
-    th[role=columnheader]:not(.no-sort):after {
-        content: '';
-        float: right;
-        margin-top: 7px;
-        border-width: 0 4px 4px;
-        border-style: solid;
-        border-color: #404040 transparent;
-        visibility: hidden;
-        opacity: 0;
-        -ms-user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-    }
-    th[aria-sort=ascending]:not(.no-sort):after {
-        border-bottom: none;
-        border-width: 4px 4px 0;
-    }
-    
-    th[aria-sort]:not(.no-sort):after {
-        visibility: visible;
-        opacity: 0.4;
-    }
-    
-    th[role=columnheader]:not(.no-sort):hover:after {
-        visibility: visible;
-        opacity: 1;
-    }</style></head>`;
-
-    html += "<body>\n";
-    html += "<table id=\"sort\" border=1><thead><tr><th>Client</th><th>Match Hash</th><th>Winner</th><th>Score</th><th>Move Count</th><th>Download</th></tr></thead>\n";
-
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
-    .then((match) => {
-        db.collection("match_games").aggregate([
-            { "$match": { "$or": [
-               { winnerhash: match.network1, loserhash: match.network2, options_hash: match.options_hash },
-               { winnerhash: match.network2, loserhash: match.network1, options_hash: match.options_hash }
-            ] } },
-            { "$sort": { _id: 1 } }
-        ]).toArray()
-        .then((list) => {
-            html += "<tbody>"
-            for (let item of list) {
-                if (ipMap.get(item.ip) == null) {
-                    ipMap.set(item.ip, ipMap.size + 1);
-                }
-                html += "<tr>";
-                html += "<td>" + ipMap.get(item.ip) + "</td>";
-                html += "<td><a href=\"/viewmatch/" + item.sgfhash + "?viewer=wgo\">" + item.sgfhash + "</a></td>";
-                html += "<td>" + item.winnerhash.slice(0,8) + "</td>";
-                html += "<td>" + item.score + "</td><td>" + item.movescount + "</td>";
-                html += "<td><a href=\"/viewmatch/" + item.sgfhash + ".sgf\">sgf</a></td></tr>\n";
-            }
+        .then((match) => {
+            db.collection("match_games").aggregate([
+                {
+                    "$match": {
+                        "$or": [
+                            { winnerhash: match.network1, loserhash: match.network2, options_hash: match.options_hash },
+                            { winnerhash: match.network2, loserhash: match.network1, options_hash: match.options_hash }
+                        ]
+                    }
+                },
+                { "$sort": { _id: 1 } }
+            ]).toArray()
+                .then((list) => {
+                    for (let item of list) {
+                        if (ipMap.get(item.ip) == null) {
+                            ipMap.set(item.ip, ipMap.size + 1);
+                        }
+                        // replace IP here before going to pug view
+                        item.ip = ipMap.get(item.ip);
+                    }
 
-            html += "</table>";
-            
-            // add tablesort before body tag
-            html += `<script>
-                Tablesort.extend('score', function(item) {
-                return item.match(/(?:b|w)\+([\d\.]+|resign)/i);
-                }, function(a, b) {
-                return (a.match(/(?:b|w)\+([\d\.]+)/i) ? RegExp.$1 : 0)
-                    - (b.match(/(?:b|w)\+([\d\.]+)/i) ? RegExp.$1 : 0);
+                    // render pug view match-games
+                    res.render("match-games", { data: list });
+                }).catch(err => {
+                    res.send("No matches found for match " + req.params.matchid);
                 });
-                new Tablesort(document.getElementById('sort'));
-            </script>`;
-
-            html += "</tbody></body></html>\n";
-
-            res.send(html);
-        }).catch( err => {
-            res.send("No matches found for match " + req.params.matchid);
+        }).catch(err => {
+            res.send("No match found for id " + req.params.hash);
         });
-    }).catch( err => {
-        res.send("No match found for id " + req.params.hash);
-    });
-
 });
 
 app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
@@ -1428,93 +1414,87 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
     });
 });
 
-// TODO Make this whole thing a function, and cache it. Clear the cache when I clear cachematches (elograph won't
-// change unless a new match result is uploaded.
-//
+
 app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
+    // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
+    var json = await cachematches.wrap("elograph", "1d", async () => {
+    console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
+
     var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
     var totalgames = await cursor.next();
 
-    var ratingsMap = new Map();
-    var networks = [];
-
-    Promise.all([
-        db.collection("networks").find().sort({_id: -1}).toArray()
-        .then((list) => {
-            for (let item of list) {
-                totalgames.count -= item.game_count || 0;
-
-                var mycount = (
-                    (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count
-                )
-
-                if (item.game_count) {
-                    networks.push({ "hash": item.hash, "game_count": item.game_count,
-                        "net": mycount, "best": "true" });
-                } else {
-                    networks.push({ "hash": item.hash, "game_count": item.game_count,
-                        "net": mycount, "best": "false" });
-                }
-            }
-
-            return;
-        }),
+    return Promise.all([
+        db.collection("networks").find().sort({_id: -1}).toArray(),
         db.collection("matches").aggregate([
-            { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$sort": { "merged._id": 1 } }
+            { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } },
+            { "$unwind": "$merged" },
+            { "$sort": { "merged._id": 1 } }
         ]).toArray()
-        .then((list) => {
-            for (let match of list) {
-                var network2_rating = ratingsMap.get(match.network2) ? ratingsMap.get(match.network2).rating : 0;
-                var sprt;
-                var elo;
-
-                // TODO If no ELO info, make rating -1 for graph to just hide it instead of assuming same elo as network 2.
-                //
-                if (match.network1_wins > 0 && match.network1_losses > 0) {
-                    elo = CalculateEloFromPercent( match.network1_wins / match.game_count );
-                } else {
-                    var fakecount = match.game_count;
-                    var fakewins = match.network1_wins;
-
-                    if (fakewins == 0) {
-                        fakewins++;
-                        fakecount++;
-                    }
-
-                    if (match.network1_losses == 0) {
-                        fakecount++;
-                    }
-
-                    elo = CalculateEloFromPercent( fakewins / fakecount );
-                }
-
-                switch (SPRT(match.network1_wins, match.network1_losses)) {
-                    case false:
-                        sprt = "FAIL";
-                        break;
-
-                    case true:
-                        sprt = "PASS";
-                        break;
-
-                    default:
-                        sprt = "???"
-                }
-
-                var info =  {
-                    "rating": elo + network2_rating,
-                    "sprt": sprt
-                };
-
-                ratingsMap.set(match.network1, info);
-            }
-
-            return;
-        })
-    ]).then((responses) => {
+    ]).then((dataArray) => {
         var elograph_data;
 
-        var json = networks.map( (item) => {
+        // prepare networks
+        var networks = dataArray[0].map(item => {
+            totalgames.count -= item.game_count || 0;
+
+            return {
+                "hash": item.hash, 
+                "game_count": item.game_count,
+                "net": (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
+                "best": !!item.game_count // !! boolean cast
+            };
+        });
+
+        // prepare ratingsMap
+        var ratingsMap = new Map();
+        dataArray[1].forEach(match => {
+            var network2_rating = ratingsMap.get(match.network2) ? ratingsMap.get(match.network2).rating : 0;
+            var sprt;
+            var elo;
+
+            // TODO If no ELO info, make rating -1 for graph to just hide it instead of assuming same elo as network 2.
+            //
+            if (match.network1_wins > 0 && match.network1_losses > 0) {
+                elo = CalculateEloFromPercent( match.network1_wins / match.game_count );
+            } else {
+                var fakecount = match.game_count;
+                var fakewins = match.network1_wins;
+
+                if (fakewins == 0) {
+                    fakewins++;
+                    fakecount++;
+                }
+
+                if (match.network1_losses == 0) {
+                    fakecount++;
+                }
+
+                elo = CalculateEloFromPercent( fakewins / fakecount );
+            }
+
+            switch (SPRT(match.network1_wins, match.network1_losses)) {
+                case false:
+                    sprt = "FAIL";
+                    break;
+
+                case true:
+                    sprt = "PASS";
+                    break;
+
+                default:
+                    sprt = "???"
+            }
+
+            var info =  {
+                "rating": elo + network2_rating,
+                "sprt": sprt
+            };
+
+            ratingsMap.set(match.network1, info);
+        });
+
+        // prepare json result
+        var json = networks.map((item) => {
             var rating;
 
             if (ratingsMap.get(item.hash) === undefined) {
@@ -1524,13 +1504,19 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             }
             var sprt = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).sprt : "???";
             var result_item = { "rating": rating, "net": Number(item.net + rating/100000), "sprt": sprt, "hash": item.hash.slice(0,6), "best": item.best };
-            return JSON.stringify(result_item);
-        }).join(",");
+            return result_item;
+        });
 
-        res.send("[ " + json + " ]");
+        // shortcut for sending json result using `JSON.stringify`
+        // and set `Content-Type: application/json`
+        return json;
     }).catch( err => {
         console.log("ERROR data/elograph.json: " + err);
         res.send("ERROR data/elograph.json: " + err);
     });
+
+    });
+
+    res.json(json);
 }));
 
