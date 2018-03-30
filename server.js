@@ -1160,7 +1160,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Leela Zero is available from: <a href=\"https://github.com/gcp/leela-zero\">Github</a>.<br>";
         page += "Check out the <a href=\"https://github.com/gcp/leela-zero/blob/master/FAQ.md\">FAQ</a> and ";
         page += "<a href=\"https://github.com/gcp/leela-zero/blob/master/README.md\">README</a>.<br>";
-        page += "<br>Network 6615567e is a net2net trained 10x128 network test. Not a bug. <a href=\"https://github.com/gcp/leela-zero/issues/965\">Info here</a>.<br>\n";
+        page += `<br>Networks 93229e15 and 8d9c5e80 are net2net trained 256x20 network tests. Not a bug. <a href="https://github.com/gcp/leela-zero/issues/1113">Info here</a>.<br>\n`;
+        page += `<br>Network 6615567e is a net2net trained 128x10 network test. Not a bug. <a href="https://github.com/gcp/leela-zero/issues/965">Info here</a>.<br>\n`;
         page += "Network 1e2b85cf is best_v1 tested as a reference point. It isn't a normal LZ network. Not a bug.<br>\n";
         page += "<br>Autogtp will automatically download better networks once found.<br>";
         page += "Not each trained network will be a strength improvement over the prior one. Patience please. :)<br>";
@@ -1168,10 +1169,10 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
         page += "2018-03-24 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.13 + AutoGTP v15</a>.</b><br>";
-        page += "2018-03-05 We moved to 10 blocks x 128 filters.<br>";
+        page += "2018-03-05 We moved to 128 filters x 10 blocks.<br>";
         page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
-        page += "2018-01-20 We moved to 6 blocks x 128 filters.<br>";
-        page += "2017-11-21 We moved to 5 blocks x 64 filters.<br>";
+        page += "2018-01-20 We moved to 128 filters x 6 blocks.<br>";
+        page += "2017-11-21 We moved to 64 filters x 5 blocks.<br>";
         page += "<br>";
 
         responses.map( response => page += response );
