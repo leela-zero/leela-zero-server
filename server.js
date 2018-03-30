@@ -988,7 +988,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 network_table += "<tr><td>"
                     + item.networkID
                     + "</td><td>"
-                    + itemmoment.format("YYYY-MM-DD HH:mm")
+                    + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm")
                     + "</td><td><a href=\"/networks/"
                     + item.hash
                     + ".gz\">"
@@ -1057,7 +1057,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 }
 
                 match_table += "<tr>"
-                    + "<td>" + itemmoment.format("YYYY-MM-DD HH:mm") + "</td>"
+                    + "<td>" + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm") + "</td>"
                     + "<td>"
                     + "<div class=\"tooltip\">"
                     + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
