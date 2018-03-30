@@ -23,7 +23,7 @@ const zlib = require("zlib");
         var network_folder = __dirname + "/../network/";
 
         // Start Re-Scanning
-        networks.forEach(async network => {
+        for (var network of networks) {
             var network_path = network_folder + network.hash + ".gz";
 
             if (!fs.existsSync(network_path)) {
@@ -45,7 +45,7 @@ const zlib = require("zlib");
             }
             var filters = space + 1, blocks = (newline + 1 - (1 + 4 + 14)) / 8;
 
-            db.collection("networks").updateOne(
+            await db.collection("networks").updateOne(
                 {
                     _id: network._id
                 },
@@ -54,13 +54,11 @@ const zlib = require("zlib");
                         filters: filters, blocks: blocks
                     }
                 }
-            ).then( () => {
-                console.log(`Network ${network.hash} is ${filters}x${blocks} and updated in database`);
-            }).catch( err => {
-                console.log("Error: " + err);
-            });
+            );
 
-        });
+            console.log(`Network ${network.hash} is ${filters}x${blocks} and updated in database`);
+
+        }
 
         db.close();
         console.log("Done");
