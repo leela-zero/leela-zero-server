@@ -49,6 +49,11 @@ var MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. Afte
 
 const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 
+function network_exists(hash) {
+    var network_file = __dirname + "/network/" + hash + ".gz";
+    return !fs.existsSync(network_file);
+}
+
 // From https://stackoverflow.com/questions/9461621/how-to-format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900-in-javascrip
 //
 function abbreviateNumber(number, length) {
@@ -440,9 +445,13 @@ app.post('/request-match', (req, res) => {
 
     if (!req.body.network1)
         return res.status(400).send('No network1 hash specified.');
+    else if (network_exists(req.body.network1))
+        return res.status(400).send('network1 hash not found.');
 
     if (!req.body.network2)
         req.body.network2 = null;
+    else if (network_exists(req.body.network2))
+        return res.status(400).send('network2 hash not found.');
 
     // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing? Don't allow both to be set.
     //
