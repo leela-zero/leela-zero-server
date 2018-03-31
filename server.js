@@ -486,6 +486,8 @@ app.post('/request-match', (req, res) => {
     //   Convert 0, "", "false" , null, NaN and undefined to boolean false
     //   Otherwise, true
     //
+    //   curl -F is_test=true
+    //
     if(req.body.is_test === "false")
         req.body.is_test = false;
     else
@@ -509,7 +511,7 @@ app.post('/request-match', (req, res) => {
         pending_matches.unshift( match );
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " Match added!");
-        res.send("Match added!\n");
+        res.send((match.is_test ? "Test" : "Regular") + " Match added!\n");
         console.log("Pending is now: " + JSON.stringify(pending_matches));
     } )
     .catch( (err) => {
@@ -804,7 +806,9 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                                 // don't face right opponent. Lets do a sync copy if this was in fact a new best network
                                 // situation for the current active match in queue.
                                 //
-                                if (req.body.loserhash == best_network_hash) {
+                                // added !is_test flag
+                                //
+                                if (req.body.loserhash == best_network_hash && !pending_matches[pending_matches.length - 1].is_test) {
                                     new_best_network_flag = true;
 
                                     fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
@@ -827,8 +831,10 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     //
     if (!new_best_network_flag && req.body.loserhash == best_network_hash) {
         db.collection("matches").findOne({ network1: req.body.winnerhash, network2: best_network_hash, options_hash: req.body.options_hash})
-        .then( (match) => {
-            if (match && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
+            .then((match) => {
+            // added !is_test flag
+            //
+            if (match && !match.is_test && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
                 fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
                 console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
             }
@@ -1085,8 +1091,14 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
                     + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.filters}x${item.merged1.blocks}` : "")
                     + (item.merged1.description ? `<br/>${item.merged1.description}` : "")
-                    + "</span></div>"
-                    + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
+                    + "</span></div>&nbsp;"
+                    + "<div class=\"tooltip\">"
+                    + " <a href=\"/match-games/" + item._id + "\">VS</a> "
+                    + "<span class=\"tooltiptextright\">"
+                    + (item.is_test ? "Test" : "Regular") + " Match"
+                    + "</span>"
+                    + "</div>&nbsp;"
+                    ;
 
                 if (item.network2) {
                     match_table += "<div class=\"tooltip\">"
