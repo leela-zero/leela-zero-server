@@ -49,6 +49,11 @@ var MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. Afte
 
 const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 
+function network_exists(hash) {
+    var network_file = __dirname + "/network/" + hash + ".gz";
+    return !fs.existsSync(network_file);
+}
+
 // From https://stackoverflow.com/questions/9461621/how-to-format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900-in-javascrip
 //
 function abbreviateNumber(number, length) {
@@ -440,9 +445,13 @@ app.post('/request-match', (req, res) => {
 
     if (!req.body.network1)
         return res.status(400).send('No network1 hash specified.');
+    else if (network_exists(req.body.network1))
+        return res.status(400).send('network1 hash not found.');
 
     if (!req.body.network2)
         req.body.network2 = null;
+    else if (network_exists(req.body.network2))
+        return res.status(400).send('network2 hash not found.');
 
     // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing? Don't allow both to be set.
     //
@@ -482,10 +491,23 @@ app.post('/request-match', (req, res) => {
         options.visits = Number(req.body.visits);
     }
 
+    // Usage:
+    //   - schedule a Test match, set is_test=true
+    //   curl -F is_test=true <other params>
+    //
+    //   - schedule a Normal match, leave out the flag
+    //   curl  <other params>
+    //
+    if (req.body.is_test === 'true')
+        req.body.is_test = true;
+    else
+        req.body.is_test = false;
+
     var match = { "network1": req.body.network1,
         "network2": req.body.network2, "network1_losses": 0,
         "network1_wins": 0,
         "game_count": 0, "number_to_play": Number(req.body.number_to_play),
+        "is_test" : req.body.is_test,
         "options": options, "options_hash": get_options_hash(options) };
 
     db.collection("matches").insertOne( match )
@@ -499,7 +521,7 @@ app.post('/request-match', (req, res) => {
         pending_matches.unshift( match );
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " Match added!");
-        res.send("Match added!\n");
+        res.send((match.is_test ? "Test" : "Regular") + " Match added!\n");
         console.log("Pending is now: " + JSON.stringify(pending_matches));
     } )
     .catch( (err) => {
@@ -794,7 +816,9 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
                                 // don't face right opponent. Lets do a sync copy if this was in fact a new best network
                                 // situation for the current active match in queue.
                                 //
-                                if (req.body.loserhash == best_network_hash) {
+                                // added !is_test flag
+                                //
+                                if (req.body.loserhash == best_network_hash && !pending_matches[pending_matches.length - 1].is_test) {
                                     new_best_network_flag = true;
 
                                     fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
@@ -817,8 +841,10 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     //
     if (!new_best_network_flag && req.body.loserhash == best_network_hash) {
         db.collection("matches").findOne({ network1: req.body.winnerhash, network2: best_network_hash, options_hash: req.body.options_hash})
-        .then( (match) => {
-            if (match && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
+            .then((match) => {
+            // added !is_test flag
+            //
+            if (match && !match.is_test && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
                 fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
                 console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
             }
@@ -1075,8 +1101,14 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
                     + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.filters}x${item.merged1.blocks}` : "")
                     + (item.merged1.description ? `<br/>${item.merged1.description}` : "")
-                    + "</span></div>"
-                    + " <a href=\"/match-games/" + item._id + "\">VS</a> ";
+                    + "</span></div>&nbsp;"
+                    + "<div class=\"tooltip\">"
+                    + " <a href=\"/match-games/" + item._id + "\">VS</a> "
+                    + "<span class=\"tooltiptextright\">"
+                    + (item.is_test ? "Test" : "Regular") + " Match"
+                    + "</span>"
+                    + "</div>&nbsp;"
+                    ;
 
                 if (item.network2) {
                     match_table += "<div class=\"tooltip\">"
