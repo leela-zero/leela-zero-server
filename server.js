@@ -550,12 +550,16 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
     var hash;
     var networkbuffer = Buffer.from(req.files.weights.data);
 
+    log_memory_stats("submit-network begins");
+
     zlib.unzip(networkbuffer,  asyncMiddleware( async (err, networkbuffer, next) => {
         if (err) {
             console.error("Error decompressing network: " + err);
             res.send("Error decompressing network: " + err);
         } else {
+            log_memory_stats("unzip completed");
             network = networkbuffer.toString();
+            log_memory_stats("networkbuffer.toString() complete");
             hash = checksum(network, 'sha256');
 
             // Start parsing network weights
