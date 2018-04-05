@@ -321,7 +321,7 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
 
 app.enable('trust proxy');
 
-//app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(fileUpload());
 
 app.use('/view/player', express.static('static/eidogo-player-1.2/player'));
