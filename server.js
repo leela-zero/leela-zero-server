@@ -548,7 +548,7 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
 
     var network;
     var hash;
-    var networkbuffer = Buffer.from(req.files.weights.data);
+    var networkbuffer = req.files.weights.data;
 
     log_memory_stats("submit-network begins");
 
@@ -558,9 +558,7 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             res.send("Error decompressing network: " + err);
         } else {
             log_memory_stats("unzip completed");
-            network = networkbuffer.toString();
-            log_memory_stats("networkbuffer.toString() complete");
-            hash = checksum(network, 'sha256');
+            hash = checksum(networkbuffer, 'sha256');
 
             // Start parsing network weights
             // Optimization
@@ -571,12 +569,12 @@ app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
             //   - blocks, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L217
             //
             var space = 0, newline = 0;
-            for(let x = 0 ; x < network.length ; ++x) {
-                var c = network[x];
+            for(let x = 0 ; x < networkbuffer.length ; ++x) {
+                var c = networkbuffer[x];
         
-                if(c == "\n")
+                if(c == 0x0A)   // 0X0A = '\n' = newline
                     newline++;
-                else if(newline == 2 && c == " ")
+                else if(newline == 2 && c == 0x20)  // 0x20 = ' ' = space
                     space++;
             }
             var filters = space + 1, blocks = (newline + 1 - (1 + 4 + 14)) / 8;
