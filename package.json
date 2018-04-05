@@ -25,6 +25,7 @@
     "mongodb": "^2.2.33",
     "nodemon": "^1.14.11",
     "pug": "^2.0.0-rc.4",
+    "streamifier": "^0.1.1",
     "zlib": "^1.0.5"
   },
   "devDependencies": {}
