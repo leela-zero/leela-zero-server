@@ -185,7 +185,12 @@ async function get_pending_matches () {
 function log_memory_stats (string) {
     console.log(string);
     const used = process.memoryUsage();
-    for (let key in used) { console.log(`\t${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`); }
+
+    for (let key in used) { 
+        var size = Math.round(used[key] / 1024 / 1024 * 100) / 100;
+        key += " ".repeat(9 - key.length);
+        console.log(`\t${key} ${size} MB`); 
+    }
 };
 
 async function get_best_network_hash () {
