@@ -1204,7 +1204,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Match games are played at full strength (only 3200 visits).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
-        page += "2018-03-24 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.13 + AutoGTP v15</a>.</b><br>";
+        page += "2018-03-24 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.13 + AutoGTP v15</a>. <b>Update required.</b><br>";
         page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
         page += "<br>";
 
@@ -1259,8 +1259,8 @@ function shouldScheduleMatch (req, now) {
 }
 
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
-    var required_client_version = String(14);
-    var required_leelaz_version = String("0.12");
+    var required_client_version = String(15);
+    var required_leelaz_version = String("0.13");
 
     var random_seed = converter.hexToDec( "0x"+crypto.randomBytes(8).toString('hex') ).toString();
 
