@@ -1537,7 +1537,13 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 rating = Math.round(ratingsMap.get(item.hash).rating);
             }
             var sprt = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).sprt : "???";
-            var result_item = { "rating": rating, "net": Number(item.net + rating/100000), "sprt": sprt, "hash": item.hash.slice(0,6), "best": item.best };
+            var result_item = {
+                "rating": Math.max(0.0, rating),
+                "net": Math.max(0.0, Number(item.net + rating/100000)),
+                "sprt": sprt,
+                "hash": item.hash.slice(0,6),
+                "best": item.best
+            };
             return result_item;
         });
 
