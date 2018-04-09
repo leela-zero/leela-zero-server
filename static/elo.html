@@ -54,7 +54,7 @@
         },
         {
           "transform": [
-            { "filter": "datum.rating > -1" }
+            { "filter": "datum.rating > -1 && !(datum.rating < 1 && datum.net > 1) && !(datum.rating > 1 && datum.net < 1)" }
           ],
           "mark": {"type": "point", "filled": true},
           "encoding": {
