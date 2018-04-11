@@ -547,7 +547,7 @@ app.post('/request-match', (req, res) => {
 // So we don't think the network is newer than it really is. Actually, upsert shouldn't change
 // the ObjectID so date will remain original insertion date.
 //
-app.post('/submit-network', (req, res, next) => {
+app.post('/submit-network', asyncMiddleware((req, res, next) => {
     log_memory_stats("submit network start");
     var busboy = new Busboy({ headers: req.headers });
 
@@ -672,7 +672,7 @@ app.post('/submit-network', (req, res, next) => {
             }
         );
     });
-});
+}));
 
 app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     if (!req.files) {
