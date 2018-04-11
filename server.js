@@ -1,7 +1,6 @@
 const moment = require('moment');
 const express = require('express');
 const fileUpload = require('express-fileupload');
-const streamifier = require('streamifier');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const fs = require('fs-extra');
@@ -12,8 +11,12 @@ const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 const zlib = require('zlib');
 const converter = require('hex2dec');
 const Cacheman = require('cacheman');
-const weight_parser = require('./classes/weight_parser.js');
 const app = express();
+const Busboy = require('busboy');
+const weight_parser = require('./classes/weight_parser.js');
+const os = require("os");
+const util = require("util");
+const path = require("path");
 
 var auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 
@@ -186,8 +189,10 @@ function log_memory_stats (string) {
     console.log(string);
     const used = process.memoryUsage();
 
-    for (let key in used) { 
-        var size = Math.round(used[key] / 1024 / 1024 * 100) / 100;
+    for (let key in used) {
+        var size = (used[key] / 1024 / 1024).toFixed(2);
+
+        size = " ".repeat(6 - size.length) + size;
         key += " ".repeat(9 - key.length);
         console.log(`\t${key} ${size} MB`); 
     }
@@ -322,7 +327,7 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
 app.enable('trust proxy');
 
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(fileUpload());
+app.use(/\/((?!submit-network).)*/, fileUpload());
 
 app.use('/view/player', express.static('static/eidogo-player-1.2/player'));
 app.use('/viewmatch/player', express.static('static/eidogo-player-1.2/player'));
@@ -542,110 +547,132 @@ app.post('/request-match', (req, res) => {
 // So we don't think the network is newer than it really is. Actually, upsert shouldn't change
 // the ObjectID so date will remain original insertion date.
 //
-app.post('/submit-network', asyncMiddleware( async (req, res, next) => {
-    if (!req.body.key || req.body.key != auth_key) {
-        console.log("AUTH FAIL: '" + String(req.body.key) + "' VS '" + String(auth_key) + "'");
-        return res.status(400).send('Incorrect key provided.');
-    }
+app.post('/submit-network', (req, res, next) => {
+    log_memory_stats("submit network start");
+    var busboy = new Busboy({ headers: req.headers });
 
-    if (!req.files)
-        return res.status(400).send('No weights file was uploaded.');
-    
-    log_memory_stats("submit-network begins");
-    
-    var network_stream = streamifier.createReadStream(req.files.weights.data);
-    var unzip_pipe = network_stream
-        .pipe(zlib.createGunzip())
-        .on('finish', () => {
-            log_memory_stats("unzip completed");
-        })
-        .on('error', (err) => {
-            console.error("Error decompressing network: " + err);
-            res.send("Error decompressing network: " + err);
-        });
-    var hasher = crypto.createHash("sha256");
-    var parser = new weight_parser();
+    req.body = {};
 
-    Promise.all([
-        new Promise((resolve, reject) => {
-            // pipe unzip to hash
-            unzip_pipe
-                .pipe(hasher)
-                .on('finish', () => {
-                    resolve(hasher.read().toString("hex"));
-                });
-        }),
-        new Promise((resolve, reject) => {
-            // also pipe unzip to parse weight
-            unzip_pipe
-                .pipe(parser)
-                .on('finish', () => {
-                    resolve(parser.read());
-                });
-        })
-    ]).then(async resultArray => {
-        var hash = resultArray[0], filters = resultArray[1].filters, blocks = resultArray[1].blocks;
-        
-        var training_count;
+    var file_promise = null;
 
-        if (!req.body.training_count) {
-            var cursor = db.collection("networks").aggregate([{ $group: { _id: 1, count: { $sum: "$game_count" } } }]);
-            var totalgames = await cursor.next();
-            training_count = totalgames.count;
-        } else {
-            training_count = Number(req.body.training_count);
+    req.pipe(busboy).on('field', (name, value) => {
+        req.body[name] = value;
+    }).on('file', (name, file_stream, file_name) => {
+        if (!req.files)
+            req.files = {};
+
+        if (name != "weights") {
+            // Not the file we expected, flush the stream and do nothing
+            //
+            file_stream.on('readable', file_stream.read);
+            return;
         }
 
-        var training_steps = req.body.training_steps ? Number(req.body.training_steps) : null;
+        var temp_file = path.join(os.tmpdir(), file_name);
+        // Pipes
+        //   - file_stream.pipe(fs_stream)
+        //   - file_stream.pipe(gunzip_stream)
+        //       - gunzip_stream.pipe(hasher)
+        //       - gunzip_stream.pipe(parser)
+        file_promise = new Promise((resolve, reject) => {
+            var fs_stream = file_stream.pipe(fs.createWriteStream(temp_file)).on('error', reject);
+            var gunzip_stream = file_stream.pipe(zlib.createGunzip()).on('error', reject);
 
-        // Add description of the network, e.g. Regular Network / SWA Network / Test Network
+            Promise.all([
+                new Promise(resolve => {
+                    fs_stream.on('finish', () => { resolve({ path: fs_stream.path }) });
+                }),
+                new Promise(resolve => {
+                    var hasher = gunzip_stream.pipe(crypto.createHash('sha256')).on('finish', () => resolve({ hash: hasher.read().toString('hex') }));
+                }),
+                new Promise(resolve => {
+                    var parser = gunzip_stream.pipe(new weight_parser).on('finish', () => resolve(parser.read()));
+                })
+            ]).then(results => {
+                // consolidate results
+                results = req.files[name] = Object.assign.apply(null, results);
+
+                // Move temp file to network folder with hash name
+                results.path = path.join(__dirname, "network", results.hash + ".gz");
+                if (fs.existsSync(temp_file))
+                    fs.moveSync(temp_file, results.path, { overwrite: true });
+
+                // We are all done (hash, parse and save file)
+                resolve();
+            });
+
+        }).catch(err => {
+            console.error(err);
+            req.files[name] = { error: err };
+
+            // Clean up, flush stream and delete temp file
+            file_stream.on('readable', file_stream.read);
+
+            if (fs.existsSync(temp_file))
+                fs.removeSync(temp_file);
+
+        });
+
+    }).on('finish', async () => {
+        
+        await file_promise;
+
+        if (!req.body.key || req.body.key != auth_key) {
+            console.log("AUTH FAIL: '" + String(req.body.key) + "' VS '" + String(auth_key) + "'");
+            return res.status(400).send('Incorrect key provided.');
+        }
+
+        if (!req.files || !req.files.weights)
+            return res.status(400).send('No weights file was uploaded.');
+
+        if (req.files.weights.error)
+            return res.status(400).send(req.files.weights.error.message);
+
+        var set = {
+            hash: req.files.weights.hash,
+            ip: req.ip,
+            training_count: +req.body.training_count || null,
+            training_steps: +req.body.training_steps || null,
+            filters: req.files.weights.filters,
+            blocks: req.files.weights.blocks,
+            description: req.body.description,
+        };
+
+        // No training count given, we'll calculate it from database.
         //
-        var description = req.body.description;
+        if (!set.training_count) {
+            var cursor = db.collection("networks").aggregate([{ $group: { _id: 1, count: { $sum: "$game_count" } } }]);
+            var totalgames = await cursor.next();
+            set.training_count = totalgames.count;
+        }
 
-        await db.collection("networks").updateOne(
-            { hash: hash },
-            // Weights data is too large, store on disk and just store hashes in the database?
-            // Save `filters` / `blocks` / `description` into database
-            //
-            { $set: { hash: hash, ip: req.ip, training_count: training_count, training_steps: training_steps, filters: filters, blocks: blocks, description: description } },
+        // Prepare variables for printing messages
+        //
+        var hash = set.hash,
+            filters = set.filters,
+            blocks = set.blocks,
+            training_count = set.training_count
+            ;
+
+        db.collection("networks").updateOne(
+            { hash: set.hash },
+            { $set: set },
             { upsert: true },
             (err, dbres) => {
-                // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
-                //
                 if (err) {
-                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded network " + hash + " ERROR: " + err);
-                } else {
-                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded network " + hash + " (" + training_count + ")");
+                    res.end(err.message);
+                    console.error(err);
                 }
-            });
-
-        // If we serve a listing from database instead and query as needed, this can be removed.
-        //
-        var networkpath = __dirname + '/network/';
-
-        fs.mkdirs(networkpath)
-            .then(() => {
-                fs.pathExists(networkpath + hash + ".gz")
-                    .then(exists => {
-                        if (!exists) {
-                            req.files.weights.mv(networkpath + hash + ".gz", (err) => {
-                                if (err)
-                                    return res.status(500).send(err);
-
-                                console.log('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!');
-                                res.send('Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ")" + ' uploaded!\n');
-                            })
-                        } else {
-                            console.log('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.');
-                            res.send('Network weights  (' + filters + ' x ' + blocks + ') ' + hash + ' already exists.\n');
-                        }
-                    })
-            })
-            .catch(err => {
-                console.error("Cannot make directory error: " + err)
-            });
-    });   
-}));
+                else {
+                    var msg = 'Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
+                    res.end(msg);
+                    console.log(msg);
+                    log_memory_stats('submit network ends');
+                }
+            }
+        );
+    });
+});
 
 app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     if (!req.files) {
