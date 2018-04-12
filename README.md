@@ -10,7 +10,7 @@
 - Ensure MongoDB is running locally on port `27017`
 - Ensure dummy `auth_key` file is created at project root
 - Ensure `network/best-network.gz` exists (you could download it from http://zero.sjeng.org/best-network)
-- Run `npm update` to get required packages
+- Run `npm install` to get required packages
 
 Your project folder should look like this
 ```
