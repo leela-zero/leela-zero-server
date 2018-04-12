@@ -17,7 +17,7 @@ class rss_generator {
             feed.item({
                 title:  network.hash,
                 description: `${network.filters} x ${network.blocks} `,
-                url: `http://zero.sjeng.org/network/${network.hash}.gz`, 
+                url: `http://zero.sjeng.org/networks/${network.hash}.gz`, 
                 date: date.utc()
             });
         }
