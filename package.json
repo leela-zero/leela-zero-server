@@ -7,8 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gcp/leela-zero-server.git"
+  },
   "author": "",
-  "license": "AGPLv3",
+  "license": "AGPL-3.0-or-later",
   "dependencies": {
     "async": "^2.5.0",
     "async-lock": "^1.1.2",
@@ -26,6 +30,7 @@
     "mongodb": "^2.2.33",
     "nodemon": "^1.14.11",
     "pug": "^2.0.0-rc.4",
+    "rss": "^1.2.2",
     "streamifier": "^0.1.1",
     "zlib": "^1.0.5"
   },

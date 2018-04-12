@@ -14,6 +14,7 @@ const Cacheman = require('cacheman');
 const app = express();
 const Busboy = require('busboy');
 const weight_parser = require('./classes/weight_parser.js');
+const rss_generator = require('./classes/rss_generator.js');
 const os = require("os");
 const util = require("util");
 const path = require("path");
@@ -985,6 +986,36 @@ app.post('/submit', (req, res) => {
     }
 });
 
+app.get('/rss', asyncMiddleware(async (req, res, next) => {
+    var rss_path = path.join(__dirname, 'static', 'rss.xml')
+      , best_network_path = path.join(__dirname, 'network', 'best-network.gz')
+      , should_generate = true;
+    
+    var rss_exists = await fs.pathExists(rss_path)
+        
+    if(rss_exists) {
+        best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
+        rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
+
+        // We have new network promoted since rss last generated
+        should_generate = best_network_mtimeMs > rss_mtimeMs;
+    }
+
+    if(should_generate) {
+        var networks = await db.collection("networks")
+            .find({ game_count: { $gt: 0 } })
+            .sort({ _id : -1 })
+            .toArray();
+        
+        var rss_xml = new rss_generator().generate(networks);
+
+        await fs.writeFile(rss_path, rss_xml);
+    }
+
+    res.setHeader("Content-Type", "application/rss+xml");
+    res.sendFile(rss_path);
+}));
+
 app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
@@ -1200,6 +1231,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         var match_table = match_and_styles[1];
 
         var page = "<html><head>\n<title>Leela Zero</title>\n";
+        page += `<link rel="alternate" type="application/rss+xml" title="Leela Zero Best Networks" href="http://zero.sjeng.org/rss" />`
         page += "<script type=\"text/javascript\" src=\"/static/timeago.js\"></script>\n";
         page += "<style>";
         page += "table.networks-table { float: left; margin-right: 40px; margin-bottom: 20px; }\n";
