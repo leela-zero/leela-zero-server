@@ -1007,7 +1007,7 @@ app.get('/networks/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
 
     if (!await fs.pathExists(avatar_path)) {
         var retricon = require('retricon-without-canvas');
-        await retricon('github', { pixelSize: 60 }).pngStream().pipe(fs.createWriteStream(avatar_path));
+        await retricon(network.hash, { pixelSize: 60, }).pngStream().pipe(fs.createWriteStream(avatar_path));
     }
 
     res.render('networks/profile', { network });
