@@ -1010,14 +1010,15 @@ app.get('/networks/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
         await retricon(network.hash, { pixelSize: 60, }).pngStream().pipe(fs.createWriteStream(avatar_path));
     }
 
-    res.render('networks/profile', { network });
+    res.render('networks/profile', { network, http_host = req.protocol + '://' + req.get('host') });
 
 }));
 
 app.get('/rss', asyncMiddleware(async (req, res, next) => {
     var rss_path = path.join(__dirname, 'static', 'rss.xml')
         , best_network_path = path.join(__dirname, 'network', 'best-network.gz')
-        , should_generate = true;
+        , should_generate = true
+        , http_host = req.protocol + '://' + req.get('host');
 
     var rss_exists = await fs.pathExists(rss_path);
 
@@ -1035,7 +1036,7 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
             .sort({ _id: 1 })
             .toArray();
 
-        var rss_xml = new rss_generator().generate(networks);
+        var rss_xml = new rss_generator().generate(networks, http_host);
 
         await fs.writeFile(rss_path, rss_xml);
     }

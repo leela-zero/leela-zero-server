@@ -2,10 +2,10 @@ extends ../layout.pug
 
 block meta
     - var title = `LZ#${network.networkID} ${network.hash.slice(0,6)}`
-    - var identicon = `http://zero.sjeng.org/static/networks/${network.hash}.png`
+    - var identicon = `${http_host}/static/networks/${network.hash}.png`
     meta(property="og:title" content=`${title}`)
     meta(property="og:type" content="website")
-    meta(property="og:url" content=`http://zero.sjeng.org/networks/${network.hash}`)
+    meta(property="og:url" content=`${http_host}/networks/${network.hash}`)
     meta(property="og:image" content=`${identicon}`)
     script(src="/static/timeago.js")
 block script
@@ -20,7 +20,7 @@ block content
                 img.card-img-top(src=`${identicon}` alt=`${title}`)
                 div.card-header
                     h2.text-center #{title}
-                    a.btn.btn-light.btn-block.border-dark(href=`http://zero.sjeng.org/networks/${network.hash}.gz`) Download
+                    a.btn.btn-light.btn-block.border-dark(href=`${http_host}/networks/${network.hash}.gz`) Download
                 ul.list-group.list-group-flush
                     li.list-group-item Since
                         span.float-right.time-ago #{parseInt(network._id.toString().slice(0, 8), 16) * 1000}
