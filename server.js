@@ -1010,7 +1010,7 @@ app.get('/networks/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
         await retricon(network.hash, { pixelSize: 60, }).pngStream().pipe(fs.createWriteStream(avatar_path));
     }
 
-    res.render('networks/profile', { network, http_host = req.protocol + '://' + req.get('host') });
+    res.render('networks/profile', { network, http_host : req.protocol + '://' + req.get('host') });
 
 }));
 
@@ -1030,9 +1030,10 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
         should_generate = best_network_mtimeMs > rss_mtimeMs;
     }
 
-    if (should_generate) {
+    if (should_generate || req.query.force) {
+        best_hash = get_best_network_hash();
         var networks = await db.collection("networks")
-            .find({ game_count: { $gt: 0 } })
+            .find({ $or: [{ game_count: { $gt: 0 } }, { hash: best_hash }] })
             .sort({ _id: 1 })
             .toArray();
 
