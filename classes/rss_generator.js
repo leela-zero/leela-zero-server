@@ -3,21 +3,22 @@ const moment = require('moment');
 
 class rss_generator {
 
-    generate(networks) {
-        
+    generate(networks, http_host) {
+
         var feed = new rss({
             title: 'Leela Zero Best Networks',
-            feed_url: 'http://zero.sjeng.org/feed/rss',
-            site_url: 'http://zero.sjeng.org',
+            feed_url: `${http_host}/rss`,
+            site_url: http_host,
         });
 
-        for(let network of networks) {
+        for (let n in networks) {
+            var network = networks[n];
             var date = new moment(network._id.getTimestamp());
 
             feed.item({
-                title:  network.hash,
+                title: `LZ#${n} ${network.hash.slice(0, 6)}`,
                 description: `${network.filters} x ${network.blocks} `,
-                url: `http://zero.sjeng.org/networks/${network.hash}.gz`, 
+                url: `${http_host}/networks/${network.hash}`,
                 date: date.utc()
             });
         }

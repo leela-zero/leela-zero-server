@@ -986,14 +986,43 @@ app.post('/submit', (req, res) => {
     }
 });
 
+app.get('/networks/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
+
+    var network = await db.collection("networks")
+        .findOne({ hash: req.params.hash });
+    var networkID = await db.collection("networks")
+        .count({ _id: { $lt: network._id } });
+
+    network.networkID = networkID;
+    network.training_count = abbreviateNumber(network.training_count, 4)
+    network.training_steps = abbreviateNumber(network.training_steps, 3)
+
+    var avatar_folder = path.join(__dirname, 'static', 'networks');
+    console.log(avatar_folder);
+    if (!await fs.pathExists(avatar_path)) {
+        await fs.mkdirs(avatar_folder);
+    }
+
+    var avatar_path = path.join(avatar_folder, network.hash + '.png');
+
+    if (!await fs.pathExists(avatar_path)) {
+        var retricon = require('retricon-without-canvas');
+        await retricon(network.hash, { pixelSize: 60, }).pngStream().pipe(fs.createWriteStream(avatar_path));
+    }
+
+    res.render('networks/profile', { network, http_host : req.protocol + '://' + req.get('host') });
+
+}));
+
 app.get('/rss', asyncMiddleware(async (req, res, next) => {
     var rss_path = path.join(__dirname, 'static', 'rss.xml')
-      , best_network_path = path.join(__dirname, 'network', 'best-network.gz')
-      , should_generate = true;
-    
-    var rss_exists = await fs.pathExists(rss_path)
-        
-    if(rss_exists) {
+        , best_network_path = path.join(__dirname, 'network', 'best-network.gz')
+        , should_generate = true
+        , http_host = req.protocol + '://' + req.get('host');
+
+    var rss_exists = await fs.pathExists(rss_path);
+
+    if (rss_exists) {
         best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
         rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
 
@@ -1001,13 +1030,14 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
         should_generate = best_network_mtimeMs > rss_mtimeMs;
     }
 
-    if(should_generate) {
+    if (should_generate || req.query.force) {
+        best_hash = get_best_network_hash();
         var networks = await db.collection("networks")
-            .find({ game_count: { $gt: 0 } })
-            .sort({ _id : -1 })
+            .find({ $or: [{ game_count: { $gt: 0 } }, { hash: best_hash }] })
+            .sort({ _id: 1 })
             .toArray();
-        
-        var rss_xml = new rss_generator().generate(networks);
+
+        var rss_xml = new rss_generator().generate(networks, http_host);
 
         await fs.writeFile(rss_path, rss_xml);
     }
