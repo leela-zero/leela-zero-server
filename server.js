@@ -79,6 +79,10 @@ function abbreviateNumber(number, length) {
     return scaled.toPrecision(length) + prefix;
 }
 
+Number.prototype.abbr = function(length) {
+    return abbreviateNumber(this, length);
+};
+
 function CalculateEloFromPercent(percentage) {
     return -400 * Math.log(1 / percentage - 1) / Math.LN10;
 }
@@ -334,7 +338,7 @@ app.use('/view/player', express.static('static/eidogo-player-1.2/player'));
 app.use('/viewmatch/player', express.static('static/eidogo-player-1.2/player'));
 app.use('/view/wgo', express.static('static/wgo'));
 app.use('/viewmatch/wgo', express.static('static/wgo'));
-app.use('/static', express.static('static'));
+app.use('/static', express.static('static', { maxage: '365d', etag: true }));
 
 // This is async but we don't need it to start the server. I'm calling it during startup so it'll get the value cached right away
 // instead of when the first /best-network request comes in, in case a lot of those requests come in at once when server
@@ -986,32 +990,69 @@ app.post('/submit', (req, res) => {
     }
 });
 
-app.get('/networks/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
-
+app.get('/network-profiles/:hash(\\w+)/:tab(matches|self-play)?', asyncMiddleware(async (req, res, next) => {
     var network = await db.collection("networks")
         .findOne({ hash: req.params.hash });
-    var networkID = await db.collection("networks")
-        .count({ _id: { $lt: network._id } });
+
+    if (!network) {
+        return res.status(404).render("404");
+    }
+
+    var networkID = null;
+
+    // If it's one of the best network, then find it's #
+    if (network.game_count > 0 || network.hash == get_best_network_hash()) {
+        networkID = await db.collection("networks")
+            .count({
+                $and: [
+                    { _id: { $lt: network._id } },
+                    { game_count: { $gt: 0 } }
+                ]
+            });
+    }
 
     network.networkID = networkID;
-    network.training_count = abbreviateNumber(network.training_count, 4)
-    network.training_steps = abbreviateNumber(network.training_steps, 3)
 
-    var avatar_folder = path.join(__dirname, 'static', 'networks');
-    console.log(avatar_folder);
-    if (!await fs.pathExists(avatar_path)) {
-        await fs.mkdirs(avatar_folder);
+    await new Promise(async (resolve, reject) => {
+        var avatar_folder = path.join(__dirname, 'static', 'networks');
+
+        if (!await fs.pathExists(avatar_path)) {
+            await fs.mkdirs(avatar_folder);
+        }
+        
+        var avatar_path = path.join(avatar_folder, network.hash + '.png');
+
+        if (!await fs.pathExists(avatar_path)) {
+            var retricon = require('retricon-without-canvas');
+            retricon(network.hash, { pixelSize: 70, imagePadding: 35, bgColor: '#F0F0F0' })
+                .pngStream()
+                .pipe(fs.createWriteStream(avatar_path))
+                .on('finish', () => {
+                    resolve();
+                });
+        } else {
+            resolve();
+        }
+    });
+    var pug_data = {
+        network,
+        http_host: req.protocol + '://' + req.get('host')
+    };
+
+    if(!req.params.tab || req.params.tab == "matches") {
+        pug_data.matches = await db.collection("matches")
+            .aggregate([ 
+                { "$match": { $or : [{ network1 : network.hash }, { network2 : network.hash }] } },
+                { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "network2" } }, { "$unwind": "$network2" }, 
+                { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "network1" } }, { "$unwind": "$network1" }, 
+                { "$sort": { _id: -1 } }, 
+                { "$limit": 100 } 
+            ]).toArray();
+        console.log(pug_data.matches);
+    } else {
+        pug_data.self_play = [];
     }
-
-    var avatar_path = path.join(avatar_folder, network.hash + '.png');
-
-    if (!await fs.pathExists(avatar_path)) {
-        var retricon = require('retricon-without-canvas');
-        await retricon(network.hash, { pixelSize: 60, }).pngStream().pipe(fs.createWriteStream(avatar_path));
-    }
-
-    res.render('networks/profile', { network, http_host : req.protocol + '://' + req.get('host') });
-
+    res.render('networks/profile', pug_data);
 }));
 
 app.get('/rss', asyncMiddleware(async (req, res, next) => {
@@ -1649,3 +1690,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     res.json(json);
 }));
 
+// Catch all, return 404 page not found
+app.get('*', asyncMiddleware(async (req, res, next) => {
+    return res.status(404).render("404");
+}));

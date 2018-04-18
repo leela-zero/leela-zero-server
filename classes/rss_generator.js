@@ -18,7 +18,7 @@ class rss_generator {
             feed.item({
                 title: `LZ#${n} ${network.hash.slice(0, 6)}`,
                 description: `${network.filters} x ${network.blocks} `,
-                url: `${http_host}/networks/${network.hash}`,
+                url: `${http_host}/network-profiles/${network.hash}`,
                 date: date.utc()
             });
         }

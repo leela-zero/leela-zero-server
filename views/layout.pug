@@ -9,20 +9,29 @@ html(lang="en")
 
         block meta
     body
-        nav(class="navbar navbar-expand-lg navbar-dark bg-dark")
-            div(class="container")
-                a(class="navbar-brand" href="/") Leela Zero
-                button(class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation")
-                    span(class="navbar-toggler-icon")
-                div(class="collapse navbar-collapse" id="navbarSupportedContent")
-                    ul(class="navbar-nav mr-auto")
-                        li(class="nav-item")
-                            a(class="nav-link" href="/") Home
-                        li(class="nav-item active")
-                            a(class="nav-link" href="#") Networks 
-                                span(class="sr-only") (current)
-
-        main(class="container")
+        nav.navbar.navbar-expand-lg.navbar-dark.bg-dark
+            div.container
+                a.navbar-brand(href="/") Leela Zero
+                button.navbar-toggler(type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation")
+                    span.navbar-toggler-icon
+                div#main-menu.collapse.navbar-collapse
+                    ul.navbar-nav.mr-auto
+                        li.nav-item
+                            a.nav-link(href="/") Home
+                        li.nav-item.active
+                            a.nav-link(href="#") Networks 
+                                span.sr-only (current)
+                    ul.navbar-nav
+                        li.nav-item
+                            a.nav-link(href="https://github.com/gcp/leela-zero") GitHub
+                        li.nav-item
+                            a.nav-link(href="https://github.com/gcp/leela-zero/releases") Releases
+                        li.nav-item
+                            a.nav-link(href="https://github.com/gcp/leela-zero/blob/master/FAQ.md") FAQ
+                        li.nav-item
+                            a.nav-link(href="https://github.com/gcp/leela-zero/blob/master/README.md") ReadMe
+                                
+        main.container
             block content
 
         script(src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous")
