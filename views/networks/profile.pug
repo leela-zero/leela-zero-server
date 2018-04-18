@@ -1,49 +1,90 @@
 extends ../layout.pug
 
 block meta
-    - var title = `LZ#${network.networkID} ${network.hash.slice(0,6)}`
+    - var title = network.hash.slice(0,6)
     - var identicon = `${http_host}/static/networks/${network.hash}.png`
     meta(property="og:title" content=`${title}`)
     meta(property="og:type" content="website")
-    meta(property="og:url" content=`${http_host}/networks/${network.hash}`)
+    meta(property="og:url" content=`${http_host}/network-profiles/${network.hash}`)
     meta(property="og:image" content=`${identicon}`)
-    script(src="/static/timeago.js")
+
 block script
+    script(src="/static/timeago.js")
     script.
-        var since = jQuery(".time-ago");
-        since.text(deltaToAgo(Date.now() - +since.text()));
+        jQuery(".time-ago").each((_, elm) => {
+            var epoch = +elm.innerText, delta = Date.now() - epoch;
+
+            if(delta > 60 * 60 * 24 * 1000) {
+                let date = new Date(epoch);
+                elm.innerText = date.toLocaleDateString() + " " + date.toLocaleTimeString();
+            } else {
+                elm.innerText = deltaToAgo(delta);
+            }
+        })
+        jQuery(".user-time-zone").text(Intl.DateTimeFormat().resolvedOptions().timeZone)
+        jQuery('[data-toggle="tooltip"]').tooltip()
 
 block content
-    div.row.mt-4
-        div.col-md-3
-            div.card.border-0
-                img.card-img-top(src=`${identicon}` alt=`${title}`)
-                div.card-header
-                    h2.text-center #{title}
+    .row.mt-4
+        .col-md-3
+            .card.border-0
+                img.card-img-top.rounded(src=`${identicon}` alt=`LZ ${title}`)
+                .card-body
+                    h2.text-center
+                        if(network.networkID != null)
+                            span.badge.badge-success LZ##{network.networkID}
+                        |
+                        |
+                        b #{title} 
                     a.btn.btn-light.btn-block.border-dark(href=`${http_host}/networks/${network.hash}.gz`) Download
                 ul.list-group.list-group-flush
-                    li.list-group-item Since
-                        span.float-right.time-ago #{parseInt(network._id.toString().slice(0, 8), 16) * 1000}
-                            
                     li.list-group-item Architecture 
                         span.float-right #{network.filters}x#{network.blocks}
                     li.list-group-item Training 
-                        span.float-right #{network.training_count}  #{network.training_steps ? "+" + network.training_steps : ""}
+                        span.float-right #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
+                    li.list-group-item Since
+                        span.float-right.time-ago #{network._id.getTimestamp().getTime()}
                     li.list-group-item #{network.description}
-
-        div(class="col-md-9")
-            ul(class="nav nav-tabs" role="tablist")
-                li(class="nav-item")
-                    a(class="nav-link active" href="#match-games" data-toggle="tab") Match Games
-                li(class="nav-item")
-                    a(class="nav-link" href="#self-play-games" data-toggle="tab") Self-Play Games 
-                        <span class="badge badge-secondary">#{network.game_count}</span>
-                
-            div(class="tab-content pt-4")
-                div(class="tab-pane fade show active" id="match-games" role="tabpanel")
-                    div(class="jumbotron")
-                        h3 Match games coming sooooon ...
-                div(class="tab-pane fade" id="self-play-games" role="tabpanel") 
-                    div(class="jumbotron")
-                        h3 Self-play games coming sooooon too...
-            
+        
+        .col-md-9
+            ul.nav.nav-tabs
+                li.nav-item
+                    a.nav-link(class={ active : matches } href=`/network-profiles/${network.hash}/matches`) Match Games
+                //-li.nav-item
+                    a.nav-link(class={ active : self_play } href=`/network-profiles/${network.hash}/self-play`) Self-Play Games 
+            .tab-content.pt-4
+                .table-responsive
+                    table.table.table-bordered.table-hover
+                        caption.
+                             (*) Times are displayed in #[span.user-time-zone] time zone
+                        
+                        //- Start Match Table
+                        - if(matches)
+                            thead.thead-light: tr
+                                th Uploaded(*)
+                                th Network Hashes
+                                th Result
+                                th Games
+                                th SPRT
+                            tbody
+                            - for(let match of matches) 
+                                tr
+                                    td.time-ago #{match._id.getTimestamp().getTime()}
+                                    td 
+                                        - var title1 = `${match.network1.training_count.abbr(4)}${match.network1.training_steps ? '+' + match.network1.training_steps.abbr(3):''}`
+                                        - var title2 = `${match.network2.training_count.abbr(4)}${match.network2.training_steps ? '+' + match.network2.training_steps.abbr(3):''}`
+                                        a(href=`/networks/${match.network1.hash}.gz` data-toggle="tooltip" title=`${title1}`) #{match.network1.hash.slice(0,6)} 
+                                        a(href=`/match-games/${match._id}` data-toggle="tooltip" title=`${match.is_test ? "Test" : "Regular"} Match`) VS 
+                                        a(href=`/networks/${match.network2.hash}.gz` data-toggle="tooltip" title=`${title2}`) #{match.network2.hash.slice(0,6)} 
+                                    - var winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
+                                    td #{match.network1_wins} : #{match.network1_losses} #[span(class={'font-weight-bold': winrate > 55}) (#{winrate.toFixed(2)}%)]
+                                    td #{match.network1_wins + match.network1_losses} / #{match.number_to_play}
+                                    td SPRT
+                        
+                        //- Start Self-Play Table
+                        //-if(self_play)
+                            thead.thead-light
+                                tr
+                                    th Uploaded(*)
+                                    th sgf
+                            tbody
