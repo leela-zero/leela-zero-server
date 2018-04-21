@@ -679,7 +679,7 @@ app.post('/submit-network', asyncMiddleware((req, res, next) => {
     });
 }));
 
-app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
+app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     if (!req.files) {
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No files were uploaded.');
         return res.status(400).send('No files were uploaded.');
@@ -731,166 +731,127 @@ app.post('/submit-match',  asyncMiddleware( async (req, res, next) => {
     }
 
     var best_network_hash = await get_best_network_hash();
-    var new_best_network_flag = false;
-    var sgfbuffer = Buffer.from(req.files.sgf.data);
 
-    zlib.unzip(sgfbuffer, (err, sgfbuffer) => {
-      if (err) {
-        console.error("Error decompressing sgffile in /submit-match: " + err);
-      } else {
-        var sgffile = sgfbuffer.toString();
-        var sgfhash = checksum(sgffile, 'sha256');
-
-        db.collection("match_games").updateOne(
-            { sgfhash: sgfhash },
-            { $set: { ip: req.ip, winnerhash: req.body.winnerhash, loserhash: req.body.loserhash, sgf: sgffile,
-                      options_hash: req.body.options_hash,
-                      clientversion: Number(req.body.clientversion), winnercolor: req.body.winnercolor,
-                      movescount: (req.body.movescount ? Number(req.body.movescount) : null),
-                      score: req.body.score,
-                      random_seed: req.body.random_seed
-                    }},
-            { upsert: true },
-            (err, dbres) => {
-                // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
-                //
-                if (err) {
-                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " ERROR: " + err);
-                    res.send("Match data " + sgfhash + " stored in database\n");
-                } else {
-                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
-                    res.send("Match data " + sgfhash + " stored in database\n");
-                }
-            }
-        );
-
-        // TODO: Check dbres above to see if it was a duplicate, if possible? Then don't update stats below if so.
-        //
-        db.collection("matches").updateOne(
-            { network1: req.body.winnerhash, network2: req.body.loserhash, options_hash: req.body.options_hash },
-            { $inc: { network1_wins: 1, game_count: 1 } },
-            { },
-            (err, dbres) => {
-                if (err) {
-                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " INCREMENT ERROR: " + err);
-                } else {
-                    pending_matches
-                      .filter(e => ((e.network1 === req.body.winnerhash && e.network2 === req.body.loserhash) ||
-                                    (e.network2 === req.body.winnerhash && e.network1 === req.body.loserhash)) &&
-                                     e.options_hash === req.body.options_hash)
-                      .forEach(match => {
-                        var index = match.requests.findIndex(e => e.seed === seed_from_mongolong(req.body.random_seed));
-                        if (index !== -1) {
-                          match.requests.splice(index, 1); // remove the match from the requests array.
-                        }
-                        match.game_count++;
-                      })
-                    if (dbres.modifiedCount == 0) {
-                        db.collection("matches").updateOne(
-                            { network1: req.body.loserhash, network2: req.body.winnerhash, options_hash: req.body.options_hash },
-                            { $inc: { network1_losses: 1, game_count: 1 } },
-                            { },
-                            (err, dbres) => {
-                                if (err) {
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash + " INCREMENT ERROR: " + err);
-                                } else {
-                                    if (dbres.modifiedCount == 0) {
-                                        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " ERROR: No match found to update from " + JSON.stringify(req.body));
-                                    } else {
-                                        // network1 was the loser
-                                        if (pending_matches.length &&
-                                            pending_matches[pending_matches.length - 1].network1 == req.body.loserhash &&
-                                            pending_matches[pending_matches.length - 1].network2 == req.body.winnerhash &&
-                                            pending_matches[pending_matches.length - 1].options_hash == req.body.options_hash)
-                                        {
-                                            pending_matches[pending_matches.length - 1].network1_losses++;
-
-                                            // Adding a loss might make us fail SPRT
-                                            //
-                                            if (SPRT(pending_matches[pending_matches.length - 1].network1_wins,
-                                                    pending_matches[pending_matches.length - 1].network1_losses) === false)
-                                            {
-                                                console.log("SPRT: Early fail pop: " + JSON.stringify(pending_matches[pending_matches.length - 1]));
-                                                pending_matches.pop();
-                                                console.log("SPRT: Early fail post-pop: " + JSON.stringify(pending_matches));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        );
-                    } else {
-                        // network1 was the winner
-                        if (pending_matches.length &&
-                            pending_matches[pending_matches.length - 1].network1 == req.body.winnerhash &&
-                            pending_matches[pending_matches.length - 1].network2 == req.body.loserhash &&
-                            pending_matches[pending_matches.length - 1].options_hash == req.body.options_hash)
-                        {
-                            pending_matches[pending_matches.length - 1].network1_wins++;
-
-                            // Adding a win might make us pass SPRT.
-                            //
-                            //if (pending_matches.length > 1 &&
-                            if (SPRT(pending_matches[pending_matches.length - 1].network1_wins,
-                                     pending_matches[pending_matches.length - 1].network1_losses) === true)
-                            {
-                                // Check > 1 since we'll run to 400 even on a SPRT pass, but will do it at end.
-                                //
-                                if (pending_matches.length > 1)
-                                {
-                                    console.log("SPRT: Early pass unshift: "
-                                        + JSON.stringify(pending_matches[pending_matches.length - 1]));
-                                    pending_matches.unshift( pending_matches.pop() );
-                                }
-
-                                // Now, if we are playing vs best_network_hash and we have SPRT pass, promote new network.
-                                //
-                                // Actually if we do async functions in here, we might pop wrong stuff off the queue. Better to just check
-                                // at the end and not try to reduce database lookups?
-                                //
-                                // Ok new problem, during the async stuff later more requests come in and so network2=null matches
-                                // don't face right opponent. Lets do a sync copy if this was in fact a new best network
-                                // situation for the current active match in queue.
-                                //
-                                // added !is_test flag
-                                //
-                                if (req.body.loserhash == best_network_hash && !pending_matches[pending_matches.length - 1].is_test) {
-                                    new_best_network_flag = true;
-
-                                    fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
-                                    console.log("New best network copied from (fast check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
-                                }
-                            }
-                        } else {
-                            // network1 was the winner but it was no longer at the end of the pending_match queue.
-                            //
-                        }
-                    }
-                }
-            }
-        );
-      }
+    // verify match exists in database
+    var match = await db.collection("matches").findOne({
+        $or: [
+            { network1: req.body.winnerhash, network2: req.body.loserhash },
+            { network2: req.body.winnerhash, network1: req.body.loserhash }
+        ],
+        options_hash: req.body.options_hash,
     });
 
+    // Match not found, abort!!
+    if (!match) {
+        console.log(`/submit-match for ${req.body.winnerhash.slice(0, 6)} and ${req.body.loserhash.slice(0, 6)} not found`)
+        return res.send("Match not found");
+    }
+
+    // calculate sgfhash 
+    await new Promise((resolve, reject) => {
+        zlib.unzip(req.files.sgf.data, async (err, sgfbuffer) => {
+            if (err) {
+                console.error("Error decompressing sgffile in /submit-match: " + err);
+                return reject(err);
+            }
+
+            var sgfhash = checksum(sgfbuffer, 'sha256');
+
+            // upload match game to database
+            var dbres = await db.collection("match_games").updateOne(
+                { sgfhash: sgfhash },
+                {
+                    $set: {
+                        ip: req.ip, winnerhash: req.body.winnerhash, loserhash: req.body.loserhash, sgf: sgfbuffer.toString(),
+                        options_hash: req.body.options_hash,
+                        clientversion: Number(req.body.clientversion), winnercolor: req.body.winnercolor,
+                        movescount: (req.body.movescount ? Number(req.body.movescount) : null),
+                        score: req.body.score,
+                        random_seed: req.body.random_seed
+                    }
+                },
+                { upsert: true }
+            );
+
+            // Not inserted, we got duplicate sgfhash, abort!
+            if (!dbres.upsertedId) {
+                return reject('Upload match with duplicate sgf');
+            }
+
+            console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
+            res.send("Match data " + sgfhash + " stored in database\n");
+            resolve();
+        });
+    });
+
+    // update match result 
+    if (match.network1 == req.body.winnerhash)
+        match.network1_wins++;
+    else
+        match.network1_losses++;
+
+    // save to database
+    await db.collection('matches').updateOne(
+        { _id: match._id },
+        { $set: match }
+    );
+
+    // get latest SPRT result
+    const sprt_result = SPRT(match.network1_wins, match.network1_losses);
+    var pending_match_index = pending_matches.findIndex(m => m._id == match._id);
+
+    // match is found in pending_matches
+    if (pending_match_index >= 0) {
+        if (sprt_result === false) {
+            // remove from pending matches
+            console.log("SPRT: Early fail pop: " + JSON.stringify(pending_matches.splice(pending_match_index, 1)));
+            console.log("SPRT: Early fail post-pop: " + JSON.stringify(pending_matches));
+        } else {
+            var m = pending_matches[pending_match_index];
+
+            // remove the match from the requests array.
+            var index = m.requests.findIndex(e => e.seed === seed_from_mongolong(req.body.random_seed));
+            if (index !== -1) {
+                m.requests.splice(index, 1);
+            }
+
+            // update stats 
+            m.game_count++;
+            if (m.network1 == req.body.winnerhash) {
+                m.network1_wins++;
+            } else {
+                m.network1_losses++;
+            }
+
+            // Check > 1 since we'll run to 400 even on a SPRT pass, but will do it at end.
+            //
+            if (sprt_result === true && pending_matches.length > 1) {
+                console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
+                pending_matches.unshift(pending_matches.splice(pending_match_index, 1));
+            }
+        }
+    }
+
+    // Lastly, promotion check!!
     // Check if network2 == best_network_hash and if so, check SPRT. If SPRT pass, promote network1 as new best-network.
     // This is for the case where a match comes in to promote us, after it is no longer the active match in queue.
     //
-    if (!new_best_network_flag && req.body.loserhash == best_network_hash) {
-        db.collection("matches").findOne({ network1: req.body.winnerhash, network2: best_network_hash, options_hash: req.body.options_hash})
-            .then((match) => {
-            // added !is_test flag
-            //
-            if (match && !match.is_test && ( (SPRT(match.network1_wins, match.network1_losses) === true) || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55) ) ) {
-                fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
-                console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
-            }
-        }).catch( err => {
-            console.log("ERROR: " + req.body.winnerhash + " " + best_network_hash + " " + req.body.options_hash);
-            console.log("ERROR: Couldn't check for new best network: " + err);
-        });
+    if (
+        // Best network has lost
+        req.body.loserhash == best_network_hash
+        // This is not a test match
+        && !match.is_test
+        // SPRT passed OR it has reach 55% after `number_to_play` games
+        && (
+            sprt_result === true
+            || (match.game_count >= match.number_to_play && match.network1_wins / match.game_count >= 0.55)
+        )) {
+
+        fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
+        console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
     }
 
-    cachematches.clear( () => { console.log("Cleared match cache."); } );
+    cachematches.clear(() => { console.log("Cleared match cache."); });
 }));
 
 // curl -F 'networkhash=abc123' -F 'file=@zero.prototxt' http://localhost:8080/submit
