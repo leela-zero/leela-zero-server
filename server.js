@@ -844,10 +844,10 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         req.body.loserhash == best_network_hash
         // This is not a test match
         && !match.is_test
-        // SPRT passed OR it has reach 55% after `number_to_play` games
+        // SPRT passed OR it has reach 55% after 400 games (stick to the magic number)
         && (
             sprt_result === true
-            || (match.game_count >= match.number_to_play && match.network1_wins / match.game_count >= 0.55)
+            || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55)
         )) {
 
         fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
