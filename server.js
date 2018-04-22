@@ -730,23 +730,6 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         req.body.random_seed = Long.fromString(req.body.random_seed, 10);
     }
 
-    var best_network_hash = await get_best_network_hash();
-
-    // verify match exists in database
-    var match = await db.collection("matches").findOne({
-        $or: [
-            { network1: req.body.winnerhash, network2: req.body.loserhash },
-            { network2: req.body.winnerhash, network1: req.body.loserhash }
-        ],
-        options_hash: req.body.options_hash,
-    });
-
-    // Match not found, abort!!
-    if (!match) {
-        console.log(`/submit-match for ${req.body.winnerhash.slice(0, 6)} and ${req.body.loserhash.slice(0, 6)} not found`)
-        return res.send("Match not found");
-    }
-
     // calculate sgfhash 
     await new Promise((resolve, reject) => {
         zlib.unzip(req.files.sgf.data, async (err, sgfbuffer) => {
@@ -784,16 +767,35 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         });
     });
 
-    // update match result 
-    if (match.network1 == req.body.winnerhash)
-        match.network1_wins++;
-    else
-        match.network1_losses++;
+     // verify match exists in database
+    var match = await db.collection("matches").findOne(
+        {
+            $or: [
+                { network1: req.body.winnerhash, network2: req.body.loserhash },
+                { network2: req.body.winnerhash, network1: req.body.loserhash }
+            ],
+            options_hash: req.body.options_hash,
+        }
+    );
 
-    // save to database
-    await db.collection('matches').updateOne(
-        { _id: match._id },
-        { $set: match }
+    // Match not found, abort!!
+    if (!match) {
+        console.log(`/submit-match for ${req.body.winnerhash.slice(0, 6)} and ${req.body.loserhash.slice(0, 6)} not found`)
+        return res.status(400).send("Match not found");
+    }
+
+    // prepare match result
+    var $inc = { game_count: 1 };
+    if (match.network1 == req.body.winnerhash)
+        $inc.network1_wins = 1;
+    else
+        $inc.network1_losses = 1;
+    
+    // save to database using $inc and get updated document
+    match = await db.collection("matches").findOneAndUpdate(
+        { _id : match._id },
+        { $inc: $inc },
+        { returnOriginal: false }  // return modified document 
     );
 
     // get latest SPRT result
@@ -836,6 +838,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     // Check if network2 == best_network_hash and if so, check SPRT. If SPRT pass, promote network1 as new best-network.
     // This is for the case where a match comes in to promote us, after it is no longer the active match in queue.
     //
+    var best_network_hash = await get_best_network_hash();
     if (
         // Best network has lost
         req.body.loserhash == best_network_hash
