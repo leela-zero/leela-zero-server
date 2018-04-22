@@ -1048,7 +1048,6 @@ app.get('/network-profiles/:hash(\\w+)/:tab(matches|self-play)?', asyncMiddlewar
                 { "$sort": { _id: -1 } }, 
                 { "$limit": 100 } 
             ]).toArray();
-        console.log(pug_data.matches);
     } else {
         pug_data.self_play = [];
     }
