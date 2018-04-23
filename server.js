@@ -185,7 +185,6 @@ async function get_pending_matches () {
                 return reject(err);
             }
         });
-
         resolve();
     });
 };
@@ -730,6 +729,23 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         req.body.random_seed = Long.fromString(req.body.random_seed, 10);
     }
 
+    // verify match exists in database
+    var match = await db.collection("matches").findOne(
+        {
+            $or: [
+                { network1: req.body.winnerhash, network2: req.body.loserhash },
+                { network2: req.body.winnerhash, network1: req.body.loserhash }
+            ],
+            options_hash: req.body.options_hash,
+        }
+    );
+
+    // Match not found, abort!!
+    if (!match) {
+        console.log(`/submit-match for ${req.body.winnerhash.slice(0, 6)} and ${req.body.loserhash.slice(0, 6)} not found`)
+        return res.status(400).send("Match not found");
+    }
+
     // calculate sgfhash 
     await new Promise((resolve, reject) => {
         zlib.unzip(req.files.sgf.data, async (err, sgfbuffer) => {
@@ -767,40 +783,23 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         });
     });
 
-     // verify match exists in database
-    var match = await db.collection("matches").findOne(
-        {
-            $or: [
-                { network1: req.body.winnerhash, network2: req.body.loserhash },
-                { network2: req.body.winnerhash, network1: req.body.loserhash }
-            ],
-            options_hash: req.body.options_hash,
-        }
-    );
-
-    // Match not found, abort!!
-    if (!match) {
-        console.log(`/submit-match for ${req.body.winnerhash.slice(0, 6)} and ${req.body.loserhash.slice(0, 6)} not found`)
-        return res.status(400).send("Match not found");
-    }
-
-    // prepare match result
+    // prepare $inc 
     var $inc = { game_count: 1 };
     if (match.network1 == req.body.winnerhash)
         $inc.network1_wins = 1;
     else
         $inc.network1_losses = 1;
-    
-    // save to database using $inc and get updated document
-    match = await db.collection("matches").findOneAndUpdate(
-        { _id : match._id },
+
+    // save to database using $inc and get modified document
+    match = (await db.collection("matches").findOneAndUpdate(
+        { _id: match._id },
         { $inc: $inc },
         { returnOriginal: false }  // return modified document 
-    );
+    )).value;
 
     // get latest SPRT result
     const sprt_result = SPRT(match.network1_wins, match.network1_losses);
-    var pending_match_index = pending_matches.findIndex(m => m._id == match._id);
+    var pending_match_index = pending_matches.findIndex(m => m._id.equals(match._id));
 
     // match is found in pending_matches
     if (pending_match_index >= 0) {
@@ -829,7 +828,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
             //
             if (sprt_result === true && pending_matches.length > 1) {
                 console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
-                pending_matches.unshift(pending_matches.splice(pending_match_index, 1));
+                console.log("SPRT: Early pass post-unshift: " + JSON.stringify(pending_matches));
             }
         }
     }
