@@ -82,35 +82,41 @@ function compute_task_verification (seed) {
 }
 
 /**
- * Modify a task to include secret-derived verification
+ * Modify a match task to include secret-derived verification
  *
  * @param task {object} The task to modify with some required properties:
+ *          black_hash {string} Network for white included in verification
  *          random_seed {string} Seed for the task reused for verification
+ *          white_hash {string} Network for black included in verification
  *          options_hash {string} Existing hash to append verification
  */
-function add_task_verification (task) {
+function add_match_verification (task) {
     // Append the verification to options_hash as the client responds with it
-    task.options_hash += compute_task_verification(task.random_seed);
+    task.options_hash += compute_task_verification(task.random_seed + task.white_hash + task.black_hash);
 }
 
 /**
- * Check and clean up the verification from submitted data
+ * Check and clean up the verification from submitted match data
  *
  * @param data {object} The submission form data with required properties:
+ *          loserhash {string} Network for loser to recompute the verification
  *          random_seed {string} Seed to recompute the verification
+ *          winnerhash {string} Network for winner to recompute the verification
  *          options_hash {string} Hash to extract verification
  *          verification {string} Will be updated with the verification
  * @returns {bool} True if the verification code is consistent with the data
  */
-function check_task_verification (data) {
-    const expected = compute_task_verification(data.random_seed);
+function check_match_verification (data) {
+    // Allow for 2 expected verification codes for swapped networks
+    const expected = compute_task_verification(data.random_seed + data.winnerhash + data.loserhash);
+    const expected2 = compute_task_verification(data.random_seed + data.loserhash + data.winnerhash);
     const provided = data.options_hash.slice(-expected.length);
 
     // Clean up the overloaded options_hash by removing the verification
     data.options_hash = data.options_hash.slice(0, -expected.length);
     data.verification = provided;
 
-    return provided === expected;
+    return provided === expected || provided === expected2;
 }
 
 function get_options_hash (options) {
@@ -631,7 +637,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         req.body.random_seed = Long.fromString(req.body.random_seed, 10);
     }
 
-    if (!check_task_verification(req.body)) {
+    if (!check_match_verification(req.body)) {
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: Verification failed.');
         return res.status(400).send('Verification failed.');
     }
@@ -1314,7 +1320,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             task.black_hash = match.network1;
         }
 
-        add_task_verification(task);
+        add_match_verification(task);
         res.send(JSON.stringify(task));
 
         match.requests.push({timestamp: now, seed: random_seed});
