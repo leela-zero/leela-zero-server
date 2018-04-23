@@ -747,41 +747,44 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     }
 
     // calculate sgfhash 
-    await new Promise((resolve, reject) => {
-        zlib.unzip(req.files.sgf.data, async (err, sgfbuffer) => {
+    try {
+        const sgfbuffer = await new Promise((resolve, reject) => zlib.unzip(req.files.sgf.data, (err, res) => {
             if (err) {
-                console.error("Error decompressing sgffile in /submit-match: " + err);
-                return reject(err);
+                reject(err);
+            } else {
+                resolve(res);
             }
+        }));
+        const sgfhash = checksum(sgfbuffer, 'sha256');
 
-            var sgfhash = checksum(sgfbuffer, 'sha256');
+        // upload match game to database
+        var dbres = await db.collection("match_games").updateOne(
+            { sgfhash: sgfhash },
+            {
+                $set: {
+                    ip: req.ip, winnerhash: req.body.winnerhash, loserhash: req.body.loserhash, sgf: sgfbuffer.toString(),
+                    options_hash: req.body.options_hash,
+                    clientversion: Number(req.body.clientversion), winnercolor: req.body.winnercolor,
+                    movescount: (req.body.movescount ? Number(req.body.movescount) : null),
+                    score: req.body.score,
+                    random_seed: req.body.random_seed
+                }
+            },
+            { upsert: true }
+        );
 
-            // upload match game to database
-            var dbres = await db.collection("match_games").updateOne(
-                { sgfhash: sgfhash },
-                {
-                    $set: {
-                        ip: req.ip, winnerhash: req.body.winnerhash, loserhash: req.body.loserhash, sgf: sgfbuffer.toString(),
-                        options_hash: req.body.options_hash,
-                        clientversion: Number(req.body.clientversion), winnercolor: req.body.winnercolor,
-                        movescount: (req.body.movescount ? Number(req.body.movescount) : null),
-                        score: req.body.score,
-                        random_seed: req.body.random_seed
-                    }
-                },
-                { upsert: true }
-            );
+        // Not inserted, we got duplicate sgfhash, abort!
+        if (!dbres.upsertedId) {
+            console.error("Upload match with duplicate sgf");
+            return res.status(400).send("Upload match with duplicate sgf");
+        }
 
-            // Not inserted, we got duplicate sgfhash, abort!
-            if (!dbres.upsertedId) {
-                return reject('Upload match with duplicate sgf');
-            }
-
-            console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
-            res.send("Match data " + sgfhash + " stored in database\n");
-            resolve();
-        });
-    });
+        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
+        res.send("Match data " + sgfhash + " stored in database\n");
+    } catch (err) {
+        console.error("Error processing sgffile in /submit-match: " + err);
+        return res.status(400).send("Error with sgf");
+    }
 
     // prepare $inc 
     var $inc = { game_count: 1 };
@@ -803,13 +806,14 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
 
     // match is found in pending_matches
     if (pending_match_index >= 0) {
+        var m = pending_matches[pending_match_index];
+
         if (sprt_result === false) {
             // remove from pending matches
-            console.log("SPRT: Early fail pop: " + JSON.stringify(pending_matches.splice(pending_match_index, 1)));
+            console.log("SPRT: Early fail pop: " + JSON.stringify(m));
+            pending_matches.splice(pending_match_index, 1)
             console.log("SPRT: Early fail post-pop: " + JSON.stringify(pending_matches));
         } else {
-            var m = pending_matches[pending_match_index];
-
             // remove the match from the requests array.
             var index = m.requests.findIndex(e => e.seed === seed_from_mongolong(req.body.random_seed));
             if (index !== -1) {
@@ -828,6 +832,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
             //
             if (sprt_result === true && pending_matches.length > 1) {
                 console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
+                pending_matches.unshift(pending_matches.splice(pending_match_index, 1));
                 console.log("SPRT: Early pass post-unshift: " + JSON.stringify(pending_matches));
             }
         }
