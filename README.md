@@ -23,6 +23,7 @@ Your project folder should look like this
   - static/
   - views/
   - auth_key                   (dummy file)
+  - task_secret                (dummy file)
   - ...                        (and other project files)
   - server.js
   

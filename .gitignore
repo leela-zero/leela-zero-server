@@ -1,5 +1,6 @@
 node_modules
 auth_key
+task_secret
 network
 static/rss.xml
 static/networks/

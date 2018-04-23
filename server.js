@@ -36,6 +36,7 @@ const {
 } = require('./classes/utilities.js');
 
 var auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
+var task_secret = String(fs.readFileSync(__dirname + "/task_secret")).trim();
 
 var cacheIP24hr = new Cacheman('IP24hr');
 var cacheIP1hr = new Cacheman('IP1hr');
@@ -69,6 +70,48 @@ var pending_matches = [];
 var MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
 
+
+/**
+ * Compute a verification code from a secret and seed
+ *
+ * @param seed {string} Some value to compute a verification
+ * @returns {string} The verification code
+ */
+function compute_task_verification (seed) {
+    return checksum(task_secret + seed, 'sha256');
+}
+
+/**
+ * Modify a task to include secret-derived verification
+ *
+ * @param task {object} The task to modify with some required properties:
+ *          random_seed {string} Seed for the task reused for verification
+ *          options_hash {string} Existing hash to append verification
+ */
+function add_task_verification (task) {
+    // Append the verification to options_hash as the client responds with it
+    task.options_hash += compute_task_verification(task.random_seed);
+}
+
+/**
+ * Check and clean up the verification from submitted data
+ *
+ * @param data {object} The submission form data with required properties:
+ *          random_seed {string} Seed to recompute the verification
+ *          options_hash {string} Hash to extract verification
+ *          verification {string} Will be updated with the verification
+ * @returns {bool} True if the verification code is consistent with the data
+ */
+function check_task_verification (data) {
+    const expected = compute_task_verification(data.random_seed);
+    const provided = data.options_hash.slice(-expected.length);
+
+    // Clean up the overloaded options_hash by removing the verification
+    data.options_hash = data.options_hash.slice(0, -expected.length);
+    data.verification = provided;
+
+    return provided === expected;
+}
 
 function get_options_hash (options) {
     if (options.visits) {
@@ -586,6 +629,11 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         req.body.random_seed = null;
     } else {
         req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    }
+
+    if (!check_task_verification(req.body)) {
+        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: Verification failed.');
+        return res.status(400).send('Verification failed.');
     }
 
     // verify match exists in database
@@ -1266,6 +1314,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             task.black_hash = match.network1;
         }
 
+        add_task_verification(task);
         res.send(JSON.stringify(task));
 
         match.requests.push({timestamp: now, seed: random_seed});
