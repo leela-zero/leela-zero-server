@@ -760,8 +760,8 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         var matchRequest;
         try {
           matchRequest = await db.collection("matchRequest").remove({
-              "network1": { $in: [ match.loserhash, match.winnerhash ]},
-              "network2": { $in: [ match.loserhash, match.winnerhash ]},
+              "network1": match.network1,
+              "network2": match.network2,
               "option_hash": match.options_hash,
               "random_seed": req.body.random_seed
             }, {justOne: true});
