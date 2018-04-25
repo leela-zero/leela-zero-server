@@ -1,3 +1,4 @@
+require('./classes/prototypes.js');
 const moment = require('moment');
 const express = require('express');
 const fileUpload = require('express-fileupload');
@@ -7,7 +8,6 @@ const fs = require('fs-extra');
 const MongoClient = require('mongodb').MongoClient;
 const Long = require('mongodb').Long;
 const ObjectId = require('mongodb').ObjectID;
-const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 const zlib = require('zlib');
 const converter = require('hex2dec');
 const Cacheman = require('cacheman');
@@ -18,6 +18,22 @@ const rss_generator = require('./classes/rss_generator.js');
 const os = require("os");
 const util = require("util");
 const path = require("path");
+
+/**
+ * Utilities
+ */
+const {
+    network_exists,
+    checksum,
+    seed_from_mongolong,
+    CalculateEloFromPercent,
+    objectIdFromDate,
+    log_memory_stats,
+    SPRT,
+    LLR,
+    asyncMiddleware,
+    how_many_games_to_queue
+} = require('./classes/utilities.js');
 
 var auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 
@@ -52,71 +68,7 @@ var db;
 var pending_matches = [];
 var MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
-const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 
-function network_exists(hash) {
-    var network_file = __dirname + "/network/" + hash + ".gz";
-    return !fs.existsSync(network_file);
-}
-
-// From https://stackoverflow.com/questions/9461621/how-to-format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900-in-javascrip
-//
-function abbreviateNumber(number, length) {
-    // what tier? (determines SI prefix)
-    var tier = Math.log10(number) / 3 | 0;
-
-    // if zero, we don't need a prefix
-    if(tier == 0) return number;
-
-    // get prefix and determine scale
-    var prefix = SI_PREFIXES[tier];
-    var scale = Math.pow(10, tier * 3);
-
-    // scale the number
-    var scaled = number / scale;
-
-    // format number and add prefix as suffix
-    return scaled.toPrecision(length) + prefix;
-}
-
-Number.prototype.abbr = function(length) {
-    return abbreviateNumber(this, length);
-};
-
-function CalculateEloFromPercent(percentage) {
-    return -400 * Math.log(1 / percentage - 1) / Math.LN10;
-}
-
-function checksum (str, algorithm, encoding) {
-    return crypto
-        .createHash(algorithm || 'md5')
-        .update(str, 'utf8')
-        .digest(encoding || 'hex')
-}
-
-function seed_from_mongolong (seed) {
-    return converter.hexToDec(
-        "0x"
-        + (new Uint32Array([seed.getHighBits()]))[0].toString(16)
-        + (new Uint32Array([seed.getLowBits()]))[0].toString(16).padStart(8, "0")
-        ).toString();
-}
-
-//console.log("Small int test 777: " + seed_from_mongolong(Long.fromString("777", 10)));
-//console.log("Broken int test 883863265504794200: " + seed_from_mongolong(Long.fromString("883863265504794200", 10)));
-
-function objectIdFromDate (date) {
-    //return Math.floor(date.getTime() / 1000).toString(16) + "0000000000000000";
-    return safeObjectId( Math.floor(date / 1000).toString(16) + "0000000000000000" );
-}
-
-// This comes from https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
-//
-const asyncMiddleware = fn =>
-    (req, res, next) => {
-        Promise.resolve(fn(req, res, next))
-            .catch(next);
-};
 
 function get_options_hash (options) {
     if (options.visits) {
@@ -189,18 +141,7 @@ async function get_pending_matches () {
     });
 };
 
-function log_memory_stats (string) {
-    console.log(string);
-    const used = process.memoryUsage();
 
-    for (let key in used) {
-        var size = (used[key] / 1024 / 1024).toFixed(2);
-
-        size = " ".repeat(6 - size.length) + size;
-        key += " ".repeat(9 - key.length);
-        console.log(`\t${key} ${size} MB`); 
-    }
-};
 
 async function get_best_network_hash () {
     // Check if file has changed. If not, send cached version instead.
@@ -242,91 +183,9 @@ async function get_best_network_hash () {
     .catch(err => console.error(err));
 };
 
-//SPRT
-//
-function LL (x) {
-    return 1/(1+10**(-x/400));
-}
 
-function LLR(W, L, elo0, elo1) {
-    //if (W==0 || L==0) return 0;
-    if (!W) W=1;
-    if (!L) L=1;
 
-    var N = W + L;
-    var w = W/N, l = L/N;
-    var s = w;
-    var m2 = w;
-    var variance = m2-s**2;
-    var variance_s = variance / N;
-    var s0 = LL(elo0);
-    var s1 = LL(elo1);
-
-    return (s1-s0)*(2*s-s0-s1)/variance_s/2.0;
-}
-
-//function SPRTold(W,L,elo0,elo1)
-function SPRTold(W,L)
-{
-    var elo0 = 0, elo1 = 35;
-    var alpha = .05, beta = .05;
-
-    var LLR_ = LLR(W,L,elo0,elo1);
-    var LA = Math.log(beta/(1-alpha));
-    var LB = Math.log((1-beta)/alpha);
-
-    if (LLR_ > LB && W + L > 100) {
-        return true;
-    } else if (LLR_ < LA) {
-        return false;
-    } else {
-        return null;
-    }
-}
-
-function stDev(n) {
-  return Math.sqrt(n/4);
-}
-
-function canReachLimit(w, l, max, aim) {
-  var aimPerc = aim/max;
-  var remaining = max-w-l;
-  var expected = remaining*aimPerc;
-  var maxExpected = expected+3*stDev(remaining)
-  var needed = aim-w;
-  return maxExpected>needed;
-}
-
-function SPRT(w, l) {
-  var max = 400;
-  var aim = max / 2 + 2 * stDev(max);
-  if(w+l>=max&&w/(w+l)>=(aim/max)) return true;
-  if (!canReachLimit(w, l, max, aim)) return false;
-  return SPRTold(w,l);
-}
-
-var QUEUE_BUFFER = 25;
 var PESSIMISTIC_RATE = 0.2;
-
-function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
-    var games_left = max_games - w_obs - l_obs;
-
-    if (SPRT(w_obs, l_obs) === true) {
-        return games_left + QUEUE_BUFFER;
-    }
-
-    if (SPRT(w_obs, l_obs) === false) {
-        return 0;
-    }
-
-    for (var queued_games=0; queued_games < games_left; queued_games++) {
-        if (SPRT(w_obs+queued_games*pessimistic_rate, l_obs+queued_games*(1-pessimistic_rate)) === false) {
-            return queued_games + QUEUE_BUFFER;
-        }
-    }
-
-    return games_left + QUEUE_BUFFER;
-}
 
 app.enable('trust proxy');
 
@@ -460,12 +319,12 @@ app.post('/request-match', (req, res) => {
 
     if (!req.body.network1)
         return res.status(400).send('No network1 hash specified.');
-    else if (network_exists(req.body.network1))
+    else if (!network_exists(req.body.network1))
         return res.status(400).send('network1 hash not found.');
 
     if (!req.body.network2)
         req.body.network2 = null;
-    else if (network_exists(req.body.network2))
+    else if (!network_exists(req.body.network2))
         return res.status(400).send('network2 hash not found.');
 
     // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing? Don't allow both to be set.
@@ -1198,8 +1057,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "<div class=\"tooltip\">"
                     + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
                     + "<span class=\"tooltiptextleft\">"
-                    + abbreviateNumber(item.merged1.training_count, 4)
-                    + (item.merged1.training_steps ? "+" + abbreviateNumber(item.merged1.training_steps, 3) : "")
+                    + item.merged1.training_count.abbr(4)
+                    + (item.merged1.training_steps ? "+" + item.merged1.training_steps.abbr(3) : "")
                     + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.filters}x${item.merged1.blocks}` : "")
                     + (item.merged1.description ? `<br/>${item.merged1.description}` : "")
                     + "</span></div>&nbsp;"
@@ -1215,8 +1074,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     match_table += "<div class=\"tooltip\">"
                         + "<a href=\"/networks/" + item.network2 + ".gz\">" + item.network2.slice(0,8) + "</a>"
                         + "<span class=\"tooltiptextright\">"
-                        + abbreviateNumber(item.merged.training_count, 4)
-                        + (item.merged.training_steps ? "+" + abbreviateNumber(item.merged.training_steps, 3) : "")
+                        + item.merged.training_count.abbr(4)
+                        + (item.merged.training_steps ? "+" + item.merged.training_steps.abbr(3) : "")
                         + (item.merged.filters && item.merged.blocks ? `<br/>${item.merged.filters}x${item.merged.blocks}` : "")
                         + (item.merged.description ? `<br/>${item.merged.description}` : "")
                         + "</span></div>"
