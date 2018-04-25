@@ -832,7 +832,8 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
             //
             if (sprt_result === true && pending_matches.length > 1) {
                 console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
-                pending_matches.unshift(pending_matches.splice(pending_match_index, 1));
+                pending_matches.splice(pending_match_index, 1);  // cut out the match
+                if (m.game_count < m.number_to_play) pending_matches.unshift(m);   // continue a SPRT pass at end of queue
                 console.log("SPRT: Early pass post-unshift: " + JSON.stringify(pending_matches));
             }
         }
