@@ -5,6 +5,64 @@ const ObjectId = require('mongodb').ObjectID;
 const crypto = require('crypto');
 const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 
+// Default secret for task verification codes
+var gTaskSecret = "";
+
+/**
+ * Sets the secret to be used for verification codes
+ */
+function set_task_verification_secret (secret) {
+    gTaskSecret = secret;
+}
+
+/**
+ * Compute a verification code from a secret and seed
+ *
+ * @param seed {string} Some value to compute a verification
+ * @returns {string} The verification code
+ */
+function compute_task_verification (seed) {
+    return checksum(gTaskSecret + seed, 'sha256');
+}
+
+/**
+ * Modify a match task to include secret-derived verification
+ *
+ * @param task {object} The task to modify with some required properties:
+ *          black_hash {string} Network for white included in verification
+ *          random_seed {string} Seed for the task reused for verification
+ *          white_hash {string} Network for black included in verification
+ *          options_hash {string} Existing hash to append verification
+ */
+function add_match_verification (task) {
+    // Append the verification to options_hash as the client responds with it
+    task.options_hash += compute_task_verification(task.random_seed + task.white_hash + task.black_hash);
+}
+
+/**
+ * Check and clean up the verification from submitted match data
+ *
+ * @param data {object} The submission form data with required properties:
+ *          loserhash {string} Network for loser to recompute the verification
+ *          random_seed {string} Seed to recompute the verification
+ *          winnerhash {string} Network for winner to recompute the verification
+ *          options_hash {string} Hash to extract verification
+ *          verification {string} Will be updated with the verification
+ * @returns {bool} True if the verification code is consistent with the data
+ */
+function check_match_verification (data) {
+    // Allow for 2 expected verification codes for swapped networks
+    const expected = compute_task_verification(data.random_seed + data.winnerhash + data.loserhash);
+    const expected2 = compute_task_verification(data.random_seed + data.loserhash + data.winnerhash);
+    const provided = data.options_hash.slice(-expected.length);
+
+    // Clean up the overloaded options_hash by removing the verification
+    data.options_hash = data.options_hash.slice(0, -expected.length);
+    data.verification = provided;
+
+    return provided === expected || provided === expected2;
+}
+
 function network_exists(hash) {
     var network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
     return fs.pathExistsSync(network_file);
@@ -143,6 +201,10 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate) {
 }
 
 module.exports = {
+    set_task_verification_secret,
+    compute_task_verification,
+    add_match_verification,
+    check_match_verification,
     network_exists,
     checksum,
     seed_from_mongolong,
