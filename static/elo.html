@@ -28,6 +28,12 @@
           "transform": [
             { "filter": { "field": "best", "equal": "true" } }
           ],
+          "selection": {
+            "grid": {
+              "type": "interval",
+              "bind": "scales"
+            }
+          },
           "mark": {
             "type": "line",
             "interpolate": "monotone"
