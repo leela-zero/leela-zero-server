@@ -847,6 +847,8 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     if (
         // Best network has lost
         req.body.loserhash == best_network_hash
+        // Best network was being challenged, it was not the victorious challenger
+        && req.body.loserhash == match.network2
         // This is not a test match
         && !match.is_test
         // SPRT passed OR it has reach 55% after 400 games (stick to the magic number)
