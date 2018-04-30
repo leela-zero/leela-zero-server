@@ -23,6 +23,9 @@ const path = require("path");
  * Utilities
  */
 const {
+    set_task_verification_secret,
+    add_match_verification,
+    check_match_verification,
     network_exists,
     checksum,
     seed_from_mongolong,
@@ -36,6 +39,7 @@ const {
 } = require('./classes/utilities.js');
 
 var auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
+set_task_verification_secret(String(fs.readFileSync(__dirname + "/task_secret")).trim());
 
 var cacheIP24hr = new Cacheman('IP24hr');
 var cacheIP1hr = new Cacheman('IP1hr');
@@ -583,6 +587,11 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         req.body.random_seed = null;
     } else {
         req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    }
+
+    if (!check_match_verification(req.body)) {
+        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: Verification failed.');
+        return res.status(400).send('Verification failed.');
     }
 
     // verify match exists in database
@@ -1263,6 +1272,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
             task.black_hash = match.network1;
         }
 
+        add_match_verification(task);
         res.send(JSON.stringify(task));
 
         match.requests.push({timestamp: now, seed: random_seed});
