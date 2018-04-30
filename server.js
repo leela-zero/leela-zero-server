@@ -1485,6 +1485,11 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                     sprt = "???"
             }
 
+            // Force the match to show up as a test instead of the usual SPRT
+            if (match.is_test) {
+                sprt = "TEST";
+            }
+
             var info =  {
                 "rating": elo + network2_rating,
                 "sprt": sprt
