@@ -366,16 +366,13 @@ app.post('/request-match', (req, res) => {
     }
 
     // Usage:
-    //   - schedule a Test match, set is_test=true
+    //   - schedule a Test match, set is_test=true or is_test=1
     //   curl -F is_test=true <other params>
     //
     //   - schedule a Normal match, leave out the flag
     //   curl  <other params>
     //
-    if (req.body.is_test === 'true')
-        req.body.is_test = true;
-    else
-        req.body.is_test = false;
+    req.body.is_test = ["true", "1"].includes(req.body.is_test);
 
     var match = { "network1": req.body.network1,
         "network2": req.body.network2, "network1_losses": 0,
