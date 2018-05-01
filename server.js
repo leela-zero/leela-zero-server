@@ -1161,16 +1161,12 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Leela Zero is available from: <a href=\"https://github.com/gcp/leela-zero\">Github</a>.<br>";
         page += "Check out the <a href=\"https://github.com/gcp/leela-zero/blob/master/FAQ.md\">FAQ</a> and ";
         page += "<a href=\"https://github.com/gcp/leela-zero/blob/master/README.md\">README</a>.<br>";
-        page += `<br>Networks 93229e15 and 8d9c5e80 are net2net trained 256x20 network tests. Not a bug. <a href="https://github.com/gcp/leela-zero/issues/1113">Info here</a>.<br>\n`;
-        page += `<br>Network 6615567e is a net2net trained 128x10 network test. Not a bug. <a href="https://github.com/gcp/leela-zero/issues/965">Info here</a>.<br>\n`;
-        page += "Network 1e2b85cf is best_v1 tested as a reference point. It isn't a normal LZ network. Not a bug.<br>\n";
         page += "<br>Autogtp will automatically download better networks once found.<br>";
         page += "Not each trained network will be a strength improvement over the prior one. Patience please. :)<br>";
         page += "Match games are played at full strength (only 3200 visits).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
         page += "2018-03-24 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.13 + AutoGTP v15</a>. <b>Update required.</b><br>";
-        page += "2018-02-19 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.12 + AutoGTP v14</a>. <b>Update required.</b><br>";
         page += "<br>";
 
         responses.map( response => page += response );
