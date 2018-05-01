@@ -14,15 +14,53 @@
   <div id="vis"></div>
 
   <script type="text/javascript">
+  (async () => {
+    // Get the data for the graph and for computing the max values
+    var values = await (await fetch("/data/elograph.json")).json();
+
+    // Share the axis variables for use in multiple layers
+    var x = {
+      "axis": { "title": "Number of accumulated games" },
+      "field": "net",
+      "type": "quantitative"
+    };
+    var y = {
+      "axis": { "title": "Elo rating (0 = random play)" },
+      "field": "rating",
+      "type": "quantitative"
+    };
+
+    // Customize the default axis if there's a desired recent view
+    var recent = location.hash.match(/recent=(\d+)/);
+    if (recent) {
+      recent = Number(recent[1]);
+
+      // Find the highest number of games of valid networks
+      var networks = values.filter(v => v.net && v.rating);
+      var maxGames = Math.max(...networks.map(v => v.net));
+
+      // Find networks that are in the recent window
+      var threshold = maxGames - recent;
+      var recentNetworks = networks.filter(v => v.net >= threshold);
+
+      // Find the other bounds for games and rating of recent networks
+      var minGames = Math.min(...recentNetworks.map(v => v.net));
+      var minRating = Math.min(...recentNetworks.map(v => v.rating));
+      var maxRating = Math.max(...recentNetworks.map(v => v.rating));
+
+      // Set the domain bounds of each axis
+      x.scale = { "domain": [minGames, maxGames] };
+      y.scale = { "domain": [minRating, maxRating] };
+    }
+
+    // Configure the vega-lite graph for a strength line and network "dots"
     var vlSpec = {
       "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
       "description": "Leela Zero Elo rating",
       "config": { 
         "point": { "size": 80 }
       }, 
-      "data": {
-        "url": "/data/elograph.json"
-      },
+      "data": { "values": values },
       "layer": [
         {
           "transform": [
@@ -39,20 +77,8 @@
             "interpolate": "monotone"
           },
           "encoding": {
-            "x": {
-              "field": "net", 
-              "type": "quantitative",
-              "axis": {
-                "title": "Number of accumulated games",
-              }
-            },
-            "y": {
-              "field": "rating", 
-              "type": "quantitative",
-              "axis": {
-                "title": "Elo rating (0 = random play)"
-              }
-            },
+            "x": x,
+            "y": y,
             "color": {
               "value": "blue"
             }
@@ -64,20 +90,8 @@
           ],
           "mark": {"type": "point", "filled": true},
           "encoding": {
-            "x": {
-              "field": "net", 
-              "type": "quantitative",
-              "axis": {
-                "title": "Number of accumulated games",
-              }
-            },
-            "y": {
-              "field": "rating", 
-              "type": "quantitative",
-              "axis": {
-                "title": "Elo rating (0 = random play)"
-              }
-            },
+            "x": x,
+            "y": y,
             "color": {
               "field": "sprt", "type": "nominal",
               "scale": {"range": ["#59E817", "rgba(193,27,23,0.3)", "blue", "rgba(0,0,0,0.5)"]}
@@ -96,13 +110,6 @@
       actions: false,
       width: 800,
       height: 600
-      // "width": 800,
-      // "height": 600,
-      // "actions" : {
-      //   "export": false,
-      //   "source": false,
-      //   "editor": false
-      // }
     };
 
     var tooltipOpt = {
@@ -115,22 +122,10 @@
       ]
     };
 
-    vegaEmbed("#vis", vlSpec, opt)
-    .then(function (result){
-      vegaTooltip.vegaLite(result.view, vlSpec, tooltipOpt)
-    }).catch(console.error);
-    
-    // function (error, result) {
-    //   var tooltipOption = {
-    //     showAllFields: false,
-    //     fields: [
-    //       {field: "net", title: "Number of games"},
-    //       {field: "rating", title: "Elo rating"},
-    //       {field: "sprt", title: "SPRT result"}
-    //     ]
-    //   };
-    //   vegaToolTip.vegaLite(result.view, vlSpec, tooltipOption)
-    // };
+    // Render the graph then add tooltips
+    var result = await vegaEmbed("#vis", vlSpec, opt);
+    vegaTooltip.vegaLite(result.view, vlSpec, tooltipOpt);
+  })();
   </script>
   </div>
 </body>

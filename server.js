@@ -1189,7 +1189,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "<a href=\"https://sjeng.org/zero/\">Raw SGF files</a>.<br>";
         page += "<a href=\"https://docs.google.com/spreadsheets/d/e/2PACX-1vTsHu7T9vbfLsYOIANnUX9rHAYu7lQ4AlpVIvCfn60G7BxNZ0JH4ulfbADEedPVgwHxaH5MczdH853l/pubchart?oid=286613333&format=interactive\">Original strength graph</a>. (Mostly obsolete.)<br>";
         page += "<br>";
-        page += "<iframe width=\"950\" height=\"655\" seamless frameborder=\"0\" scrolling=\"no\" src=\"/static/elo.html\"></iframe>";
+        page += `<h4>Recent Strength Graph (<a href="/static/elo.html">Full view</a>.)</h4>`;
+        page += "<iframe width=\"950\" height=\"655\" seamless frameborder=\"0\" scrolling=\"no\" src=\"/static/elo.html#recent=2500000\"></iframe>";
         page += "<br><br>Times are in GMT+0100 (CET)<br>\n";
         page += network_table;
         page += match_table;
