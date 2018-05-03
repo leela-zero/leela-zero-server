@@ -1300,6 +1300,10 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         task.hash = best_network_hash;
 
+        // For now, have autogtp 16 or newer play half of self-play with
+        // Facebook's ELF Open Go network, which uses network version 2.
+        if (req.params.version >= 16 && Math.random() < .5) task.hash = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
+
         res.send(JSON.stringify(task));
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: selfplay");
