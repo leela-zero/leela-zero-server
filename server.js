@@ -1160,7 +1160,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Match games are played at full strength (only 3200 visits).<br>";
         page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
         page += "<br>";
-        page += "2018-03-24 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.13 + AutoGTP v15</a>. <b>Update required.</b><br>";
+        page += "2018-05-04 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.14 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
         page += "<br>";
 
         responses.map( response => page += response );
