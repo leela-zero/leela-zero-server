@@ -1290,7 +1290,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        var options = {"playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "30"};
+        var options = {"playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "999"};
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
