@@ -539,60 +539,46 @@ app.post('/submit-network', asyncMiddleware((req, res, next) => {
 }));
 
 app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
-    if (!req.files) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No files were uploaded.');
-        return res.status(400).send('No files were uploaded.');
-    }
+    const logAndFail = msg => {
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) /submit-match: ${msg}`);
+        console.log(`files: ${JSON.stringify(Object.keys(req.files || {}))}, body: ${JSON.stringify(req.body)}`);
+        return res.status(400).send(msg);
+    };
 
-    if (!req.files.sgf) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No sgf file provided.');
-        return res.status(400).send('No sgf file provided.');
-    }
+    if (!req.files)
+        return logAndFail('No files were uploaded.');
 
-    if (!req.body.clientversion) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No clientversion specified.');
-        return res.status(400).send('No clientversion specified.');
-    }
+    if (!req.files.sgf)
+        return logAndFail('No sgf file provided.');
 
-    if (!req.body.winnerhash) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No winnerhash (network hash for winner) specified.');
-        return res.status(400).send('No winnerhash (network hash for winner) specified.');
-    }
+    if (!req.body.clientversion)
+        return logAndFail('No clientversion provided.');
 
-    if (!req.body.loserhash) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No loserhash (network hash for loser) specified.');
-        return res.status(400).send('No loserhash (network hash for loser) specified.');
-    }
+    if (!req.body.winnerhash)
+        return logAndFail('No winner hash provided.');
 
-    if (!req.body.winnercolor) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No winnercolor provided.');
-        return res.status(400).send('No winnercolor provided.');
-    }
+    if (!req.body.loserhash)
+        return logAndFail('No loser hash provided.');
 
-    if (!req.body.movescount) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No movescount provided.');
-    }
+    if (!req.body.winnercolor)
+        return logAndFail('No winnercolor provided.');
 
-    if (!req.body.score) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No score provided.');
-        return res.status(400).send('No score provided.');
-    }
+    if (!req.body.movescount)
+        return logAndFail('No movescount provided.');
 
-    if (!req.body.options_hash) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: No options_hash provided.');
-        return res.status(400).send('No options_hash provided.');
-    }
+    if (!req.body.score)
+        return logAndFail('No score provided.');
 
-    if (!req.body.random_seed) {
-        req.body.random_seed = null;
-    } else {
-        req.body.random_seed = Long.fromString(req.body.random_seed, 10);
-    }
+    if (!req.body.options_hash)
+        return logAndFail('No options_hash provided.');
 
-    if (!check_match_verification(req.body)) {
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + '/submit-match: Verification failed.');
-        return res.status(400).send('Verification failed.');
-    }
+    if (!req.body.random_seed)
+        return logAndFail('No random_seed provided.');
+
+    req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+
+    if (!check_match_verification(req.body))
+        return logAndFail('Verification failed.');
 
     // verify match exists in database
     var match = await db.collection("matches").findOne(
@@ -606,10 +592,8 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     );
 
     // Match not found, abort!!
-    if (!match) {
-        console.log(`/submit-match for ${req.body.winnerhash.slice(0, 6)} and ${req.body.loserhash.slice(0, 6)} not found`)
-        return res.status(400).send("Match not found");
-    }
+    if (!match)
+        return logAndFail('Match not found.');
 
     // calculate sgfhash 
     try {
@@ -639,16 +623,14 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         );
 
         // Not inserted, we got duplicate sgfhash, abort!
-        if (!dbres.upsertedId) {
-            console.error("Upload match with duplicate sgf");
-            return res.status(400).send("Upload match with duplicate sgf");
-        }
+        if (!dbres.upsertedId)
+            return logAndFail('Upload match with duplicate sgf.');
 
         console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
         res.send("Match data " + sgfhash + " stored in database\n");
     } catch (err) {
-        console.error("Error processing sgffile in /submit-match: " + err);
-        return res.status(400).send("Error with sgf");
+        console.error(err);
+        return logAndFail('Error with sgf.');
     }
 
     // prepare $inc 
@@ -733,32 +715,41 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
 // curl -F 'networkhash=abc123' -F 'sgf=@zero.prototxt' -F 'trainingdata=@zero.prototxt' http://localhost:8080/submit
 
 app.post('/submit', (req, res) => {
-    if (!req.files)
-        return res.status(400).send('No files were uploaded.');
+    const logAndFail = msg => {
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) /submit: ${msg}`);
+        console.log(`files: ${JSON.stringify(Object.keys(req.files || {}))}, body: ${JSON.stringify(req.body)}`);
+        return res.status(400).send(msg);
+    };
 
-    if (!req.body.networkhash)
-        return res.status(400).send('No network hash specified.');
+    if (!req.files)
+        return logAndFail('No files were uploaded.');
 
     if (!req.files.sgf)
-        return res.status(400).send('No sgf file provided.');
+        return logAndFail('No sgf file provided.');
 
     if (!req.files.trainingdata)
-        return res.status(400).send('No trainingdata file provided.');
+        return logAndFail('No trainingdata file provided.');
 
-    if (!req.body.random_seed) {
-        req.body.random_seed = null;
-    } else {
-        req.body.random_seed = Long.fromString(req.body.random_seed, 10);
-    }
+    if (!req.body.clientversion)
+        return logAndFail('No clientversion provided.');
 
-    let clientversion;
+    if (!req.body.networkhash)
+        return logAndFail('No network hash provided.');
 
-    if (!req.body.clientversion) {
-      clientversion = 0;
-    } else {
-      clientversion = req.body.clientversion;
-    }
+    if (!req.body.winnercolor)
+        return logAndFail('No winnercolor provided.');
 
+    if (!req.body.movescount)
+        return logAndFail('No movescount provided.');
+
+    if (!req.body.options_hash)
+        return logAndFail('No options_hash provided.');
+
+    if (!req.body.random_seed)
+        return logAndFail('No random_seed provided.');
+
+    req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    let clientversion = req.body.clientversion;
     var networkhash = req.body.networkhash;
     var trainingdatafile;
     var sgffile;
@@ -774,14 +765,16 @@ app.post('/submit', (req, res) => {
 
     zlib.unzip(sgfbuffer, (err, sgfbuffer) => {
         if (err) {
-            console.error("Error decompressing sgffile: " + err);
+            console.error(err);
+            return logAndFail('Error with sgf.');
         } else {
             sgffile = sgfbuffer.toString();
             sgfhash = checksum(sgffile, 'sha256');
 
             zlib.unzip(trainbuffer, (err, trainbuffer) => {
                 if (err) {
-                    console.error("Error decompressing trainingdata: " + err);
+                    console.error(err);
+                    return logAndFail('Error with trainingdata.');
                 } else {
                     trainingdatafile = trainbuffer.toString();
 
@@ -1276,7 +1269,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: match " + match.network1.slice(0,8) + " vs " + match.network2.slice(0,8) + " " + (match.game_count + match.requests.length) + " of " + match.number_to_play);
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
 //    } else if ( req.params.version==1 && Math.random() > .2 ) {
 //        var task = { "cmd": "wait", "minutes": "5" };
 //
@@ -1302,7 +1295,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         res.send(JSON.stringify(task));
 
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: selfplay");
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: selfplay ${JSON.stringify(task)}`);
     }
 }));
 
