@@ -1463,7 +1463,8 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 "hash": item.hash, 
                 "game_count": item.game_count,
                 "net": (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
-                "best": !!item.game_count // !! boolean cast
+                // The ELF network has games but is not actually best
+                "best": item.game_count && !ELF_NETWORK.startsWith(item.hash)
             };
         });
 
@@ -1535,8 +1536,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 "net": Math.max(0.0, Number(item.net + rating/100000)),
                 "sprt": sprt,
                 "hash": item.hash.slice(0, 6),
-                // set best = false, for networks with rating == 0 && best == true, i.e. ELF
-                "best": item.rating == 0 && item.best ? false : item.best
+                "best": item.best
             };
             return result_item;
         });
