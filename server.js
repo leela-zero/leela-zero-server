@@ -967,7 +967,9 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
             return (count + " in past hour.)<br>");
         }),
         db.collection("networks").aggregate([
-            { $match: { game_count: { $gt: 0 } } },
+            // Exclude ELF network
+            { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $ne: ELF_NETWORK } }] } },
+            { $sort: { _id: 1 } },
             { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count", filters: "$filters", blocks: "$blocks" } } } },
             { $unwind: { path: '$networks', includeArrayIndex: 'networkID' } },
             { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", filters: "$networks.filters", blocks: "$networks.blocks", networkID: 1 } },
