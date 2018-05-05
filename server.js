@@ -967,7 +967,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
             return (count + " in past hour.)<br>");
         }),
         db.collection("networks").aggregate([
-            { $match: { game_count: { $gt: 0 } } },
+            // Exclude ELF network
+            { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $ne: ELF_NETWORK } }] } },
             { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count", filters: "$filters", blocks: "$blocks" } } } },
             { $unwind: { path: '$networks', includeArrayIndex: 'networkID' } },
             { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", filters: "$networks.filters", blocks: "$networks.blocks", networkID: 1 } },
@@ -1514,8 +1515,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 "rating": Math.max(0.0, rating),
                 "net": Math.max(0.0, Number(item.net + rating/100000)),
                 "sprt": sprt,
-                "hash": item.hash.slice(0,6),
-                "best": item.best
+                "hash": item.hash.slice(0, 6),
+                // set best = false, for networks with rating == 0 && best == true, i.e. ELF
+                "best": rating == 0 && item.best ? false : item.best
             };
             return result_item;
         });
