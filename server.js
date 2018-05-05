@@ -1195,16 +1195,34 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     });
 }));
 
+/**
+ * Determine if a match should be scheduled for a given request.
+ *
+ * @param req {object} Express request
+ * @param now {int} Timestamp right now
+ * @returns {bool|object} False if no match to schedule; otherwise, match object
+ */
 function shouldScheduleMatch (req, now) {
   if (!(pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip))) {
     return false;
   }
 
-  var match = pending_matches[pending_matches.length - 1];
+  // Find the first match this client can play
+  var match;
+  var i = pending_matches.length;
+  while (--i >= 0) {
+    match = pending_matches[i];
 
-  // For now, only allow autogtp 16 or newer play a match with Facebook's ELF
-  // Open Go network, which uses network version 2.
-  if (req.params.version < 16 && match.network1 == ELF_NETWORK) return false;
+    // For now, only allow autogtp 16 or newer play a match with Facebook's ELF
+    // Open Go network, which uses network version 2, so new clients can take
+    // any match and older clients can take a match that doesn't include ELF.
+    if (req.params.version >= 16 || match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
+      break;
+    }
+  }
+
+  // Don't schedule if we ran out of potential matches for this client
+  if (i < 0) return false;
 
   var deleted = match.requests.filter(e => e.timestamp < now - MATCH_EXPIRE_TIME).length;
   var oldest = (match.requests.length > 0 ? (now - match.requests[0].timestamp) / 1000 / 60 : 0).toFixed(2);
@@ -1218,7 +1236,7 @@ function shouldScheduleMatch (req, now) {
   var result = needed > requested;
   console.log(`Need ${needed} match games. Requested ${requested}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`);
 
-  return result;
+  return result && match;
 }
 
 app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
@@ -1234,8 +1252,8 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
-    if (shouldScheduleMatch(req, now)) {
-        var match = pending_matches[pending_matches.length - 1];
+    var match = shouldScheduleMatch(req, now);
+    if (match) {
         var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
