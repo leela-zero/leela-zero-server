@@ -62,7 +62,7 @@ process.on('uncaughtException', (err) => {
 
 // https://blog.tompawlak.org/measure-execution-time-nodejs-javascript
 
-var counter;
+var counter, elf_counter;
 var best_network_mtimeMs = 0;
 var best_network_hash_promise = null;
 var db;
@@ -243,10 +243,18 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         console.log ( count + " networks.");
     });
 
-    db.collection("networks").aggregate( [
+    db.collection("networks").aggregate([
         {
             $group: {
-                _id: null,
+                _id: {
+                    type: {
+                        $cond: {
+                            if: { $eq: ["$hash", ELF_NETWORK] },
+                            then: "ELF",
+                            else: "LZ"
+                        }
+                    }
+                },
                 total: { $sum: "$game_count" }
             }
         }
@@ -261,8 +269,13 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         .then()
         .catch();
 
-        counter =  res[0] && res[0].total;
-        console.log ( counter + " games.");
+        res.forEach(result => {
+            if (result._id.type == 'ELF')
+                elf_counter = result.total;
+            else
+                counter = result.total;
+        });
+        console.log(counter + " LZ games, " + elf_counter + " ELF games.");
 
         app.listen(8080, () => {
             console.log('listening on 8080')
@@ -795,8 +808,13 @@ app.post('/submit', (req, res) => {
                                 console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded game #" + counter + ": " + sgfhash + " ERROR: " + err);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             } else {
-                                counter++;
-                                console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded game #" + counter + ": " + sgfhash);
+                                if (networkhash == ELF_NETWORK) {
+                                    elf_counter++;
+                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash);
+                                } else {
+                                    counter++;
+                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash);
+                                }
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             }
                         }
@@ -808,7 +826,10 @@ app.post('/submit', (req, res) => {
                         { },
                         (err, dbres) => {
                             if (err) {
-                                console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded game #" + counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
+                                if (networkhash == ELF_NETWORK)
+                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
+                                else
+                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
                             } else {
                                 //console.log("Incremented " + networkhash);
                             }
@@ -946,16 +967,22 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((list) => {
             return (list.length + " in past hour.<br>");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, hash : { $ne : ELF_NETWORK } }).count()
         .then((count) => {
-            return (counter + " total selfplay games. (" + count + " in past 24 hours, ");
+            return (counter + " total LZ selfplay games, (" + count + " in past 24 hours, ");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, hash: { $ne: ELF_NETWORK } }).count()
         .then((count) => {
-            return (count + " in past hour, ");
+            return (count + " in past hour).<br/>");
         }),
-        db.collection('games').count({ networkhash: ELF_NETWORK })
-            .then(count => count + " by ELF network).<br/>"),
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, hash : ELF_NETWORK }).count()
+        .then((count) => {
+            return (elf_counter + " total ELF selfplay games, (" + count + " in past 24 hours, ");
+        }),
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, hash: ELF_NETWORK }).count()
+        .then((count) => {
+            return (count + " in past hour).<br/>");
+        }),
         db.collection("match_games").find().count()
         .then((count) => {
             return (count + " total match games. (");
