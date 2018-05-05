@@ -38,6 +38,8 @@ const {
     how_many_games_to_queue
 } = require('./classes/utilities.js');
 
+const ELF_NETWORK = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
+
 var auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 set_task_verification_secret(String(fs.readFileSync(__dirname + "/task_secret")).trim());
 
@@ -1199,6 +1201,11 @@ function shouldScheduleMatch (req, now) {
   }
 
   var match = pending_matches[pending_matches.length - 1];
+
+  // For now, only allow autogtp 16 or newer play a match with Facebook's ELF
+  // Open Go network, which uses network version 2.
+  if (req.params.version < 16 && match.network1 == ELF_NETWORK) return false;
+
   var deleted = match.requests.filter(e => e.timestamp < now - MATCH_EXPIRE_TIME).length;
   var oldest = (match.requests.length > 0 ? (now - match.requests[0].timestamp) / 1000 / 60 : 0).toFixed(2);
   match.requests.splice(0, deleted);
@@ -1296,7 +1303,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         // For now, have autogtp 16 or newer play half of self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        if (req.params.version >= 16 && Math.random() < .5) task.hash = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
+        if (req.params.version >= 16 && Math.random() < .5) task.hash = ELF_NETWORK;
 
         res.send(JSON.stringify(task));
 
