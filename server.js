@@ -952,8 +952,10 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
         .then((count) => {
-            return (count + " in past hour.)<br>");
+            return (count + " in past hour, ");
         }),
+        db.collection('games').count({ networkhash: ELF_NETWORK })
+            .then(count => count + " by ELF network).<br/>"),
         db.collection("match_games").find().count()
         .then((count) => {
             return (count + " total match games. (");
