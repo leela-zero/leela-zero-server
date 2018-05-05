@@ -30,7 +30,7 @@ var weight_parser = require('../classes/weight_parser.js');
 
             if (!fs.existsSync(network_path)) {
                 console.log(`Network ${network.hash} not found`);
-                return;
+                continue;
             }
 
             var parser = new weight_parser;
