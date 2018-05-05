@@ -1247,7 +1247,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
  * @returns {bool|object} False if no match to schedule; otherwise, match object
  */
 function shouldScheduleMatch (req, now) {
-  if (!(pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip))) {
+  if (!(pending_matches.length && req.params.autogtp!=0 && fastClientsMap.get(req.ip))) {
     return false;
   }
 
@@ -1257,10 +1257,10 @@ function shouldScheduleMatch (req, now) {
   while (--i >= 0) {
     match = pending_matches[i];
 
-    // For now, only allow autogtp 16 or newer play a match with Facebook's ELF
-    // Open Go network, which uses network version 2, so new clients can take
-    // any match and older clients can take a match that doesn't include ELF.
-    if (req.params.version >= 16 || match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
+    // For now, only allow newer autogtp and leelaz to take any match while
+    // older clients can take a match that don't include ELF (network v2).
+    if (req.params.autogtp >= 16 || req.params.leelaz >= 0.14 ||
+        match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
       break;
     }
   }
@@ -1283,7 +1283,11 @@ function shouldScheduleMatch (req, now) {
   return result && match;
 }
 
-app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
+/**
+ * Get a self-play or match task depending on various client versions.
+ * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
+ */
+app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res, next) => {
     var required_client_version = String(15);
     var required_leelaz_version = String("0.13");
 
@@ -1340,7 +1344,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
         console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
-//    } else if ( req.params.version==1 && Math.random() > .2 ) {
+//    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
 //        var task = { "cmd": "wait", "minutes": "5" };
 //
 //        res.send(JSON.stringify(task));
@@ -1359,9 +1363,9 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         task.hash = best_network_hash;
 
-        // For now, have autogtp 16 or newer play half of self-play with
+        // For now, have newer autogtp and leelaz play some self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        if (req.params.version >= 16 && Math.random() < .25) {
+        if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < .25) {
             task.hash = ELF_NETWORK;    
             options.resignation_percent = "5";
         }
