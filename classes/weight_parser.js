@@ -4,6 +4,7 @@ class weight_parser extends Writable {
     constructor(options) {
         super(options);
         this.newline = this.space = 0;
+        this.lastNewline = null;
     }
 
     write(chunk, encoding, next) {
@@ -19,10 +20,12 @@ class weight_parser extends Writable {
             else if (this.newline == 2 && c == 0x20)  // 0x20 = ' ' = space
                 this.space++;
         }
+        // track whether the weight file ended with newline
+        this.lastNewline = chunk[chunk.length - 1] == 0x0A;
     }
 
     read() {
-        var filters = this.space + 1, blocks = (this.newline + 1 - (1 + 4 + 14)) / 8;
+        var filters = this.space + 1, blocks = (this.newline + (this.lastNewline ? 0 : 1) - (1 + 4 + 14)) / 8;
 
         if(!Number.isInteger(blocks))
             blocks = 0;
