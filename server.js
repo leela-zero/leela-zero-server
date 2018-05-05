@@ -1536,7 +1536,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 "sprt": sprt,
                 "hash": item.hash.slice(0, 6),
                 // set best = false, for networks with rating == 0 && best == true, i.e. ELF
-                "best": rating == 0 && item.best ? false : item.best
+                "best": item.rating == 0 && item.best ? false : item.best
             };
             return result_item;
         });
