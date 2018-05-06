@@ -967,19 +967,19 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((list) => {
             return (list.length + " in past hour.<br>");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, hash : { $ne : ELF_NETWORK } }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash: { $ne : ELF_NETWORK } }).count()
         .then((count) => {
             return (counter + " total LZ selfplay games, (" + count + " in past 24 hours, ");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, hash: { $ne: ELF_NETWORK } }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, networkhash: { $ne: ELF_NETWORK } }).count()
         .then((count) => {
             return (count + " in past hour).<br/>");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, hash : ELF_NETWORK }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash: ELF_NETWORK }).count()
         .then((count) => {
             return (elf_counter + " total ELF selfplay games, (" + count + " in past 24 hours, ");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, hash: ELF_NETWORK }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, networkhash: ELF_NETWORK }).count()
         .then((count) => {
             return (count + " in past hour).<br/>");
         }),
