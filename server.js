@@ -62,7 +62,7 @@ process.on('uncaughtException', (err) => {
 
 // https://blog.tompawlak.org/measure-execution-time-nodejs-javascript
 
-var counter, elf_counter;
+var counter, elf_counter = 0;
 var best_network_mtimeMs = 0;
 var best_network_hash_promise = null;
 var db;
@@ -967,16 +967,15 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((list) => {
             return (list.length + " in past hour.<br>");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash : { $ne : ELF_NETWORK } }).count()
         .then((count) => {
             return (counter + " total selfplay games, (" + count + " in past 24 hours, ");
         }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, networkhash: { $ne: ELF_NETWORK } }).count()
         .then((count) => {
             return (count + " in past hour).<br/>");
         }),
-/*
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash: ELF_NETWORK }).count()
+        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash : ELF_NETWORK }).count()
         .then((count) => {
             return (elf_counter + " total ELF selfplay games, (" + count + " in past 24 hours, ");
         }),
@@ -984,7 +983,6 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         .then((count) => {
             return (count + " in past hour).<br/>");
         }),
-*/
         db.collection("match_games").find().count()
         .then((count) => {
             return (count + " total match games. (");
