@@ -26,6 +26,14 @@ block script
 
 block content
     .row.mt-4
+        .col-12
+            nav(aria-label="breadcrumb")
+                ol.breadcrumb
+                    li.breadcrumb-item 
+                        a(href="/") Home
+                    li.breadcrumb-item
+                        a(href="/network-profiles") Networks
+                    li.breadcrumb-item.active #{network.hash.slice(0, 6)}
         .col-md-3
             .card.border-0
                 img.card-img-top.rounded(src=`${identicon}` alt=`LZ ${title}`)
@@ -50,8 +58,6 @@ block content
             ul.nav.nav-tabs
                 li.nav-item
                     a.nav-link(class={ active : matches } href=`/network-profiles/${network.hash}/matches`) Match Games
-                //-li.nav-item
-                    a.nav-link(class={ active : self_play } href=`/network-profiles/${network.hash}/self-play`) Self-Play Games 
             .tab-content.pt-4
                 .table-responsive
                     table.table.table-bordered.table-hover
@@ -77,14 +83,15 @@ block content
                                         a(href=`/match-games/${match._id}` data-toggle="tooltip" title=`${match.is_test ? "Test" : "Regular"} Match`) VS 
                                         a(href=`/networks/${match.network2.hash}.gz` data-toggle="tooltip" title=`${title2}`) #{match.network2.hash.slice(0,6)} 
                                     - var winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
-                                    td #{match.network1_wins} : #{match.network1_losses} #[span(class={'font-weight-bold': winrate > 55}) (#{winrate.toFixed(2)}%)]
+                                    td #{match.network1_wins} : #{match.network1_losses} #[span(class={'font-weight-bold': winrate >= 55}) (#{winrate.toFixed(2)}%)]
                                     td #{match.network1_wins + match.network1_losses} / #{match.number_to_play}
-                                    td SPRT
-                        
-                        //- Start Self-Play Table
-                        //-if(self_play)
-                            thead.thead-light
-                                tr
-                                    th Uploaded(*)
-                                    th sgf
-                            tbody
+                                    td.align-middle
+                                        -if(match.SPRT === true)
+                                            .progress
+                                                .progress-bar.bg-success(style=`width:100%`) Pass
+                                        -else if(match.SPRT === false)
+                                            .progress
+                                                .progress-bar.bg-dark(style=`width:100%`) Failed
+                                        -else
+                                            .progress
+                                                .progress-bar.progress-bar-striped.progress-bar-animated(style=`width:${match.SPRT}%`)

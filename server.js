@@ -843,7 +843,24 @@ app.post('/submit', (req, res) => {
     }
 });
 
-app.get('/network-profiles/:hash(\\w+)/:tab(matches|self-play)?', asyncMiddleware(async (req, res, next) => {
+app.get('/network-profiles', asyncMiddleware(async (req, res, next) => {
+    var networks = await db.collection("networks")
+        .find({
+            hash: { $ne: ELF_NETWORK },
+            $or: [
+                { game_count: { $gt: 0 } },
+                { hash: get_best_network_hash() },
+            ]
+        })
+        .sort({ _id: -1 })
+        .toArray();
+    
+    var pug_data = { networks };
+
+    res.render('networks/index', pug_data);
+}));
+
+app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
     var network = await db.collection("networks")
         .findOne({ hash: req.params.hash });
 
@@ -851,59 +868,57 @@ app.get('/network-profiles/:hash(\\w+)/:tab(matches|self-play)?', asyncMiddlewar
         return res.status(404).render("404");
     }
 
-    var networkID = null;
-
     // If it's one of the best network, then find it's #
-    if (network.game_count > 0 || network.hash == get_best_network_hash()) {
-        networkID = await db.collection("networks")
+    if ((network.game_count > 0 || network.hash == get_best_network_hash()) && network.hash != ELF_NETWORK) {
+        network.networkID = await db.collection("networks")
             .count({
-                $and: [
-                    { _id: { $lt: network._id } },
-                    { game_count: { $gt: 0 } }
-                ]
+                _id: { $lt: network._id },
+                game_count: { $gt: 0 },
+                hash: { $ne: ELF_NETWORK }
             });
     }
 
-    network.networkID = networkID;
+    // Prepare Avatar
+    var avatar_folder = path.join(__dirname, 'static', 'networks');
+    if (!await fs.pathExists(avatar_path)) {
+        await fs.mkdirs(avatar_folder);
+    }
 
-    await new Promise(async (resolve, reject) => {
-        var avatar_folder = path.join(__dirname, 'static', 'networks');
+    var avatar_path = path.join(avatar_folder, network.hash + '.png');
+    if (!fs.pathExistsSync(avatar_path)) {
+        var retricon = require('retricon-without-canvas');
 
-        if (!await fs.pathExists(avatar_path)) {
-            await fs.mkdirs(avatar_folder);
-        }
-        
-        var avatar_path = path.join(avatar_folder, network.hash + '.png');
-
-        if (!await fs.pathExists(avatar_path)) {
-            var retricon = require('retricon-without-canvas');
+        await new Promise((resolve, reject) => {
+            // GitHub style 
             retricon(network.hash, { pixelSize: 70, imagePadding: 35, bgColor: '#F0F0F0' })
                 .pngStream()
                 .pipe(fs.createWriteStream(avatar_path))
-                .on('finish', () => {
-                    resolve();
-                });
-        } else {
-            resolve();
-        }
-    });
+                .on('finish', resolve)
+                .on('error', reject);
+        });
+    }
+
     var pug_data = {
         network,
-        http_host: req.protocol + '://' + req.get('host')
+        http_host: req.protocol + '://' + req.get('host'),
+        matches: await db.collection("matches")
+            .aggregate([
+                { "$match": { $or: [{ network1: network.hash }, { network2: network.hash }] } },
+                { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "network2" } }, { "$unwind": "$network2" },
+                { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "network1" } }, { "$unwind": "$network1" },
+                { "$sort": { _id: -1 } },
+                { "$limit": 100 }
+            ]).toArray()
     };
 
-    if(!req.params.tab || req.params.tab == "matches") {
-        pug_data.matches = await db.collection("matches")
-            .aggregate([ 
-                { "$match": { $or : [{ network1 : network.hash }, { network2 : network.hash }] } },
-                { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "network2" } }, { "$unwind": "$network2" }, 
-                { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "network1" } }, { "$unwind": "$network1" }, 
-                { "$sort": { _id: -1 } }, 
-                { "$limit": 100 } 
-            ]).toArray();
-    } else {
-        pug_data.self_play = [];
-    }
+    // Calculate SPRT (Pass / Failed / Percentage %)
+    pug_data.matches.forEach(match => {
+        match.SPRT = SPRT(match.network1_wins, match.network1_losses);
+        if (match.SPRT === null) {
+            match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);
+        }
+    });
+
     res.render('networks/profile', pug_data);
 }));
 
@@ -916,7 +931,7 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
     var rss_exists = await fs.pathExists(rss_path);
 
     if (rss_exists) {
-        best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
+        var best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
         rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
 
         // We have new network promoted since rss last generated
@@ -926,7 +941,7 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
     if (should_generate || req.query.force) {
         best_hash = get_best_network_hash();
         var networks = await db.collection("networks")
-            .find({ $or: [{ game_count: { $gt: 0 } }, { hash: best_hash }] })
+            .find({ $or: [{ game_count: { $gt: 0 } }, { hash: best_hash }], hash: { $ne: ELF_NETWORK } })
             .sort({ _id: 1 })
             .toArray();
 

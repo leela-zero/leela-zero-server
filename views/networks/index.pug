@@ -1,0 +1,63 @@
+extends ../layout.pug
+
+block meta
+    meta(property="og:title" content=`Leela Zero Best Networks`)
+    meta(property="og:type" content="website")
+    meta(property="og:url" content=`${http_host}/network-profiles`)
+
+block script
+    script(src="/static/timeago.js")
+    script.
+        jQuery(".time-ago").each((_, elm) => {
+            var epoch = +elm.innerText, delta = Date.now() - epoch;
+
+            if(delta > 60 * 60 * 24 * 1000) {
+                let date = new Date(epoch);
+                elm.innerText = date.toLocaleDateString() + " " + date.toLocaleTimeString();
+            } else {
+                elm.innerText = deltaToAgo(delta);
+            }
+        })
+        jQuery(".user-time-zone").text(Intl.DateTimeFormat().resolvedOptions().timeZone)
+        jQuery('[data-toggle="tooltip"]').tooltip()
+
+block content
+    .row.mt-4
+        .col-12
+            nav(aria-label="breadcrumb")
+                ol.breadcrumb
+                    li.breadcrumb-item 
+                        a(href="/") Home
+                    li.breadcrumb-item.active Networks
+
+            h1 Best Networks
+            
+            .table-responsive
+                table.table.table-bordered.table-hover
+                    thead 
+                        tr
+                            th #
+                            th Upload Date
+                            th Hash
+                            th Architecture
+                            th Self Play Games
+                            th Training
+                            th Links
+                    tbody
+                    - for(var n in networks) 
+                        - var network = networks[n]
+                        tr
+                            td #{networks.length - n - 1}
+                            td 
+                                span.time-ago #{network._id.getTimestamp().getTime()}
+                            td #{network.hash.slice(0, 6)}
+                            td #{network.filters}x#{network.blocks}
+                            td #{network.game_count}
+                            td #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
+                            td
+                                a(href=`/network-profiles/${network.hash}`) Profile 
+                                |
+                                .
+                                     | 
+                                |
+                                a(href=`/networks/${network.hash}.gz`) Download
