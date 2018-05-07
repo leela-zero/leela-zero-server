@@ -973,18 +973,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
         .then((count) => {
-            return (count + " in past hour).<br/>");
+            return (count + " in past hour).<br/>" + elf_counter + " total ELF selfplay games.<br/>");
         }),
-/*
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash: ELF_NETWORK }).count()
-        .then((count) => {
-            return (elf_counter + " total ELF selfplay games, (" + count + " in past 24 hours, ");
-        }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, networkhash: ELF_NETWORK }).count()
-        .then((count) => {
-            return (count + " in past hour).<br/>");
-        }),
-*/
         db.collection("match_games").find().count()
         .then((count) => {
             return (count + " total match games. (");
