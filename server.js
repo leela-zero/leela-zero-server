@@ -969,33 +969,23 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
         .then((count) => {
-            return (counter + " total selfplay games, (" + count + " in past 24 hours, ");
+            return `${counter} total self-play games (${count} in past 24 hours, `;
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
         .then((count) => {
-            return (count + " in past hour).<br/>");
+            return `${count} in past hour, <a href="https://github.com/gcp/leela-zero/issues/1311#issuecomment-386422486">includes ${elf_counter} ELF</a>).<br/>`;
         }),
-/*
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) }, networkhash: ELF_NETWORK }).count()
-        .then((count) => {
-            return (elf_counter + " total ELF selfplay games, (" + count + " in past 24 hours, ");
-        }),
-        db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) }, networkhash: ELF_NETWORK }).count()
-        .then((count) => {
-            return (count + " in past hour).<br/>");
-        }),
-*/
         db.collection("match_games").find().count()
         .then((count) => {
-            return (count + " total match games. (");
+            return `${count} total match games (`;
         }),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
         .then((count) => {
-            return (count + " match games in past 24 hours, ");
+            return `${count} in past 24 hours, `;
         }),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
         .then((count) => {
-            return (count + " in past hour.)<br>");
+            return `${count} in past hour).<br>`;
         }),
         db.collection("networks").aggregate([
             // Exclude ELF network
@@ -1193,7 +1183,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "<br>Autogtp will automatically download better networks once found.<br>";
         page += "Not each trained network will be a strength improvement over the prior one. Patience please. :)<br>";
         page += "Match games are played at full strength (only 3200 visits).<br>";
-        page += "Training games are played with some randomness in first 30 moves, and noise all game long.<br>";
+        page += "Self-play games are played with some randomness and noise for all moves.<br>";
+        page += "Training data from self-play games are full strength even if plays appear weak.<br>";
         page += "<br>";
         page += "2018-05-04 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.14 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
         page += "<br>";
@@ -1201,14 +1192,14 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         responses.map( response => page += response );
 
         if (mostrecentselfplayhash) {
-            page += "View most recent selfplay training game: ";
+            page += "View most recent self-play game: ";
             page += "[<a href=\"/view/" + mostrecentselfplayhash + "?viewer=eidogo\">EidoGo</a> / ";
             page += "<a href=\"/view/" + mostrecentselfplayhash + "?viewer=wgo\">WGo</a>] ";
             page += "<br>";
         }
 
         if (iprecentselfplayhash) {
-            page += "View your most recent selfplay training game: ";
+            page += "View your most recent self-play game: ";
             page += "[<a href=\"/view/" + iprecentselfplayhash + "?viewer=eidogo\">EidoGo</a> / ";
             page += "<a href=\"/view/" + iprecentselfplayhash + "?viewer=wgo\">WGo</a>]";
             page += "<br>";
