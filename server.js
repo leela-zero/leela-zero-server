@@ -1357,15 +1357,17 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
-        //task.options_hash = checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
-        task.options_hash = get_options_hash(options);
-        task.options = options;
-
         task.hash = best_network_hash;
 
         // For now, have autogtp 16 or newer play half of self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        if (req.params.version >= 16 && Math.random() < .5) task.hash = ELF_NETWORK;
+        if (req.params.version >= 16 && Math.random() < .5) {
+            task.hash = ELF_NETWORK;
+            options.visits = "1801";
+        }
+
+        task.options_hash = get_options_hash(options);
+        task.options = options;
 
         res.send(JSON.stringify(task));
 
