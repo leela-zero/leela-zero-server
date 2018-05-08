@@ -29,6 +29,8 @@ const {
     check_match_verification,
     network_exists,
     checksum,
+    make_seed,
+    get_timestamp_from_seed,
     seed_from_mongolong,
     CalculateEloFromPercent,
     objectIdFromDate,
@@ -599,6 +601,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
 
     // Convert random_seed to Long, which is signed, after verifying the string
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    req.body.task_time = get_timestamp_from_seed(req.body.random_seed);
 
     // verify match exists in database
     var match = await db.collection("matches").findOne(
@@ -659,7 +662,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         if (!dbres.upsertedId)
             return logAndFail('Upload match with duplicate sgf.');
 
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) uploaded in ${Math.round(Date.now() / 1000 - req.body.task_time)}s match: ${sgfhash}`);
         res.send("Match data " + sgfhash + " stored in database\n");
     } catch (err) {
         console.error(err);
@@ -781,6 +784,8 @@ app.post('/submit', (req, res) => {
         return logAndFail('No random_seed provided.');
 
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    req.body.task_time = get_timestamp_from_seed(req.body.random_seed);
+
     let clientversion = req.body.clientversion;
     var networkhash = req.body.networkhash;
     var trainingdatafile;
@@ -824,13 +829,15 @@ app.post('/submit', (req, res) => {
                                 console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded game #" + counter + ": " + sgfhash + " ERROR: " + err);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             } else {
+                                var message = `in ${Math.round(Date.now() / 1000 - req.body.task_time)}s `;
                                 if (networkhash == ELF_NETWORK) {
                                     elf_counter++;
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash);
+                                    message += `ELF game #${elf_counter}`;
                                 } else {
                                     counter++;
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash);
+                                    message += `LZ game #${counter}`;
                                 }
+                                console.log(`${req.ip} (${req.headers['x-real-ip']}) uploaded ${message}: ${sgfhash}`);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             }
                         }
@@ -1300,12 +1307,11 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     var required_client_version = String(15);
     var required_leelaz_version = String("0.13");
 
-    var random_seed = converter.hexToDec( "0x"+crypto.randomBytes(8).toString('hex') ).toString();
-
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
     var best_network_hash = await get_best_network_hash();
     var now = Date.now();
+    var random_seed = make_seed(now / 1000).toString();
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
