@@ -45,7 +45,10 @@ set_task_verification_secret(String(fs.readFileSync(__dirname + "/task_secret"))
 
 var cacheIP24hr = new Cacheman('IP24hr');
 var cacheIP1hr = new Cacheman('IP1hr');
+
+// Cache information about matches and best network rating
 var cachematches = new Cacheman('matches');
+var bestRatings = new Map;
 
 var fastClientsMap = new Map;
 
@@ -957,8 +960,8 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
 app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
-    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=6>Best Network Hash</th></tr>\n";
-    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>Games</th><th>Training #</th></tr>\n";
+    var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
+    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>ELO</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
     var iprecentselfplayhash = "";
@@ -1030,6 +1033,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + item.hash.slice(0,8)
                     + "</a></td><td>"
                     + (item.filters && item.blocks ? `${item.filters}x${item.blocks}` : "TBD")
+                    + "</td><td>"
+                    + ~~bestRatings.get(item.hash)
                     + "</td><td>"
                     + item.game_count
                     + "</td><td>"
@@ -1131,7 +1136,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                     + "<td>" + item.game_count + " / " + item.number_to_play + "</td>"
                     + "<td>";
 
-                switch(SPRT(item.network1_wins, item.network1_losses)) {
+                switch(bestRatings.has(item.network1) || SPRT(item.network1_wins, item.network1_losses)) {
                     case true:
                         match_table += "<b>PASS</b>";
                         break;
@@ -1492,16 +1497,23 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     ]).then((dataArray) => {
         var elograph_data;
 
+        // initialize mapping of best networks to ELO rating cached globally
+        bestRatings = new Map();
+
         // prepare networks
         var networks = dataArray[0].map(item => {
             totalgames.count -= item.game_count || 0;
+
+            // The ELF network has games but is not actually best
+            var best = item.game_count && !ELF_NETWORK.startsWith(item.hash);
+            if (best)
+                bestRatings.set(item.hash, 0);
 
             return {
                 "hash": item.hash, 
                 "game_count": item.game_count,
                 "net": (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
-                // The ELF network has games but is not actually best
-                "best": item.game_count && !ELF_NETWORK.startsWith(item.hash)
+                best
             };
         });
 
@@ -1532,7 +1544,8 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 elo = CalculateEloFromPercent( fakewins / fakecount );
             }
 
-            switch (SPRT(match.network1_wins, match.network1_losses)) {
+            var isBest = bestRatings.has(match.network1);
+            switch (isBest || SPRT(match.network1_wins, match.network1_losses)) {
                 case false:
                     sprt = "FAIL";
                     break;
@@ -1550,11 +1563,12 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
                 sprt = "TEST";
             }
 
-            var info =  {
-                "rating": elo + network2_rating,
-                "sprt": sprt
-            };
+            // Save ratings of best networks
+            var rating = elo + network2_rating;
+            if (isBest)
+                bestRatings.set(match.network1, rating);
 
+            var info =  { rating, sprt };
             ratingsMap.set(match.network1, info);
         });
 
