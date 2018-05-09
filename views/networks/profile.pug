@@ -79,7 +79,7 @@ block content
                             tbody
                             - for(let match of matches) 
                                 tr
-                                    td.time-ago {{ '#{match._id.getTimestamp().getTime()} | timeAgo }}
+                                    td.time-ago {{ '#{match._id.getTimestamp().getTime()}' | timeAgo }}
                                     td 
                                         - var title1 = `${match.network1.training_count.abbr(4)}${match.network1.training_steps ? '+' + match.network1.training_steps.abbr(3):''}`
                                         - var title2 = `${match.network2.training_count.abbr(4)}${match.network2.training_steps ? '+' + match.network2.training_steps.abbr(3):''}`
