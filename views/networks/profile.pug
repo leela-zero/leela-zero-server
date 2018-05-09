@@ -23,6 +23,9 @@ block script
         })
         var app = new Vue({
             el: 'main',
+            data: {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            }
         })
 
 block content
@@ -63,7 +66,7 @@ block content
                 .table-responsive
                     table.table.table-bordered.table-hover
                         caption.
-                             (*) Times are displayed in #[span.user-time-zone] time zone
+                             (*) Times are displayed in {{ timezone }} time zone
                         
                         //- Start Match Table
                         - if(matches)
