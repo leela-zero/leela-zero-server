@@ -127,7 +127,7 @@ async function get_pending_matches () {
                 match.options[key] = String(match.options[key]);
             });
 
-            // If SPRT=pass use unshift() instead of push() so "elo only" matches go last in priority
+            // If SPRT=pass use unshift() instead of push() so "Elo only" matches go last in priority
             //
             switch(SPRT(match.network1_wins, match.network1_losses)) {
                 case false:
@@ -961,7 +961,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
     var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
-    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>ELO</th><th>Games</th><th>Training #</th></tr>\n";
+    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>Elo</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
     var iprecentselfplayhash = "";
@@ -1500,7 +1500,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     ]).then((dataArray) => {
         var elograph_data;
 
-        // initialize mapping of best networks to ELO rating cached globally
+        // initialize mapping of best networks to Elo rating cached globally
         bestRatings = new Map();
 
         // prepare networks
@@ -1527,7 +1527,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             var sprt;
             var elo;
 
-            // TODO If no ELO info, make rating -1 for graph to just hide it instead of assuming same elo as network 2.
+            // TODO If no Elo info, make rating -1 for graph to just hide it instead of assuming same Elo as network 2.
             //
             if (match.network1_wins > 0 && match.network1_losses > 0) {
                 elo = CalculateEloFromPercent( match.network1_wins / match.game_count );
