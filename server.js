@@ -1576,7 +1576,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             if (isBest)
                 bestRatings.set(match.network1, rating);
 
-            var info =  { rating, sprt };
+            // Chain together previous infos if we have any
+            var previous = ratingsMap.get(match.network1);
+            var info =  { previous, rating, sprt };
             ratingsMap.set(match.network1, info);
         });
 
@@ -1584,24 +1586,22 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
         cachematches.del('matches', () => console.log('Cleared match table cache.'));
 
         // prepare json result
-        var json = networks.map((item) => {
-            var rating;
-
-            if (ratingsMap.get(item.hash) === undefined) {
-                rating = item.best === "true" ? 0 : -1;
-            } else {
-                rating = Math.round(ratingsMap.get(item.hash).rating);
-            }
-            var sprt = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).sprt : "???";
-            var result_item = {
-                "rating": Math.max(0.0, rating),
+        var json = [];
+        const addNetworkRating = (item, info = { rating: 0, sprt: "???" }) => {
+            var rating = Math.max(0, Math.round(info.rating));
+            json.push({
+                rating,
                 "net": Math.max(0.0, Number(item.net + rating/100000)),
-                "sprt": sprt,
+                "sprt": info.sprt,
                 "hash": item.hash.slice(0, 6),
                 "best": item.best
-            };
-            return result_item;
-        });
+            });
+
+            // Add additional result for multiple matches
+            if (info.previous)
+                addNetworkRating(item, info.previous);
+        };
+        networks.forEach(item => addNetworkRating(item, ratingsMap.get(item.hash)));
 
         // shortcut for sending json result using `JSON.stringify`
         // and set `Content-Type: application/json`
