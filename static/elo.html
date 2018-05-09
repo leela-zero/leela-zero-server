@@ -2,6 +2,9 @@
 <html>
 <head>
   <title>Embedding Vega-Lite</title>
+  <!-- fetch polyfill https://github.com/github/fetch -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.4/fetch.min.js"></script>
+  <!-- Vega -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vega/3.0.8/vega.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/2.0.3/vega-lite.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/3.0.0-rc7/vega-embed.min.js"></script>
@@ -14,10 +17,10 @@
   <div id="vis"></div>
 
   <script type="text/javascript">
-  (async () => {
-    // Get the data for the graph and for computing the max values
-    var values = await (await fetch("/data/elograph.json")).json();
-
+  // Get the data for the graph and for computing the max values
+  fetch("/data/elograph.json")
+  .then(response => response.json())
+  .then(values => {
     // Share the axis variables for use in multiple layers
     var x = {
       "axis": { "title": "Number of accumulated games" },
@@ -123,9 +126,11 @@
     };
 
     // Render the graph then add tooltips
-    var result = await vegaEmbed("#vis", vlSpec, opt);
-    vegaTooltip.vegaLite(result.view, vlSpec, tooltipOpt);
-  })();
+    vegaEmbed("#vis", vlSpec, opt)
+    .then(result => vegaTooltip.vegaLite(result.view, vlSpec, tooltipOpt))
+    .catch(console.error);
+  })
+  .catch(console.error);
   </script>
   </div>
 </body>
