@@ -1580,6 +1580,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             ratingsMap.set(match.network1, info);
         });
 
+        // Matches table uses data from bestRatings, so allow it to refresh
+        cachematches.del('matches', () => console.log('Cleared match table cache.'));
+
         // prepare json result
         var json = networks.map((item) => {
             var rating;
