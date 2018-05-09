@@ -1206,6 +1206,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Self-play games are played with some randomness and noise for all moves.<br>";
         page += "Training data from self-play games are full strength even if plays appear weak.<br>";
         page += "<br>";
+        page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
         page += "2018-05-04 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.14 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
         page += "<br>";
 
