@@ -8,18 +8,19 @@ block meta
 block script
     script(src="/static/timeago.js")
     script.
-        jQuery(".time-ago").each((_, elm) => {
-            var epoch = +elm.innerText, delta = Date.now() - epoch;
+        Vue.filter('timeAgo', function(value) {
+            var epoch = +value, delta = Date.now() - epoch;
 
             if(delta > 60 * 60 * 24 * 1000) {
                 let date = new Date(epoch);
-                elm.innerText = date.toLocaleDateString() + " " + date.toLocaleTimeString();
+                return date.toLocaleDateString() + " " + date.toLocaleTimeString();
             } else {
-                elm.innerText = deltaToAgo(delta);
+                return deltaToAgo(delta);
             }
         })
-        jQuery(".user-time-zone").text(Intl.DateTimeFormat().resolvedOptions().timeZone)
-        jQuery('[data-toggle="tooltip"]').tooltip()
+        var app = new Vue({
+            el: 'main',
+        })
 
 block content
     .row.mt-4
@@ -49,7 +50,7 @@ block content
                         tr
                             td #{networks.length - n - 1}
                             td 
-                                span.time-ago #{network._id.getTimestamp().getTime()}
+                                span.time-ago {{ '#{network._id.getTimestamp().getTime()}' | timeAgo }}
                             td #{network.hash.slice(0, 6)}
                             td #{network.filters}x#{network.blocks}
                             td #{network.game_count}
