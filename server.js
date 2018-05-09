@@ -1576,9 +1576,12 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             if (isBest)
                 bestRatings.set(match.network1, rating);
 
+            // Use opponent's net for ELF as its training_count is arbitrary
+            var net = match.network1 == ELF_NETWORK && match.merged.training_count;
+
             // Chain together previous infos if we have any
             var previous = ratingsMap.get(match.network1);
-            var info =  { previous, rating, sprt };
+            var info = { net, previous, rating, sprt };
             ratingsMap.set(match.network1, info);
         });
 
@@ -1591,7 +1594,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             var rating = Math.max(0, Math.round(info.rating));
             json.push({
                 rating,
-                "net": Math.max(0.0, Number(item.net + rating/100000)),
+                "net": Math.max(0.0, Number((info.net || item.net) + rating/100000)),
                 "sprt": info.sprt,
                 "hash": item.hash.slice(0, 6),
                 "best": item.best
