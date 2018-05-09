@@ -961,7 +961,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     console.log(req.ip + " Sending index.html");
 
     var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
-    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Architecture</th><th>Elo</th><th>Games</th><th>Training #</th></tr>\n";
+    network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Size</th><th>Elo</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
     var iprecentselfplayhash = "";
