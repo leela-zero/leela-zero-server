@@ -1,5 +1,5 @@
 var config = {};
 
-config.discord_webhook = "";
+config.discord_webhook = process.env.DISCORD_WEBHOOK;
 
 module.exports = config;
