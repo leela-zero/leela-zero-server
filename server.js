@@ -18,6 +18,7 @@ const rss_generator = require('./classes/rss_generator.js');
 const os = require("os");
 const util = require("util");
 const path = require("path");
+const discord = require("./classes/discord");
 
 /**
  * Utilities
@@ -725,6 +726,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
 
         fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
         console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
+        discord.network_promotion_notify(req.body.winnerhash);
     }
 
     cachematches.clear(() => { console.log("Cleared match cache."); });
