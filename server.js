@@ -860,7 +860,7 @@ app.get('/network-profiles', asyncMiddleware(async (req, res, next) => {
         .sort({ _id: -1 })
         .toArray();
     
-    var pug_data = { networks };
+    var pug_data = { networks, menu: 'network-profiles' };
 
     res.render('networks/index', pug_data);
 }));
@@ -913,7 +913,8 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res, next) 
                 { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "network1" } }, { "$unwind": "$network1" },
                 { "$sort": { _id: -1 } },
                 { "$limit": 100 }
-            ]).toArray()
+            ]).toArray(),
+        menu: 'network-profiles'
     };
 
     // Calculate SPRT (Pass / Failed / Percentage %)
@@ -1619,6 +1620,22 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     });
 
     res.json(json);
+}));
+
+app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res, next) => {
+    var start = req.params.start;
+    var files = {
+        "44": "top10-Q16.json",
+        "43" : "top10-R16.json",
+        "33" : "top10-R17.json",
+    }
+
+    if (!(start in files))
+        start = "44";
+
+    var top10 = JSON.parse(fs.readFileSync(path.join(__dirname, 'static', files[start])));
+
+    return res.render('opening', { top10, start, menu : 'opening' });
 }));
 
 // Catch all, return 404 page not found
