@@ -967,8 +967,17 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Size</th><th>Elo</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
-    var iprecentselfplayhash = "";
-    var mostrecentselfplayhash = "";
+
+    // Display some self-play for all and by current ip
+    var recentSelfplay = {};
+    var selfplayProjection = { _id: 0, movescount: 1, networkhash: 1, sgfhash: 1, winnercolor: 1 };
+    var saveSelfplay = type => games => {
+        recentSelfplay[type] = games.map(({movescount, networkhash, sgfhash, winnercolor}) => ({
+            sgfhash,
+            text: `${networkhash.slice(0, 8)}/${movescount}${winnercolor.slice(0, 1)}`
+        }));
+        return "";
+    };
 
     var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
     var totalgames = await cursor.next();
@@ -1048,14 +1057,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
             network_table += "</table>\n";
             return "";
         }),
-        db.collection("games").find({ ip: req.ip }, { _id: 0, sgfhash: 1 }).hint( "ip_-1__id_-1" ).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => {
-            if (game[0]) {
-                iprecentselfplayhash = game[0].sgfhash;
-            }
-
-            return "";
-        }),
+        db.collection("games").find({ ip: req.ip }, selfplayProjection).hint( "ip_-1__id_-1" ).sort( { _id: -1 } ).limit(10).toArray()
+        .then(saveSelfplay("ip")),
         db.collection("match_games").find(
             { winnerhash: best_network_hash },
             { _id: 0, winnerhash: 1, loserhash: 1, sgfhash: 1 }
@@ -1071,14 +1074,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 return "";
             }
         }),
-        db.collection("games").find({}, { _id: 0, sgfhash: 1 }).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => {
-            if (game[0]) {
-                mostrecentselfplayhash = game[0].sgfhash;
-            }
-
-            return "";
-        }),
+        db.collection("games").find({}, selfplayProjection).sort( { _id: -1 } ).limit(10).toArray()
+        .then(saveSelfplay("all")),
         cachematches.wrap('matches', '1d', () => { return Promise.resolve(
         db.collection("matches").aggregate([ { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "merged1" } }, { "$unwind": "$merged1" }, { "$sort": { _id: -1 } }, { "$limit": 100 } ])
         .toArray()
@@ -1215,19 +1212,17 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
 
         responses.map( response => page += response );
 
-        if (mostrecentselfplayhash) {
-            page += "View most recent self-play game: ";
-            page += "[<a href=\"/view/" + mostrecentselfplayhash + "?viewer=eidogo\">EidoGo</a> / ";
-            page += "<a href=\"/view/" + mostrecentselfplayhash + "?viewer=wgo\">WGo</a>] ";
-            page += "<br>";
-        }
-
-        if (iprecentselfplayhash) {
-            page += "View your most recent self-play game: ";
-            page += "[<a href=\"/view/" + iprecentselfplayhash + "?viewer=eidogo\">EidoGo</a> / ";
-            page += "<a href=\"/view/" + iprecentselfplayhash + "?viewer=wgo\">WGo</a>]";
-            page += "<br>";
-        }
+        ["all", "ip"].forEach(type => {
+            var games = recentSelfplay[type];
+            if (games && games.length) {
+                page += `View ${type == "ip" ? "your " : ""}most recent self-play games: `;
+                page += games.map(({sgfhash, text}) => `
+                    <a href="/view/${sgfhash}">${text}</a>
+                    <a href="/view/${sgfhash}?viewer=wgo">WGo</a>
+                `.trim()).join(", ");
+                page += "<br>";
+            }
+        });
 
         page += "<br><br>";
         page += "<a href=\"https://sjeng.org/zero/\">Raw SGF files</a>.<br>";
