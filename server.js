@@ -974,7 +974,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     var saveSelfplay = type => games => {
         recentSelfplay[type] = games.map(({movescount, networkhash, sgfhash, winnercolor}) => ({
             sgfhash,
-            text: `${networkhash.slice(0, 8)}/${movescount}${winnercolor.slice(0, 1)}`
+            text: `${networkhash.slice(0, 4)}/${movescount}${winnercolor.slice(0, 1)}`
         }));
         return "";
     };
@@ -1216,10 +1216,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
             var games = recentSelfplay[type];
             if (games && games.length) {
                 page += `View ${type == "ip" ? "your " : ""}most recent self-play games: `;
-                page += games.map(({sgfhash, text}) => `
-                    <a href="/view/${sgfhash}">${text}</a>
-                    <a href="/view/${sgfhash}?viewer=wgo">WGo</a>
-                `.trim()).join(", ");
+                page += games.map(({sgfhash, text}) =>
+                    `<a href="/view/${sgfhash}?viewer=wgo">${text}</a>`).join(", ");
                 page += "<br>";
             }
         });
