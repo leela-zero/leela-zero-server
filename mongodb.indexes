@@ -6,15 +6,12 @@ db.games.createIndex({"ip":1}, {"name":"ip_1"});
 db.games.createIndex({"networkhash":1}, {"name":"networkhash_1"});
 db.games.createIndex({"sgfhash":1}, {"unique":true,"name":"sgfhash_1"});
 
-// match-games
-db.match-games.createIndex({"_id":1}, {"name":"_id_"});
-
 // match_games
 db.match_games.createIndex({"_id":1}, {"name":"_id_"});
 db.match_games.createIndex({"ip":1}, {"name":"ip_1"});
 db.match_games.createIndex({"sgfhash":1}, {"unique":true,"name":"sgfhash_1","background":true});
 db.match_games.createIndex({"winnerhash":1,"loserhash":1,"options_hash":1,"_id":1}, {"name":"winnerhash_1_loserhash_1_options_hash_1__id_1","background":true});
-db.match_games.createIndex{"random_seed":1}, {"name":"random_seed_1","background":true});
+db.match_games.createIndex({"random_seed":1}, {"name":"random_seed_1","background":true});
 
 // matches
 db.matches.createIndex({"_id":1}, {"name":"_id_"});
