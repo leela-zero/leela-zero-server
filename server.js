@@ -990,7 +990,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
         .then((count) => {
-            return `${counter} total self-play games (${count} in past 24 hours, `;
+            return `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `;
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
         .then((count) => {
@@ -1384,6 +1384,19 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     }
 }));
 
+app.get('/view/:hash(\\w+).sgf', (req, res) => {
+    db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
+
+        res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
+        res.setHeader("Content-Type", "application/x-go-sgf");
+        res.send(sgf);
+    }).catch( err => {
+        res.send("No self-play was found with hash " + req.params.hash);
+    });
+});
+
 app.get('/view/:hash(\\w+)', (req, res) => {
     Promise.all([
         db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
@@ -1405,6 +1418,26 @@ app.get('/view/:hash(\\w+)', (req, res) => {
         }
     }).catch( err => {
         res.send("No selfplay game was found with hash " + req.params.hash);
+    });
+});
+
+app.get('/self-plays', (req, res) => {
+    var ipMap = new Map();
+
+    db.collection("games").find({}).sort({ _id: -1 }).limit(400).toArray()
+    .then(list => {
+        for (let item of list) {
+            if (!ipMap.has(item.ip)) {
+                ipMap.set(item.ip, item.ip == req.ip ? "you" : ipMap.size + 1);
+            }
+            // replace IP here before going to pug view
+            item.ip = ipMap.get(item.ip);
+        }
+
+        // render pug view self-plays
+        res.render("self-plays", { data: list });
+    }).catch(err => {
+        res.send("Failed to get recent self-play games");
     });
 });
 
