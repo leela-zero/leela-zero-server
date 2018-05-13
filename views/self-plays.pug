@@ -9,6 +9,7 @@ html(lang="en")
             thead
                 tr
                     th Client
+                    th Version
                     th Self-Play Hash
                     th Network
                     th Move Count
@@ -18,6 +19,7 @@ html(lang="en")
                 each item in data
                     tr
                         td #{item.ip}
+                        td #{item.clientversion}
                         td
                             a(href="/view/" + item.sgfhash + "?viewer=wgo")  #{item.sgfhash}
                         td #{item.networkhash.slice(0, 8)}
