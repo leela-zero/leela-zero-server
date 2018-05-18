@@ -18,9 +18,11 @@ html(lang="en")
                     ul.navbar-nav.mr-auto
                         li.nav-item
                             a.nav-link(href="/") Home
-                        li.nav-item.active
-                            a.nav-link(href="/network-profiles") Networks 
-                                span.sr-only (current)
+                        li.nav-item
+                            a.nav-link(class={ active: menu == "network-profiles"} href="/network-profiles") Networks 
+                        li.nav-item
+                            a.nav-link(class={ active: menu == "opening"} href="/opening") Openings 
+
                     ul.navbar-nav
                         li.nav-item
                             a.nav-link(href="https://github.com/gcp/leela-zero") GitHub
@@ -30,11 +32,12 @@ html(lang="en")
                             a.nav-link(href="https://github.com/gcp/leela-zero/blob/master/FAQ.md") FAQ
                         li.nav-item
                             a.nav-link(href="https://github.com/gcp/leela-zero/blob/master/README.md") ReadMe
-                                
+
         main.container
             block content
 
         script(src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous")
         script(src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous")
         script(src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous")
+        script(src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.min.js" crossorigin="anonymous")
         block script

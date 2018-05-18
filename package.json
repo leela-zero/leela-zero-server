@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "import": "node scripts/import.js"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,7 @@
     "mongodb": "^2.2.33",
     "nodemon": "^1.14.11",
     "pug": "^2.0.0-rc.4",
+    "request": "^2.85.0",
     "retricon-without-canvas": "^1.0.0",
     "rss": "^1.2.2",
     "zlib": "^1.0.5"

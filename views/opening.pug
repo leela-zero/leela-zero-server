@@ -1,0 +1,59 @@
+extends layout.pug
+
+block script
+    script(src="/static/wgo/wgo.min.js")
+    script(src="/static/wgo/wgo.player.min.js")
+    link(rel="stylesheet" href="/static/wgo/wgo.player.css")
+    script(src="https://www.gstatic.com/charts/loader.js")
+    script.
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+        function drawChart() {
+            $(".chart").each((idx, elm) => {
+                var $this = $(elm);
+
+                var data = new google.visualization.DataTable();
+                data.addColumn('number', 'Network by Training #'); // Implicit domain label col.
+                data.addColumn('number', 'Frequency'); // Implicit series 1 data col.
+                data.addColumn({type: 'string', role: 'tooltip', 'p' : { html : true }});
+                data.addRows($this.data('chart'));
+
+                var options = {
+                    title: `Seen total ${$this.data('total')} times`,
+                    hAxis: {title: 'Networks by Training #', maxValue: 8000000},
+                    vAxis: {title: 'Frequency'},
+                    tooltip: {isHtml: true},
+                    legend: { position : 'none'},
+                };
+
+                var chart = new google.visualization.ScatterChart(elm);
+
+                chart.draw(data, options);
+            });
+        }
+        
+
+block content
+    .row.mt-4
+        .col
+            h1 Leela Zero Opening Analysis
+            p Total 336,595 match games as of 04-May-2018
+
+            ul.nav.nav-tabs
+                li.nav-item
+                    a.nav-link(class={ active : start == "44"} href="/opening/44") 4-4 Point
+                li.nav-item
+                    a.nav-link(class={ active : start == "43"} href="/opening/43") 4-3 Point
+                li.nav-item
+                    a.nav-link(class={ active : start == "33"} href="/opening/33") 3-3 Point
+
+    -for(let opening of top10)
+        .row.mt-4
+            .col-sm-6(style="height: 100%")
+                h1 Opening (#{opening._id.slice(0,6)})
+                .player.w-100(data-wgo-board="section:{top: 0,left: 9,right: 0,bottom: 9}" data-wgo=`${opening.sgf}` data-wgo-move="20" data-wgo-enablewheel="false")
+            .col-sm-6
+                .chart.w-100(style="height: 100%;min-height:300px" data-total=`${opening.count}` data-chart=`${JSON.stringify(opening.chart)}`)
+
+            
+            

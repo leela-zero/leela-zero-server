@@ -18,6 +18,7 @@ const rss_generator = require('./classes/rss_generator.js');
 const os = require("os");
 const util = require("util");
 const path = require("path");
+const discord = require("./classes/discord");
 
 /**
  * Utilities
@@ -28,6 +29,8 @@ const {
     check_match_verification,
     network_exists,
     checksum,
+    make_seed,
+    get_timestamp_from_seed,
     seed_from_mongolong,
     CalculateEloFromPercent,
     objectIdFromDate,
@@ -598,6 +601,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
 
     // Convert random_seed to Long, which is signed, after verifying the string
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    req.body.task_time = get_timestamp_from_seed(req.body.random_seed);
 
     // verify match exists in database
     var match = await db.collection("matches").findOne(
@@ -613,6 +617,19 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     // Match not found, abort!!
     if (!match)
         return logAndFail('Match not found.');
+
+    // Verify random_seed for the match hasn't been used
+    if (await db.collection("match_games").findOne(
+        {
+            random_seed: req.body.random_seed,
+            $or: [
+                { winnerhash: req.body.winnerhash, loserhash: req.body.loserhash },
+                { loserhash: req.body.winnerhash, winnerhash: req.body.loserhash }
+            ],
+            options_hash: req.body.options_hash
+        }
+    ))
+        return logAndFail('Upload match with duplicate random_seed.');
 
     // calculate sgfhash 
     try {
@@ -645,7 +662,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         if (!dbres.upsertedId)
             return logAndFail('Upload match with duplicate sgf.');
 
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded match " + sgfhash);
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) uploaded in ${Math.round(Date.now() / 1000 - req.body.task_time)}s match: ${sgfhash}`);
         res.send("Match data " + sgfhash + " stored in database\n");
     } catch (err) {
         console.error(err);
@@ -694,9 +711,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
                 m.network1_losses++;
             }
 
-            // Check > 1 since we'll run to 400 even on a SPRT pass, but will do it at end.
-            //
-            if (sprt_result === true && pending_matches.length > 1) {
+            if (sprt_result === true) {
                 console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
                 pending_matches.splice(pending_match_index, 1);  // cut out the match
                 if (m.game_count < m.number_to_play) pending_matches.unshift(m);   // continue a SPRT pass at end of queue
@@ -725,6 +740,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
 
         fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
         console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
+        discord.network_promotion_notify(req.body.winnerhash);
     }
 
     cachematches.clear(() => { console.log("Cleared match cache."); });
@@ -768,6 +784,8 @@ app.post('/submit', (req, res) => {
         return logAndFail('No random_seed provided.');
 
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
+    req.body.task_time = get_timestamp_from_seed(req.body.random_seed);
+
     let clientversion = req.body.clientversion;
     var networkhash = req.body.networkhash;
     var trainingdatafile;
@@ -811,13 +829,15 @@ app.post('/submit', (req, res) => {
                                 console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded game #" + counter + ": " + sgfhash + " ERROR: " + err);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             } else {
+                                var message = `in ${Math.round(Date.now() / 1000 - req.body.task_time)}s `;
                                 if (networkhash == ELF_NETWORK) {
                                     elf_counter++;
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash);
+                                    message += `ELF game #${elf_counter}`;
                                 } else {
                                     counter++;
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash);
+                                    message += `LZ game #${counter}`;
                                 }
+                                console.log(`${req.ip} (${req.headers['x-real-ip']}) uploaded ${message}: ${sgfhash}`);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             }
                         }
@@ -858,7 +878,7 @@ app.get('/network-profiles', asyncMiddleware(async (req, res, next) => {
         .sort({ _id: -1 })
         .toArray();
     
-    var pug_data = { networks };
+    var pug_data = { networks, menu: 'network-profiles' };
 
     res.render('networks/index', pug_data);
 }));
@@ -911,7 +931,8 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res, next) 
                 { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "network1" } }, { "$unwind": "$network1" },
                 { "$sort": { _id: -1 } },
                 { "$limit": 100 }
-            ]).toArray()
+            ]).toArray(),
+        menu: 'network-profiles'
     };
 
     // Calculate SPRT (Pass / Failed / Percentage %)
@@ -964,8 +985,17 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
     network_table += "<tr><th>#</th><th>Upload Date</th><th>Hash</th><th>Size</th><th>Elo</th><th>Games</th><th>Training #</th></tr>\n";
 
     var styles = "";
-    var iprecentselfplayhash = "";
-    var mostrecentselfplayhash = "";
+
+    // Display some self-play for all and by current ip
+    var recentSelfplay = {};
+    var selfplayProjection = { _id: 0, movescount: 1, networkhash: 1, sgfhash: 1, winnercolor: 1 };
+    var saveSelfplay = type => games => {
+        recentSelfplay[type] = games.map(({movescount, networkhash, sgfhash, winnercolor}) => ({
+            sgfhash,
+            text: `${networkhash.slice(0, 4)}/${movescount}${winnercolor.slice(0, 1)}`
+        }));
+        return "";
+    };
 
     var cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
     var totalgames = await cursor.next();
@@ -987,7 +1017,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
         .then((count) => {
-            return `${counter} total self-play games (${count} in past 24 hours, `;
+            return `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `;
         }),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
         .then((count) => {
@@ -1045,14 +1075,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
             network_table += "</table>\n";
             return "";
         }),
-        db.collection("games").find({ ip: req.ip }, { _id: 0, sgfhash: 1 }).hint( "ip_-1__id_-1" ).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => {
-            if (game[0]) {
-                iprecentselfplayhash = game[0].sgfhash;
-            }
-
-            return "";
-        }),
+        db.collection("games").find({ ip: req.ip }, selfplayProjection).hint( "ip_-1__id_-1" ).sort( { _id: -1 } ).limit(10).toArray()
+        .then(saveSelfplay("ip")),
         db.collection("match_games").find(
             { winnerhash: best_network_hash },
             { _id: 0, winnerhash: 1, loserhash: 1, sgfhash: 1 }
@@ -1068,14 +1092,8 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
                 return "";
             }
         }),
-        db.collection("games").find({}, { _id: 0, sgfhash: 1 }).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => {
-            if (game[0]) {
-                mostrecentselfplayhash = game[0].sgfhash;
-            }
-
-            return "";
-        }),
+        db.collection("games").find({}, selfplayProjection).sort( { _id: -1 } ).limit(10).toArray()
+        .then(saveSelfplay("all")),
         cachematches.wrap('matches', '1d', () => { return Promise.resolve(
         db.collection("matches").aggregate([ { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "merged1" } }, { "$unwind": "$merged1" }, { "$sort": { _id: -1 } }, { "$limit": 100 } ])
         .toArray()
@@ -1206,24 +1224,21 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Self-play games are played with some randomness and noise for all moves.<br>";
         page += "Training data from self-play games are full strength even if plays appear weak.<br>";
         page += "<br>";
+        page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
         page += "2018-05-04 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.14 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
         page += "<br>";
 
         responses.map( response => page += response );
 
-        if (mostrecentselfplayhash) {
-            page += "View most recent self-play game: ";
-            page += "[<a href=\"/view/" + mostrecentselfplayhash + "?viewer=eidogo\">EidoGo</a> / ";
-            page += "<a href=\"/view/" + mostrecentselfplayhash + "?viewer=wgo\">WGo</a>] ";
-            page += "<br>";
-        }
-
-        if (iprecentselfplayhash) {
-            page += "View your most recent self-play game: ";
-            page += "[<a href=\"/view/" + iprecentselfplayhash + "?viewer=eidogo\">EidoGo</a> / ";
-            page += "<a href=\"/view/" + iprecentselfplayhash + "?viewer=wgo\">WGo</a>]";
-            page += "<br>";
-        }
+        ["all", "ip"].forEach(type => {
+            var games = recentSelfplay[type];
+            if (games && games.length) {
+                page += `View ${type == "ip" ? "your " : ""}most recent self-play games: `;
+                page += games.map(({sgfhash, text}) =>
+                    `<a href="/view/${sgfhash}?viewer=wgo">${text}</a>`).join(", ");
+                page += "<br>";
+            }
+        });
 
         page += "<br><br>";
         page += "<a href=\"https://sjeng.org/zero/\">Raw SGF files</a>.<br>";
@@ -1247,7 +1262,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
  * @returns {bool|object} False if no match to schedule; otherwise, match object
  */
 function shouldScheduleMatch (req, now) {
-  if (!(pending_matches.length && req.params.version!=0 && fastClientsMap.get(req.ip))) {
+  if (!(pending_matches.length && req.params.autogtp!=0 && fastClientsMap.get(req.ip))) {
     return false;
   }
 
@@ -1257,10 +1272,10 @@ function shouldScheduleMatch (req, now) {
   while (--i >= 0) {
     match = pending_matches[i];
 
-    // For now, only allow autogtp 16 or newer play a match with Facebook's ELF
-    // Open Go network, which uses network version 2, so new clients can take
-    // any match and older clients can take a match that doesn't include ELF.
-    if (req.params.version >= 16 || match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
+    // For now, only allow newer autogtp and leelaz to take any match while
+    // older clients can take a match that don't include ELF (network v2).
+    if (req.params.autogtp >= 16 || req.params.leelaz >= 0.14 ||
+        match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
       break;
     }
   }
@@ -1276,23 +1291,27 @@ function shouldScheduleMatch (req, now) {
                 match.number_to_play,
                 match.network1_wins,
                 match.network1_losses,
-                PESSIMISTIC_RATE);
+                PESSIMISTIC_RATE,
+                bestRatings.has(match.network1));
   var result = needed > requested;
   console.log(`Need ${needed} match games. Requested ${requested}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`);
 
   return result && match;
 }
 
-app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
+/**
+ * Get a self-play or match task depending on various client versions.
+ * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
+ */
+app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res, next) => {
     var required_client_version = String(15);
     var required_leelaz_version = String("0.13");
-
-    var random_seed = converter.hexToDec( "0x"+crypto.randomBytes(8).toString('hex') ).toString();
 
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
     var best_network_hash = await get_best_network_hash();
     var now = Date.now();
+    var random_seed = make_seed(now / 1000).toString();
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
@@ -1340,7 +1359,7 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
         console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
-//    } else if ( req.params.version==1 && Math.random() > .2 ) {
+//    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
 //        var task = { "cmd": "wait", "minutes": "5" };
 //
 //        res.send(JSON.stringify(task));
@@ -1359,9 +1378,9 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
 
         task.hash = best_network_hash;
 
-        // For now, have autogtp 16 or newer play half of self-play with
+        // For now, have newer autogtp and leelaz play some self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        if (req.params.version >= 16 && Math.random() < .25) {
+        if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < .25) {
             task.hash = ELF_NETWORK;    
             options.resignation_percent = "5";
         }
@@ -1375,6 +1394,19 @@ app.get('/get-task/:version(\\d+)', asyncMiddleware( async (req, res, next) => {
         console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: selfplay ${JSON.stringify(task)}`);
     }
 }));
+
+app.get('/view/:hash(\\w+).sgf', (req, res) => {
+    db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
+
+        res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
+        res.setHeader("Content-Type", "application/x-go-sgf");
+        res.send(sgf);
+    }).catch( err => {
+        res.send("No self-play was found with hash " + req.params.hash);
+    });
+});
 
 app.get('/view/:hash(\\w+)', (req, res) => {
     Promise.all([
@@ -1397,6 +1429,26 @@ app.get('/view/:hash(\\w+)', (req, res) => {
         }
     }).catch( err => {
         res.send("No selfplay game was found with hash " + req.params.hash);
+    });
+});
+
+app.get('/self-plays', (req, res) => {
+    var ipMap = new Map();
+
+    db.collection("games").find({}).sort({ _id: -1 }).limit(400).toArray()
+    .then(list => {
+        for (let item of list) {
+            if (!ipMap.has(item.ip)) {
+                ipMap.set(item.ip, item.ip == req.ip ? "you" : ipMap.size + 1);
+            }
+            // replace IP here before going to pug view
+            item.ip = ipMap.get(item.ip);
+        }
+
+        // render pug view self-plays
+        res.render("self-plays", { data: list });
+    }).catch(err => {
+        res.send("Failed to get recent self-play games");
     });
 });
 
@@ -1571,29 +1623,35 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             if (isBest)
                 bestRatings.set(match.network1, rating);
 
-            var info =  { rating, sprt };
+            // Use opponent's net for ELF as its training_count is arbitrary
+            var net = match.network1 == ELF_NETWORK && match.merged.training_count;
+
+            // Chain together previous infos if we have any
+            var previous = ratingsMap.get(match.network1);
+            var info = { net, previous, rating, sprt };
             ratingsMap.set(match.network1, info);
         });
 
-        // prepare json result
-        var json = networks.map((item) => {
-            var rating;
+        // Matches table uses data from bestRatings, so allow it to refresh
+        cachematches.del('matches', () => console.log('Cleared match table cache.'));
 
-            if (ratingsMap.get(item.hash) === undefined) {
-                rating = item.best === "true" ? 0 : -1;
-            } else {
-                rating = Math.round(ratingsMap.get(item.hash).rating);
-            }
-            var sprt = ratingsMap.get(item.hash) ? ratingsMap.get(item.hash).sprt : "???";
-            var result_item = {
-                "rating": Math.max(0.0, rating),
-                "net": Math.max(0.0, Number(item.net + rating/100000)),
-                "sprt": sprt,
+        // prepare json result
+        var json = [];
+        const addNetworkRating = (item, info = { rating: 0, sprt: "???" }) => {
+            var rating = Math.max(0, Math.round(info.rating));
+            json.push({
+                rating,
+                "net": Math.max(0.0, Number((info.net || item.net) + rating/100000)),
+                "sprt": info.sprt,
                 "hash": item.hash.slice(0, 6),
                 "best": item.best
-            };
-            return result_item;
-        });
+            });
+
+            // Add additional result for multiple matches
+            if (info.previous)
+                addNetworkRating(item, info.previous);
+        };
+        networks.forEach(item => addNetworkRating(item, ratingsMap.get(item.hash)));
 
         // shortcut for sending json result using `JSON.stringify`
         // and set `Content-Type: application/json`
@@ -1606,6 +1664,22 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     });
 
     res.json(json);
+}));
+
+app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res, next) => {
+    var start = req.params.start;
+    var files = {
+        "44": "top10-Q16.json",
+        "43" : "top10-R16.json",
+        "33" : "top10-R17.json",
+    }
+
+    if (!(start in files))
+        start = "44";
+
+    var top10 = JSON.parse(fs.readFileSync(path.join(__dirname, 'static', files[start])));
+
+    return res.render('opening', { top10, start, menu : 'opening' });
 }));
 
 // Catch all, return 404 page not found

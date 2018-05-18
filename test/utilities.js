@@ -3,12 +3,15 @@ const {
     compute_task_verification,
     add_match_verification,
     check_match_verification,
+    make_seed,
+    get_timestamp_from_seed,
     network_exists,
     asyncMiddleware,
     SPRT
 } = require('../classes/utilities.js');
 var assert = require('assert');
 const crypto = require('crypto');
+const {Long} = require('mongodb');
 
 describe('Utilities', function () {
     describe('#network_exists(hash)', function () {
@@ -180,6 +183,59 @@ describe('Task Verification', () => {
 
                 assert(check_match_verification(data));
             });
+        });
+    });
+});
+
+describe('Seed', () => {
+    describe('#make_seed(seconds, highBits)', () => {
+        it('should make something with defaults', () => {
+            assert(make_seed());
+        });
+
+        it('should use current time by default', () => {
+            const now = Date.now() / 1000;
+            const s1 = make_seed();
+            const s2 = make_seed(now);
+
+            assert.equal(s1.getLowBits(), s2.getLowBits());
+        });
+
+        it('should not make negative seeds by default', () => {
+            for (let i = 0; i < 100; i++)
+                assert.notEqual(make_seed().toString()[0], '-');
+        });
+
+        it('should take custom high bits', () => {
+            const low = 123;
+            const high = 890;
+
+            const seed = make_seed(low, high);
+
+            assert.equal(seed.getLowBits(), low);
+            assert.equal(seed.getHighBits(), high);
+        });
+
+        it('should allow full 64-bit seeds', () => {
+            const seed = make_seed(0, 4294967295);
+
+            assert.equal(seed.toString()[0], '-');
+        });
+    });
+
+    describe('#get_timestamp_from_seed(seed)', () => {
+        it('should extract the timestamp', () => {
+            const seed = Long.fromString('1719949479461840638');
+            const ts = get_timestamp_from_seed(seed);
+
+            assert.equal(ts, 1525737214);
+        });
+
+        it('should work for existing seeds (non-sensical timestamp)', () => {
+            const seed = Long.fromString('1324276254195649245');
+            const ts = get_timestamp_from_seed(seed);
+
+            assert.equal(ts, 2748386013);
         });
     });
 });
