@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require('fs-extra');
 const converter = require('hex2dec');
-const ObjectId = require('mongodb').ObjectID;
+const {Long, ObjectId} = require('mongodb');
 const crypto = require('crypto');
 const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 
@@ -77,6 +77,28 @@ function checksum(str, algorithm, encoding) {
         .createHash(algorithm || 'md5')
         .update(str, 'utf8')
         .digest(encoding || 'hex')
+}
+
+/**
+ * Generate a 64-bit Long seed that embeds a timestamp
+ *
+ * @param seconds {number} Timestamp seconds defaulting to now
+ * @param highBits {number} Extra values for seed defaulting to 31-bit random
+ * @returns {Long} A random number
+ */
+function make_seed(seconds = Date.now() / 1000,
+                   highBits = converter.hexToDec(`0x${crypto.randomBytes(4).toString('hex')}`).toString() >>> 1) {
+    return new Long(seconds, highBits);
+}
+
+/**
+ * Extract the timestamp embedded in a seed
+ *
+ * @param seed {Long} The value to extract from
+ * @returns {number} Timestamp (seconds)
+ */
+function get_timestamp_from_seed(seed) {
+    return seed.getLowBitsUnsigned();
 }
 
 function seed_from_mongolong(seed) {
@@ -207,6 +229,8 @@ module.exports = {
     check_match_verification,
     network_exists,
     checksum,
+    make_seed,
+    get_timestamp_from_seed,
     seed_from_mongolong,
     CalculateEloFromPercent,
     objectIdFromDate,
