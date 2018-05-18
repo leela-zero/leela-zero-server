@@ -695,9 +695,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
                 m.network1_losses++;
             }
 
-            // Check > 1 since we'll run to 400 even on a SPRT pass, but will do it at end.
-            //
-            if (sprt_result === true && pending_matches.length > 1) {
+            if (sprt_result === true) {
                 console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
                 pending_matches.splice(pending_match_index, 1);  // cut out the match
                 if (m.game_count < m.number_to_play) pending_matches.unshift(m);   // continue a SPRT pass at end of queue
