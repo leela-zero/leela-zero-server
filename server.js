@@ -642,6 +642,24 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
         }));
         const sgfhash = checksum(sgfbuffer, 'sha256');
 
+        var matchRequest;
+        try {
+          matchRequest = await db.collection("matchRequest").remove({
+              "network1": match.network1,
+              "network2": match.network2,
+              "option_hash": match.options_hash,
+              "random_seed": req.body.random_seed
+            }, {justOne: true});
+        } catch (err) {
+          console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " find matchRequest " + sgfhash + " ERROR: " + err);
+        } 
+        if (matchRequest.nRemoved === 0) {
+          console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " unknown match submitted.");
+          // enable these lines to ignore unknown matches.
+          // res.send("Match data " + sgfhash + " stored in database\n");
+          // return;
+        }
+
         // upload match game to database
         var dbres = await db.collection("match_games").updateOne(
             { sgfhash: sgfhash },
@@ -1353,6 +1371,20 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         add_match_verification(task);
         res.send(JSON.stringify(task));
+        
+        var matchRequest = { "network1": match.network1,
+            "network2": match.network2,
+            "option_hash": match.options_hash,
+            "random_seed": random_seed };
+
+        db.collection("matchRequest").insertOne( matchRequest )
+        .then( () => {
+            console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " MatchRequest added! " + JSON.stringify(matchRequest));
+        } )
+        .catch( (err) => {
+            console.error(req.ip + " (" + req.headers['x-real-ip'] + ") " + " ERROR: MatchRequest addition failed: " + err);
+            res.send("ERROR: MatchRequest addition failed\n");
+        } );
 
         match.requests.push({timestamp: now, seed: random_seed});
 
