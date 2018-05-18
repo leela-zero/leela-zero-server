@@ -615,6 +615,19 @@ app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
     if (!match)
         return logAndFail('Match not found.');
 
+    // Verify random_seed for the match hasn't been used
+    if (await db.collection("match_games").findOne(
+        {
+            random_seed: req.body.random_seed,
+            $or: [
+                { winnerhash: req.body.winnerhash, loserhash: req.body.loserhash },
+                { loserhash: req.body.winnerhash, winnerhash: req.body.loserhash }
+            ],
+            options_hash: req.body.options_hash
+        }
+    ))
+        return logAndFail('Upload match with duplicate random_seed.');
+
     // calculate sgfhash 
     try {
         const sgfbuffer = await new Promise((resolve, reject) => zlib.unzip(req.files.sgf.data, (err, res) => {
