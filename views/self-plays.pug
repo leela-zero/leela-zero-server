@@ -14,6 +14,8 @@ html(lang="en")
                     th Network
                     th Move Count
                     th Winner
+                    th Started
+                    th Duration
                     th Download
             tbody
                 each item in data
@@ -25,6 +27,8 @@ html(lang="en")
                         td #{item.networkhash.slice(0, 8)}
                         td #{item.movescount}
                         td #{item.winnercolor}
+                        td #{item.started}
+                        td #{item.duration}
                         td
                             a(href="/view/" + item.sgfhash + ".sgf")  sgf
         script.
