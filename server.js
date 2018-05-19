@@ -88,7 +88,7 @@ function get_options_hash (options) {
     } else {
         return checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
     }
-};
+}
 
 async function get_fast_clients () {
     return new Promise( (resolve, reject) => {
@@ -107,7 +107,7 @@ async function get_fast_clients () {
 
         resolve();
     });
-};
+}
 
 //  db.matches.aggregate( [ { "$redact": { "$cond": [ { "$gt": [ "$number_to_play", "$game_count" ] }, "$$KEEP", "$$PRUNE" ] } } ] )
 //
@@ -151,7 +151,7 @@ async function get_pending_matches () {
         });
         resolve();
     });
-};
+}
 
 
 
@@ -193,7 +193,7 @@ async function get_best_network_hash () {
         return best_network_hash_promise;
     })
     .catch(err => console.error(err));
-};
+}
 
 
 

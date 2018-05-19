@@ -136,7 +136,7 @@ function log_memory_stats(string) {
         key += " ".repeat(9 - key.length);
         console.log(`\t${key} ${size} MB`);
     }
-};
+}
 
 //SPRT
 //
