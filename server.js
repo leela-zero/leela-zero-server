@@ -216,6 +216,8 @@ app.use('/static', express.static('static', { maxage: '365d', etag: true }));
 get_best_network_hash().then( (hash) => console.log("Current best hash " + hash) );
 
 setInterval( () => {
+    log_memory_stats("10 minute interval");
+
     get_fast_clients()
     .then()
     .catch();
