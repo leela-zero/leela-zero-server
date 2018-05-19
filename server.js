@@ -177,9 +177,9 @@ async function get_best_network_hash () {
                 rstream
                 .pipe(gunzip)
                 .pipe(hash)
-                .on('error', () => {
+                .on('error', err => {
                     console.error("Error opening/gunzip/hash best-network.gz: " + err);
-                    err => reject(err);
+                    reject(err);
                 })
                 .on('finish', () => {
                     var best_network_hash = hash.read();
@@ -958,16 +958,16 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
 
     if (rss_exists) {
         var best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
-        rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
+        var rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
 
         // We have new network promoted since rss last generated
         should_generate = best_network_mtimeMs > rss_mtimeMs;
     }
 
     if (should_generate || req.query.force) {
-        best_hash = get_best_network_hash();
+        var hash = get_best_network_hash();
         var networks = await db.collection("networks")
-            .find({ $or: [{ game_count: { $gt: 0 } }, { hash: best_hash }], hash: { $ne: ELF_NETWORK } })
+            .find({ $or: [{ game_count: { $gt: 0 } }, { hash }], hash: { $ne: ELF_NETWORK } })
             .sort({ _id: 1 })
             .toArray();
 
@@ -1410,13 +1410,9 @@ app.get('/view/:hash(\\w+).sgf', (req, res) => {
 });
 
 app.get('/view/:hash(\\w+)', (req, res) => {
-    Promise.all([
-        db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => {
-            return (game.sgf);
-        }),
-    ]).then((responses) => {
-        sgf = responses[0].replace(/(\n|\r)+/g, '');
+    db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
 
         switch (req.query.viewer) {
             case "eidogo":
@@ -1507,13 +1503,9 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 });
 
 app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
-    Promise.all([
-        db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => {
-            return (game.sgf);
-        }),
-    ]).then((responses) => {
-        sgf = responses[0].replace(/(\n|\r)+/g, '');
+    db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
 
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
         res.setHeader("Content-Type", "application/x-go-sgf");
@@ -1524,13 +1516,9 @@ app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
 });
 
 app.get('/viewmatch/:hash(\\w+)', (req, res) => {
-    Promise.all([
-        db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => {
-            return (game.sgf);
-        }),
-    ]).then((responses) => {
-        sgf = responses[0].replace(/(\n|\r)+/g, '');
+    db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
 
         switch (req.query.viewer) {
             case "eidogo":
