@@ -94,7 +94,6 @@ if (!help) {
         // Matches
         for (let i = 0; i < options.m; i++) {
             var network_idx = Math.floor(i / options.m * options.n);
-            var network1, network2;
             var match = {
                 number_to_play: 400,
                 options: {},
