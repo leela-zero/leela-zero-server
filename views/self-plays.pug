@@ -32,4 +32,9 @@ html(lang="en")
                         td
                             a(href="/view/" + item.sgfhash + ".sgf")  sgf
         script.
+            Tablesort.extend('minutes', item => /(^\?\?\?$|minutes)/.test(item), (a, b) => {
+                a = (a.match(/([.\d]+) minutes/) || [])[1] || 0;
+                b = (b.match(/([.\d]+) minutes/) || [])[1] || 0;
+                return b - a;
+            });
             new Tablesort(document.getElementById('sort'));
