@@ -136,7 +136,7 @@ function log_memory_stats(string) {
         key += " ".repeat(9 - key.length);
         console.log(`\t${key} ${size} MB`);
     }
-};
+}
 
 //SPRT
 //
@@ -150,7 +150,7 @@ function LLR(W, L, elo0, elo1) {
     if (!L) L = 1;
 
     var N = W + L;
-    var w = W / N, l = L / N;
+    var w = W / N;
     var s = w;
     var m2 = w;
     var variance = m2 - s ** 2;

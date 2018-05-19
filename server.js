@@ -9,14 +9,12 @@ const MongoClient = require('mongodb').MongoClient;
 const Long = require('mongodb').Long;
 const ObjectId = require('mongodb').ObjectID;
 const zlib = require('zlib');
-const converter = require('hex2dec');
 const Cacheman = require('cacheman');
 const app = express();
 const Busboy = require('busboy');
 const weight_parser = require('./classes/weight_parser.js');
 const rss_generator = require('./classes/rss_generator.js');
 const os = require("os");
-const util = require("util");
 const path = require("path");
 const discord = require("./classes/discord");
 
@@ -88,7 +86,7 @@ function get_options_hash (options) {
     } else {
         return checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
     }
-};
+}
 
 async function get_fast_clients () {
     return new Promise( (resolve, reject) => {
@@ -107,7 +105,7 @@ async function get_fast_clients () {
 
         resolve();
     });
-};
+}
 
 //  db.matches.aggregate( [ { "$redact": { "$cond": [ { "$gt": [ "$number_to_play", "$game_count" ] }, "$$KEEP", "$$PRUNE" ] } } ] )
 //
@@ -126,7 +124,7 @@ async function get_pending_matches () {
 
             // Client only accepts strings for now
             //
-            Object.keys(match.options).map( (key, index) => {
+            Object.keys(match.options).map(key => {
                 match.options[key] = String(match.options[key]);
             });
 
@@ -151,7 +149,7 @@ async function get_pending_matches () {
         });
         resolve();
     });
-};
+}
 
 
 
@@ -177,9 +175,9 @@ async function get_best_network_hash () {
                 rstream
                 .pipe(gunzip)
                 .pipe(hash)
-                .on('error', () => {
+                .on('error', err => {
                     console.error("Error opening/gunzip/hash best-network.gz: " + err);
-                    err => reject(err);
+                    reject(err);
                 })
                 .on('finish', () => {
                     var best_network_hash = hash.read();
@@ -193,7 +191,7 @@ async function get_best_network_hash () {
         return best_network_hash_promise;
     })
     .catch(err => console.error(err));
-};
+}
 
 
 
@@ -299,7 +297,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
 
 // Obsolete
 //
-app.use('/best-network-hash', asyncMiddleware( async (req, res, next) => {
+app.use('/best-network-hash', asyncMiddleware( async (req, res) => {
     var hash = await get_best_network_hash();
 
     res.write(hash);
@@ -315,7 +313,7 @@ app.use('/best-network-hash', asyncMiddleware( async (req, res, next) => {
 //
 // This is no longer used, as /network/ is served by nginx and best-network.gz downloaded directly from it
 //
-app.use('/best-network', asyncMiddleware( async (req, res, next) => {
+app.use('/best-network', asyncMiddleware( async (req, res) => {
     var hash = await get_best_network_hash();
     var readStream = fs.createReadStream(__dirname + '/network/best-network.gz');
 
@@ -411,7 +409,7 @@ app.post('/request-match', (req, res) => {
     db.collection("matches").insertOne( match )
     .then( () => {
         // Client only accepts strings for now
-        Object.keys(match.options).map( (key, index) => {
+        Object.keys(match.options).map(key => {
             match.options[key] = String(match.options[key]);
         });
 
@@ -434,7 +432,7 @@ app.post('/request-match', (req, res) => {
 // So we don't think the network is newer than it really is. Actually, upsert shouldn't change
 // the ObjectID so date will remain original insertion date.
 //
-app.post('/submit-network', asyncMiddleware((req, res, next) => {
+app.post('/submit-network', asyncMiddleware((req, res) => {
     log_memory_stats("submit network start");
     var busboy = new Busboy({ headers: req.headers });
 
@@ -561,7 +559,7 @@ app.post('/submit-network', asyncMiddleware((req, res, next) => {
     });
 }));
 
-app.post('/submit-match', asyncMiddleware(async (req, res, next) => {
+app.post('/submit-match', asyncMiddleware(async (req, res) => {
     const logAndFail = msg => {
         console.log(`${req.ip} (${req.headers['x-real-ip']}) /submit-match: ${msg}`);
         console.log(`files: ${JSON.stringify(Object.keys(req.files || {}))}, body: ${JSON.stringify(req.body)}`);
@@ -824,7 +822,7 @@ app.post('/submit', (req, res) => {
                                 data: trainingdatafile, clientversion: Number(clientversion),
                                     winnercolor: req.body.winnercolor, random_seed: req.body.random_seed }},
                   { upsert: true },
-                        (err, dbres) => {
+                        err => {
                             // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
                             //
                             if (err) {
@@ -849,7 +847,7 @@ app.post('/submit', (req, res) => {
                         { hash: networkhash },
                         { $inc: { game_count: 1 } },
                         { },
-                        (err, dbres) => {
+                        err => {
                             if (err) {
                                 if (networkhash == ELF_NETWORK)
                                     console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
@@ -868,7 +866,7 @@ app.post('/submit', (req, res) => {
     }
 });
 
-app.get('/network-profiles', asyncMiddleware(async (req, res, next) => {
+app.get('/network-profiles', asyncMiddleware(async (req, res) => {
     var networks = await db.collection("networks")
         .find({
             hash: { $ne: ELF_NETWORK },
@@ -885,7 +883,7 @@ app.get('/network-profiles', asyncMiddleware(async (req, res, next) => {
     res.render('networks/index', pug_data);
 }));
 
-app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res, next) => {
+app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
     var network = await db.collection("networks")
         .findOne({ hash: req.params.hash });
 
@@ -948,7 +946,7 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res, next) 
     res.render('networks/profile', pug_data);
 }));
 
-app.get('/rss', asyncMiddleware(async (req, res, next) => {
+app.get('/rss', asyncMiddleware(async (req, res) => {
     var rss_path = path.join(__dirname, 'static', 'rss.xml')
         , best_network_path = path.join(__dirname, 'network', 'best-network.gz')
         , should_generate = true
@@ -958,16 +956,16 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
 
     if (rss_exists) {
         var best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
-        rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
+        var rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
 
         // We have new network promoted since rss last generated
         should_generate = best_network_mtimeMs > rss_mtimeMs;
     }
 
     if (should_generate || req.query.force) {
-        best_hash = get_best_network_hash();
+        var hash = get_best_network_hash();
         var networks = await db.collection("networks")
-            .find({ $or: [{ game_count: { $gt: 0 } }, { hash: best_hash }], hash: { $ne: ELF_NETWORK } })
+            .find({ $or: [{ game_count: { $gt: 0 } }, { hash }], hash: { $ne: ELF_NETWORK } })
             .sort({ _id: 1 })
             .toArray();
 
@@ -980,7 +978,7 @@ app.get('/rss', asyncMiddleware(async (req, res, next) => {
     res.sendFile(rss_path);
 }));
 
-app.get('/',  asyncMiddleware( async (req, res, next) => {
+app.get('/',  asyncMiddleware( async (req, res) => {
     console.log(req.ip + " Sending index.html");
 
     var network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
@@ -1304,7 +1302,7 @@ function shouldScheduleMatch (req, now) {
  * Get a self-play or match task depending on various client versions.
  * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
  */
-app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res, next) => {
+app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res) => {
     var required_client_version = String(16);
     var required_leelaz_version = String("0.15");
 
@@ -1318,7 +1316,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     var match = shouldScheduleMatch(req, now);
     if (match) {
-        var task = {"cmd": "match", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task = {"cmd": "match", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1332,7 +1330,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
                 { network1: match.network1, network2: null, options_hash: match.options_hash },
                 { $set: { network2: best_network_hash } },
                 { },
-                (err, dbres) => {
+                err => {
                     if (err) {
                         console.log("ERROR: /get-task setting network2: " + err);
                         res.send("ERROR: /get-task setting network2: " + err);
@@ -1361,14 +1359,14 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
 //    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
-//        var task = { "cmd": "wait", "minutes": "5" };
+//        let task = { "cmd": "wait", "minutes": "5" };
 //
 //        res.send(JSON.stringify(task));
 //
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        var task  = {"cmd": "selfplay", "hash": "", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task  = {"cmd": "selfplay", "hash": "", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
@@ -1404,19 +1402,15 @@ app.get('/view/:hash(\\w+).sgf', (req, res) => {
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
         res.setHeader("Content-Type", "application/x-go-sgf");
         res.send(sgf);
-    }).catch( err => {
+    }).catch(() => {
         res.send("No self-play was found with hash " + req.params.hash);
     });
 });
 
 app.get('/view/:hash(\\w+)', (req, res) => {
-    Promise.all([
-        db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => {
-            return (game.sgf);
-        }),
-    ]).then((responses) => {
-        sgf = responses[0].replace(/(\n|\r)+/g, '');
+    db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
 
         switch (req.query.viewer) {
             case "eidogo":
@@ -1428,7 +1422,7 @@ app.get('/view/:hash(\\w+)', (req, res) => {
             default:
                 res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
         }
-    }).catch( err => {
+    }).catch(() => {
         res.send("No selfplay game was found with hash " + req.params.hash);
     });
 });
@@ -1461,7 +1455,7 @@ app.get('/self-plays', (req, res) => {
 
         // render pug view self-plays
         res.render("self-plays", { data: list });
-    }).catch(err => {
+    }).catch(() => {
         res.send("Failed to get recent self-play games");
     });
 });
@@ -1498,39 +1492,31 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
                     // render pug view match-games
                     res.render("match-games", { data: list });
-                }).catch(err => {
+                }).catch(() => {
                     res.send("No matches found for match " + req.params.matchid);
                 });
-        }).catch(err => {
+        }).catch(() => {
             res.send("No match found for id " + req.params.hash);
         });
 });
 
 app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
-    Promise.all([
-        db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => {
-            return (game.sgf);
-        }),
-    ]).then((responses) => {
-        sgf = responses[0].replace(/(\n|\r)+/g, '');
+    db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
 
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
         res.setHeader("Content-Type", "application/x-go-sgf");
         res.send(sgf);
-    }).catch( err => {
+    }).catch(() => {
         res.send("No match was found with hash " + req.params.hash);
     });
 });
 
 app.get('/viewmatch/:hash(\\w+)', (req, res) => {
-    Promise.all([
-        db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-        .then((game) => {
-            return (game.sgf);
-        }),
-    ]).then((responses) => {
-        sgf = responses[0].replace(/(\n|\r)+/g, '');
+    db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
+    .then(({sgf}) => {
+        sgf = sgf.replace(/(\n|\r)+/g, '');
 
         switch (req.query.viewer) {
             case "eidogo":
@@ -1542,13 +1528,13 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
             default:
                 res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
         }
-    }).catch( err => {
+    }).catch(() => {
         res.send("No match was found with hash " + req.params.hash);
     });
 });
 
 
-app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
+app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
     var json = await cachematches.wrap("elograph", "1d", async () => {
     console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
@@ -1564,8 +1550,6 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
             { "$sort": { "merged._id": 1 } }
         ]).toArray()
     ]).then((dataArray) => {
-        var elograph_data;
-
         // initialize mapping of best networks to Elo rating cached globally
         bestRatings = new Map();
 
@@ -1680,7 +1664,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res, next) => {
     res.json(json);
 }));
 
-app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res, next) => {
+app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     var start = req.params.start;
     var files = {
         "44": "top10-Q16.json",
@@ -1697,6 +1681,6 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res, next) => {
 }));
 
 // Catch all, return 404 page not found
-app.get('*', asyncMiddleware(async (req, res, next) => {
+app.get('*', asyncMiddleware(async (req, res) => {
     return res.status(404).render("404");
 }));
