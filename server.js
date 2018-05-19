@@ -1318,7 +1318,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     var match = shouldScheduleMatch(req, now);
     if (match) {
-        var task = {"cmd": "match", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task = {"cmd": "match", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1361,14 +1361,14 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
 //    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
-//        var task = { "cmd": "wait", "minutes": "5" };
+//        let task = { "cmd": "wait", "minutes": "5" };
 //
 //        res.send(JSON.stringify(task));
 //
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        var task  = {"cmd": "selfplay", "hash": "", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task  = {"cmd": "selfplay", "hash": "", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //

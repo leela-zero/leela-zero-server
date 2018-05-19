@@ -49,7 +49,7 @@ if (!help) {
 
         // Network
         var networks = [], filters_step = [64, 128, 192, 256], blocks_step = [10, 15, 20, 25, 30, 35, 40];
-        for (var i = 0; i < options.n; i++) {
+        for (let i = 0; i < options.n; i++) {
             networks.push({
                 hash: crypto.randomBytes(32).toString('hex'),
                 filters: filters_step[Math.floor(i / options.n * filters_step.length)],
@@ -63,7 +63,7 @@ if (!help) {
 
         // Self play games
         var games = [];
-        for (var i = 0; i < options.g; i++) {
+        for (let i = 0; i < options.g; i++) {
             games.push({
                 ip: "127.0.0.1",
                 networkhash: networks[Math.floor(i / options.g * options.n)].hash,
@@ -92,7 +92,7 @@ if (!help) {
 
         var first_match = {};
         // Matches
-        for (var i = 0; i < options.m; i++) {
+        for (let i = 0; i < options.m; i++) {
             var network_idx = Math.floor(i / options.m * options.n);
             var network1, network2;
             var match = {
