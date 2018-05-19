@@ -1226,8 +1226,7 @@ app.get('/',  asyncMiddleware( async (req, res, next) => {
         page += "Self-play games are played with some randomness and noise for all moves.<br>";
         page += "Training data from self-play games are full strength even if plays appear weak.<br>";
         page += "<br>";
-        page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
-        page += "2018-05-04 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.14 + AutoGTP v16</a>. <b>Update required soon.</b><br>";
+        page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b><br>";
         page += "<br>";
 
         responses.map( response => page += response );
@@ -1306,8 +1305,8 @@ function shouldScheduleMatch (req, now) {
  * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
  */
 app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res, next) => {
-    var required_client_version = String(15);
-    var required_leelaz_version = String("0.13");
+    var required_client_version = String(16);
+    var required_leelaz_version = String("0.15");
 
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
@@ -1319,7 +1318,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     var match = shouldScheduleMatch(req, now);
     if (match) {
-        var task = {"cmd": "match", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
+        var task = {"cmd": "match", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1369,7 +1368,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        var task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "random_seed": random_seed, "leelaz_version" : required_leelaz_version};
+        var task  = {"cmd": "selfplay", "hash": "", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
