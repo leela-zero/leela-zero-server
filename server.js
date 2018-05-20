@@ -60,7 +60,7 @@ app.set('view engine', 'pug')
 //
 // It was a bug in nodemon which has now been fixed. It is bad practice to leave this here, eventually remove it.
 //
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
     console.error('Caught exception: ' + err);
 });
 
@@ -94,9 +94,9 @@ async function get_fast_clients () {
             { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60)}}},
             { $group: { _id: "$ip", total: { $sum: 1 }}},
             { $match: { total: { $gt: 4 }}}
-        ] ).forEach( (match) => {
+        ] ).forEach( match => {
             fastClientsMap.set(match._id, true);
-        }, (err) => {
+        }, err => {
             if (err) {
                 console.error("Error fetching matches: " + err);
                 return reject(err);
@@ -119,7 +119,7 @@ async function get_pending_matches () {
                     { "$gt": [ "$number_to_play", "$game_count" ] },
                     "$$KEEP", "$$PRUNE"
                 ] } }
-        ] ).sort({_id:-1}).forEach( (match) => {
+        ] ).sort({_id:-1}).forEach( match => {
             match.requests = []; // init request list.
 
             // Client only accepts strings for now
@@ -141,7 +141,7 @@ async function get_pending_matches () {
                     pending_matches.push( match );
                     console.log("SPRT: Pushing: " + JSON.stringify(match));
             }
-        }, (err) => {
+        }, err => {
             if (err) {
                 console.error("Error fetching matches: " + err);
                 return reject(err);
@@ -157,7 +157,7 @@ async function get_best_network_hash () {
     // Check if file has changed. If not, send cached version instead.
     //
     return fs.stat(__dirname + '/network/best-network.gz')
-    .then((stats) => {
+    .then(stats => {
         if (!best_network_hash_promise || best_network_mtimeMs != stats.mtimeMs) {
             best_network_mtimeMs = stats.mtimeMs;
 
@@ -211,7 +211,7 @@ app.use('/static', express.static('static', { maxage: '365d', etag: true }));
 // This is async but we don't need it to start the server. I'm calling it during startup so it'll get the value cached right away
 // instead of when the first /best-network request comes in, in case a lot of those requests come in at once when server
 // starts up.
-get_best_network_hash().then( (hash) => console.log("Current best hash " + hash) );
+get_best_network_hash().then( hash => console.log("Current best hash " + hash) );
 
 setInterval( () => {
     log_memory_stats("10 minute interval");
@@ -245,7 +245,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
     db = database;
 
     db.collection("networks").count()
-    .then((count) => {
+    .then(count => {
         console.log ( count + " networks.");
     });
 
@@ -317,7 +317,7 @@ app.use('/best-network', asyncMiddleware( async (req, res) => {
     var hash = await get_best_network_hash();
     var readStream = fs.createReadStream(__dirname + '/network/best-network.gz');
 
-    readStream.on('error', (err) => {
+    readStream.on('error', err => {
         res.send("Error: " + err);
         console.error("ERROR /best-network : " + err);
     });
@@ -420,7 +420,7 @@ app.post('/request-match', (req, res) => {
         res.send((match.is_test ? "Test" : "Regular") + " Match added!\n");
         console.log("Pending is now: " + JSON.stringify(pending_matches));
     } )
-    .catch( (err) => {
+    .catch( err => {
         console.error(req.ip + " (" + req.headers['x-real-ip'] + ") " + " ERROR: Match addition failed: " + err);
         res.send("ERROR: Match addition failed\n");
     } );
@@ -1004,19 +1004,19 @@ app.get('/',  asyncMiddleware( async (req, res) => {
 
     Promise.all([
         cacheIP24hr.wrap('IP24hr', '5m', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })))
-        .then((list) => (list.length + " clients in past 24 hours, ")),
+        .then(list => (list.length + " clients in past 24 hours, ")),
         cacheIP1hr.wrap('IP1hr', '30s', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })))
-        .then((list) => (list.length + " in past hour.<br>")),
+        .then(list => (list.length + " in past hour.<br>")),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
-        .then((count) => `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `),
+        .then(count => `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
-        .then((count) => `${count} in past hour, <a href="https://github.com/gcp/leela-zero/issues/1311#issuecomment-386422486">includes ${elf_counter} ELF</a>).<br/>`),
+        .then(count => `${count} in past hour, <a href="https://github.com/gcp/leela-zero/issues/1311#issuecomment-386422486">includes ${elf_counter} ELF</a>).<br/>`),
         db.collection("match_games").find().count()
-        .then((count) => `${count} total match games (`),
+        .then(count => `${count} total match games (`),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
-        .then((count) => `${count} in past 24 hours, `),
+        .then(count => `${count} in past 24 hours, `),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
-        .then((count) => `${count} in past hour).<br>`),
+        .then(count => `${count} in past hour).<br>`),
         db.collection("networks").aggregate([
             // Exclude ELF network
             { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $ne: ELF_NETWORK } }] } },
@@ -1029,7 +1029,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         ])
         //db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } ).limit(100)
         .toArray()
-        .then((list) => {
+        .then(list => {
             for (let item of list) {
                 var itemmoment = new moment(item._id.getTimestamp());
 
@@ -1063,7 +1063,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             { winnerhash: best_network_hash },
             { _id: 0, winnerhash: 1, loserhash: 1, sgfhash: 1 }
         ).sort( { _id: -1 } ).limit(1).toArray()
-        .then((game) => {
+        .then(game => {
             if (game[0]) {
                 return "<br>"
                     + "View most recent match win by best network " + game[0].winnerhash.slice(0,8) + " vs " + game[0].loserhash.slice(0,8) + ": "
@@ -1079,7 +1079,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         cachematches.wrap('matches', '1d', () => Promise.resolve(
         db.collection("matches").aggregate([ { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "merged1" } }, { "$unwind": "$merged1" }, { "$sort": { _id: -1 } }, { "$limit": 100 } ])
         .toArray()
-        .then((list) => {
+        .then(list => {
             var match_table = "<table class=\"matches-table\" border=1><tr><th colspan=5>Test Matches (100 Most Recent)</th></tr>\n";
             match_table += "<tr><th>Start Date</th><th>Network Hashes</th><th>Wins / Losses</th><th>Games</th><th>SPRT</th></tr>\n";
 
@@ -1169,7 +1169,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             return [styles, match_table];
         })
         )),
-    ]).then((responses) => {
+    ]).then(responses => {
         var match_and_styles = responses.pop();
 
         var styles = match_and_styles[0];
@@ -1451,7 +1451,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
     var ipMap = new Map();
 
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
-        .then((match) => {
+        .then(match => {
             db.collection("match_games").aggregate([
                 {
                     "$match": {
@@ -1463,7 +1463,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
                 },
                 { "$sort": { _id: 1 } }
             ]).toArray()
-                .then((list) => {
+                .then(list => {
                     for (let item of list) {
                         if (ipMap.get(item.ip) == null) {
                             ipMap.set(item.ip, ipMap.size + 1);
@@ -1531,7 +1531,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
             { "$unwind": "$merged" },
             { "$sort": { "merged._id": 1 } }
         ]).toArray()
-    ]).then((dataArray) => {
+    ]).then(dataArray => {
         // initialize mapping of best networks to Elo rating cached globally
         bestRatings = new Map();
 

@@ -35,7 +35,7 @@ var weight_parser = require('../classes/weight_parser.js');
 
             var parser = new weight_parser;
 
-            var architecture = await new Promise((resolve) => {
+            var architecture = await new Promise(resolve => {
                 fs.createReadStream(network_path)
                     .pipe(zlib.createGunzip())
                     .pipe(parser)

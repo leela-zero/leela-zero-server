@@ -10,6 +10,7 @@ module.exports = {
     "rules": {
         "array-bracket-newline": "error",
         "arrow-body-style": "error",
+        "arrow-parens": ["error", "as-needed"],
         "arrow-spacing": "error",
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],
