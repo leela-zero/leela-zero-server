@@ -12,6 +12,7 @@ module.exports = {
         "arrow-body-style": "error",
         "arrow-parens": ["error", "as-needed"],
         "arrow-spacing": "error",
+        "brace-style": "error",
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],
         "dot-notation": "error",

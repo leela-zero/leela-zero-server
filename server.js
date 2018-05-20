@@ -466,7 +466,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
 
             Promise.all([
                 new Promise(resolve => {
-                    fs_stream.on('finish', () => { resolve({ path: fs_stream.path }) });
+                    fs_stream.on('finish', () => resolve({ path: fs_stream.path }));
                 }),
                 new Promise(resolve => {
                     const hasher = gunzip_stream.pipe(crypto.createHash('sha256')).on('finish', () => resolve({ hash: hasher.read().toString('hex') }));
@@ -544,8 +544,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
                 if (err) {
                     res.end(err.message);
                     console.error(err);
-                }
-                else {
+                } else {
                     const msg = 'Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
                     res.end(msg);
                     console.log(msg);
@@ -740,7 +739,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
         discord.network_promotion_notify(req.body.winnerhash);
     }
 
-    cachematches.clear(() => { console.log("Cleared match cache."); });
+    cachematches.clear(() => console.log("Cleared match cache."));
 }));
 
 // curl -F 'networkhash=abc123' -F 'file=@zero.prototxt' http://localhost:8080/submit
