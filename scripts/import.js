@@ -16,11 +16,12 @@ function getRandomInt(max) {
 process.argv.shift();   // node
 process.argv.shift();   // import.js
 
-let options = {
+const options = {
     n: 10,
     g: 10000,
     m: 100
-}, help = false;
+};
+let help = false;
 
 for (let i = 0; i < process.argv.length; i++) {
     switch (process.argv[i]) {
@@ -48,7 +49,9 @@ if (!help) {
         console.log(`Importing ${options.n} networks, ${options.g} self play games and ${options.m} matches.`);
 
         // Network
-        let networks = [], filters_step = [64, 128, 192, 256], blocks_step = [10, 15, 20, 25, 30, 35, 40];
+        const networks = [];
+        const filters_step = [64, 128, 192, 256];
+        const blocks_step = [10, 15, 20, 25, 30, 35, 40];
         for (let i = 0; i < options.n; i++) {
             networks.push({
                 hash: crypto.randomBytes(32).toString('hex'),

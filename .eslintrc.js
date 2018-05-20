@@ -32,6 +32,7 @@ module.exports = {
         "no-var": "error",
         "no-whitespace-before-property": "error",
         "object-shorthand": "error",
+        "one-var": ["error", "never"],
         "operator-assignment": "error",
         "prefer-arrow-callback": "error",
         "prefer-numeric-literals": "error",

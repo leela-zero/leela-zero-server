@@ -66,7 +66,8 @@ process.on('uncaughtException', err => {
 
 // https://blog.tompawlak.org/measure-execution-time-nodejs-javascript
 
-let counter, elf_counter;
+let counter = 0;
+let elf_counter = 0;
 let best_network_mtimeMs = 0;
 let best_network_hash_promise = null;
 let db;
@@ -533,11 +534,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
 
         // Prepare variables for printing messages
         //
-        let hash = set.hash,
-            filters = set.filters,
-            blocks = set.blocks,
-            training_count = set.training_count
-            ;
+        const {blocks, filters, hash, training_count} = set;
 
         db.collection("networks").updateOne(
             { hash: set.hash },
@@ -947,10 +944,10 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
 }));
 
 app.get('/rss', asyncMiddleware(async (req, res) => {
-    let rss_path = path.join(__dirname, 'static', 'rss.xml')
-        , best_network_path = path.join(__dirname, 'network', 'best-network.gz')
-        , should_generate = true
-        , http_host = req.protocol + '://' + req.get('host');
+    const rss_path = path.join(__dirname, 'static', 'rss.xml');
+    const best_network_path = path.join(__dirname, 'network', 'best-network.gz');
+    let should_generate = true;
+    const http_host = req.protocol + '://' + req.get('host');
 
     let rss_exists = await fs.pathExists(rss_path);
 
