@@ -41,9 +41,7 @@ for (let i = 0; i < process.argv.length; i++) {
     }
 }
 
-
 if (!help) {
-    
     
     MongoClient.connect('mongodb://localhost/test', async (err, db) => {
         console.log(`Importing ${options.n} networks, ${options.g} self play games and ${options.m} matches.`);
@@ -92,7 +90,6 @@ if (!help) {
             await db.collection('games').insertMany(games);
         }
 
-
         const first_match = {};
         // Matches
         for (let i = 0; i < options.m; i++) {
@@ -129,15 +126,10 @@ if (!help) {
 
             await db.collection('matches').insertOne(match);
         }
-        
 
         db.close();
     });
 
-
     // Network
 
 }
-
-
-

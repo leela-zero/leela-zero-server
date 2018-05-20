@@ -79,8 +79,6 @@ let db;
 let pending_matches = [];
 const MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
-
-
 function get_options_hash (options) {
     if (options.visits) {
         return checksum("" + options.visits + options.resignation_percent + options.noise + options.randomcnt).slice(0, 6);
@@ -152,8 +150,6 @@ async function get_pending_matches () {
     });
 }
 
-
-
 async function get_best_network_hash () {
     // Check if file has changed. If not, send cached version instead.
     //
@@ -193,8 +189,6 @@ async function get_best_network_hash () {
     })
     .catch(err => console.error(err));
 }
-
-
 
 const PESSIMISTIC_RATE = 0.2;
 
@@ -1510,7 +1504,6 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
         res.send("No match was found with hash " + req.params.hash);
     });
 });
-
 
 app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well

@@ -32,6 +32,7 @@ module.exports = {
         "no-extra-bind": "error",
         "no-extra-label": "error",
         "no-lonely-if": "error",
+        "no-multiple-empty-lines": ["error", {max: 1, maxBOF: 0, maxEOF: 0}],
         "no-undef-init": "error",
         "no-unneeded-ternary": "error",
         "no-unused-labels": "error",

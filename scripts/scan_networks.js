@@ -4,7 +4,6 @@ const zlib = require("zlib");
 const path = require('path');
 const weight_parser = require('../classes/weight_parser.js');
 
-
 (async () => {
     let db;
     try {
