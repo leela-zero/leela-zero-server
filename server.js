@@ -1097,7 +1097,7 @@ app.get("/",  asyncMiddleware( async (req, res) => {
                     + (item.is_test ? "Test" : "Regular") + " Match"
                     + "</span>"
                     + "</div>&nbsp;"
-                    ;
+                    ; // eslint-disable-line semi-style
 
                 if (item.network2) {
                     match_table += "<div class=\"tooltip\">"
