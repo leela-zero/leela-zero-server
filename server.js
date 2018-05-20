@@ -88,12 +88,12 @@ function get_options_hash(options) {
 }
 
 async function get_fast_clients() {
-    return new Promise( (resolve, reject) => {
-        db.collection("games").aggregate( [
+    return new Promise((resolve, reject) => {
+        db.collection("games").aggregate([
             { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } } },
             { $group: { _id: "$ip", total: { $sum: 1 } } },
             { $match: { total: { $gt: 4 } } }
-        ] ).forEach( match => {
+        ]).forEach(match => {
             fastClientsMap.set(match._id, true);
         }, err => {
             if (err) {
@@ -111,14 +111,14 @@ async function get_fast_clients() {
 async function get_pending_matches() {
     pending_matches = [];
 
-    return new Promise( (resolve, reject) => {
-        db.collection("matches").aggregate( [
+    return new Promise((resolve, reject) => {
+        db.collection("matches").aggregate([
             { $redact: { $cond:
                 [
                     { $gt: [ "$number_to_play", "$game_count" ] },
                     "$$KEEP", "$$PRUNE"
                 ] } }
-        ] ).sort({ _id: -1 }).forEach( match => {
+        ]).sort({ _id: -1 }).forEach(match => {
             match.requests = []; // init request list.
 
             // Client only accepts strings for now
@@ -133,11 +133,11 @@ async function get_pending_matches() {
                 case false:
                     break;
                 case true:
-                    pending_matches.unshift( match );
+                    pending_matches.unshift(match);
                     console.log("SPRT: Unshifting: " + JSON.stringify(match));
                     break;
                 default:
-                    pending_matches.push( match );
+                    pending_matches.push(match);
                     console.log("SPRT: Pushing: " + JSON.stringify(match));
             }
         }, err => {
@@ -158,7 +158,7 @@ async function get_best_network_hash() {
         if (!best_network_hash_promise || best_network_mtimeMs != stats.mtimeMs) {
             best_network_mtimeMs = stats.mtimeMs;
 
-            best_network_hash_promise = new Promise( (resolve, reject) => {
+            best_network_hash_promise = new Promise((resolve, reject) => {
                 log_memory_stats("best_network_hash_promise begins");
 
                 const rstream = fs.createReadStream(__dirname + "/network/best-network.gz");
@@ -205,9 +205,9 @@ app.use("/static", express.static("static", { maxage: "365d", etag: true }));
 // This is async but we don't need it to start the server. I'm calling it during startup so it'll get the value cached right away
 // instead of when the first /best-network request comes in, in case a lot of those requests come in at once when server
 // starts up.
-get_best_network_hash().then( hash => console.log("Current best hash " + hash) );
+get_best_network_hash().then(hash => console.log("Current best hash " + hash));
 
-setInterval( () => {
+setInterval(() => {
     log_memory_stats("10 minute interval");
 
     get_fast_clients()
@@ -217,7 +217,7 @@ setInterval( () => {
 
 let last_match_db_check = Date.now();
 
-setInterval( () => {
+setInterval(() => {
     const now = Date.now();
 
     // In case we have no matches scheduled, we check the db.
@@ -240,7 +240,7 @@ MongoClient.connect("mongodb://localhost/test", (err, database) => {
 
     db.collection("networks").count()
     .then(count => {
-        console.log( count + " networks.");
+        console.log(count + " networks.");
     });
 
     db.collection("networks").aggregate([
@@ -259,7 +259,7 @@ MongoClient.connect("mongodb://localhost/test", (err, database) => {
             }
         }
     ], (err, res) => {
-        if (err) console.log( err );
+        if (err) console.log(err);
 
         get_fast_clients()
         .then()
@@ -291,7 +291,7 @@ MongoClient.connect("mongodb://localhost/test", (err, database) => {
 
 // Obsolete
 //
-app.use("/best-network-hash", asyncMiddleware( async(req, res) => {
+app.use("/best-network-hash", asyncMiddleware(async(req, res) => {
     const hash = await get_best_network_hash();
 
     res.write(hash);
@@ -307,7 +307,7 @@ app.use("/best-network-hash", asyncMiddleware( async(req, res) => {
 //
 // This is no longer used, as /network/ is served by nginx and best-network.gz downloaded directly from it
 //
-app.use("/best-network", asyncMiddleware( async(req, res) => {
+app.use("/best-network", asyncMiddleware(async(req, res) => {
     const hash = await get_best_network_hash();
     const readStream = fs.createReadStream(__dirname + "/network/best-network.gz");
 
@@ -400,24 +400,24 @@ app.post("/request-match", (req, res) => {
         is_test: req.body.is_test,
         options, options_hash: get_options_hash(options) };
 
-    db.collection("matches").insertOne( match )
-    .then( () => {
+    db.collection("matches").insertOne(match)
+    .then(() => {
         // Client only accepts strings for now
         Object.keys(match.options).map(key => {
             match.options[key] = String(match.options[key]);
         });
 
         match.requests = []; // init request list.
-        pending_matches.unshift( match );
+        pending_matches.unshift(match);
 
         console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " Match added!");
         res.send((match.is_test ? "Test" : "Regular") + " Match added!\n");
         console.log("Pending is now: " + JSON.stringify(pending_matches));
-    } )
-    .catch( err => {
+    })
+    .catch(err => {
         console.error(req.ip + " (" + req.headers["x-real-ip"] + ") " + " ERROR: Match addition failed: " + err);
         res.send("ERROR: Match addition failed\n");
-    } );
+    });
 });
 
 // curl -F 'weights=@zero.prototxt' -F 'training_count=175000' http://localhost:8080/submit-network
@@ -960,7 +960,7 @@ app.get("/rss", asyncMiddleware(async(req, res) => {
     res.sendFile(rss_path);
 }));
 
-app.get("/",  asyncMiddleware( async(req, res) => {
+app.get("/",  asyncMiddleware(async(req, res) => {
     console.log(req.ip + " Sending index.html");
 
     let network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
@@ -979,7 +979,7 @@ app.get("/",  asyncMiddleware( async(req, res) => {
         return "";
     };
 
-    const cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
+    const cursor = db.collection("networks").aggregate([ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
     const totalgames = await cursor.next();
 
     const best_network_hash = await get_best_network_hash();
@@ -1032,19 +1032,19 @@ app.get("/",  asyncMiddleware( async(req, res) => {
                     + "</td><td>"
                     + item.game_count
                     + "</td><td>"
-                    + ( (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count)
+                    + ((item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count)
                     + "</td></tr>\n";
             }
 
             network_table += "</table>\n";
             return "";
         }),
-        db.collection("games").find({ ip: req.ip }, selfplayProjection).hint( "ip_-1__id_-1" ).sort( { _id: -1 } ).limit(10).toArray()
+        db.collection("games").find({ ip: req.ip }, selfplayProjection).hint("ip_-1__id_-1").sort({ _id: -1 }).limit(10).toArray()
         .then(saveSelfplay("ip")),
         db.collection("match_games").find(
             { winnerhash: best_network_hash },
             { _id: 0, winnerhash: 1, loserhash: 1, sgfhash: 1 }
-        ).sort( { _id: -1 } ).limit(1).toArray()
+        ).sort({ _id: -1 }).limit(1).toArray()
         .then(game => {
             if (game[0]) {
                 return "<br>"
@@ -1056,7 +1056,7 @@ app.get("/",  asyncMiddleware( async(req, res) => {
                 return "";
             }
         }),
-        db.collection("games").find({}, selfplayProjection).sort( { _id: -1 } ).limit(10).toArray()
+        db.collection("games").find({}, selfplayProjection).sort({ _id: -1 }).limit(10).toArray()
         .then(saveSelfplay("all")),
         cachematches.wrap("matches", "1d", () => Promise.resolve(
         db.collection("matches").aggregate([ { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "merged" } }, { $unwind: "$merged" }, { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "merged1" } }, { $unwind: "$merged1" }, { $sort: { _id: -1 } }, { $limit: 100 } ])
@@ -1114,7 +1114,7 @@ app.get("/",  asyncMiddleware( async(req, res) => {
 
                 match_table += "</td>"
                     + "<td>" + item.network1_wins + " : " + item.network1_losses
-                        + ( win_percent ? win_percent + "</td>" : "</td>")
+                        + (win_percent ? win_percent + "</td>" : "</td>")
                     + "<td>" + item.game_count + " / " + item.number_to_play + "</td>"
                     + "<td>";
 
@@ -1192,7 +1192,7 @@ app.get("/",  asyncMiddleware( async(req, res) => {
         page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b><br>";
         page += "<br>";
 
-        responses.map( response => page += response );
+        responses.map(response => page += response);
 
         ["all", "ip"].forEach(type => {
             const games = recentSelfplay[type];
@@ -1266,7 +1266,7 @@ function shouldScheduleMatch(req, now) {
  * Get a self-play or match task depending on various client versions.
  * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
  */
-app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware( async(req, res) => {
+app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(req, res) => {
     const required_client_version = String(16);
     const required_leelaz_version = String("0.15");
 
@@ -1497,12 +1497,12 @@ app.get("/viewmatch/:hash(\\w+)", (req, res) => {
     });
 });
 
-app.get("/data/elograph.json",  asyncMiddleware( async(req, res) => {
+app.get("/data/elograph.json",  asyncMiddleware(async(req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
     const json = await cachematches.wrap("elograph", "1d", async() => {
     console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared");
 
-    const cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
+    const cursor = db.collection("networks").aggregate([ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
     const totalgames = await cursor.next();
 
     return Promise.all([
@@ -1543,7 +1543,7 @@ app.get("/data/elograph.json",  asyncMiddleware( async(req, res) => {
             // TODO If no Elo info, make rating -1 for graph to just hide it instead of assuming same Elo as network 2.
             //
             if (match.network1_wins > 0 && match.network1_losses > 0) {
-                elo = CalculateEloFromPercent( match.network1_wins / match.game_count );
+                elo = CalculateEloFromPercent(match.network1_wins / match.game_count);
             } else {
                 let fakecount = match.game_count;
                 let fakewins = match.network1_wins;
@@ -1557,7 +1557,7 @@ app.get("/data/elograph.json",  asyncMiddleware( async(req, res) => {
                     fakecount++;
                 }
 
-                elo = CalculateEloFromPercent( fakewins / fakecount );
+                elo = CalculateEloFromPercent(fakewins / fakecount);
             }
 
             const isBest = bestRatings.has(match.network1);
@@ -1617,7 +1617,7 @@ app.get("/data/elograph.json",  asyncMiddleware( async(req, res) => {
         // shortcut for sending json result using `JSON.stringify`
         // and set `Content-Type: application/json`
         return json;
-    }).catch( err => {
+    }).catch(err => {
         console.log("ERROR data/elograph.json: " + err);
         res.send("ERROR data/elograph.json: " + err);
     });
