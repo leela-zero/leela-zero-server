@@ -34,7 +34,7 @@ const weight_parser = require('../classes/weight_parser.js');
                 continue;
             }
 
-            const parser = new weight_parser;
+            const parser = new weight_parser();
 
             const architecture = await new Promise(resolve => {
                 fs.createReadStream(network_path)

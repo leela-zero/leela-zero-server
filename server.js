@@ -49,9 +49,9 @@ const cacheIP1hr = new Cacheman('IP1hr');
 
 // Cache information about matches and best network rating
 const cachematches = new Cacheman('matches');
-let bestRatings = new Map;
+let bestRatings = new Map();
 
-const fastClientsMap = new Map;
+const fastClientsMap = new Map();
 
 app.set('view engine', 'pug')
 
@@ -472,7 +472,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
                     const hasher = gunzip_stream.pipe(crypto.createHash('sha256')).on('finish', () => resolve({ hash: hasher.read().toString('hex') }));
                 }),
                 new Promise(resolve => {
-                    const parser = gunzip_stream.pipe(new weight_parser).on('finish', () => resolve(parser.read()));
+                    const parser = gunzip_stream.pipe(new weight_parser()).on('finish', () => resolve(parser.read()));
                 })
             ]).then(results => {
                 // consolidate results

@@ -27,6 +27,7 @@ module.exports = {
         "linebreak-style": "error",
         "lines-around-comment": "error",
         "lines-between-class-members": "error",
+        "new-parens": "error",
         "no-console": "off",
         "no-extra-bind": "error",
         "no-extra-label": "error",
