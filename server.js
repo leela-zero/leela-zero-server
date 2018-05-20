@@ -247,7 +247,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
 
     db.collection("networks").count()
     .then(count => {
-        console.log ( count + " networks.");
+        console.log( count + " networks.");
     });
 
     db.collection("networks").aggregate([

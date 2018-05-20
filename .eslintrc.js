@@ -19,6 +19,7 @@ module.exports = {
         "dot-location": ["error", "property"],
         "dot-notation": "error",
         "eol-last": "error",
+        "func-call-spacing": "error",
         "generator-star-spacing": "error",
         "linebreak-style": "error",
         "lines-around-comment": "error",
