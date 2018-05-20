@@ -60,6 +60,7 @@ module.exports = {
         "semi-style": "error",
         "sort-imports": "error",
         "space-before-blocks": "error",
+        "space-before-function-paren": ["error", "never"],
         "space-unary-ops": "error",
         "switch-colon-spacing": "error",
         "template-curly-spacing": "error",

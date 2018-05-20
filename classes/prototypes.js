@@ -20,6 +20,6 @@ function abbreviateNumber(number, length) {
     return scaled.toPrecision(length) + prefix;
 }
 
-Number.prototype.abbr = function (length) {
+Number.prototype.abbr = function(length) {
     return abbreviateNumber(this, length);
 };

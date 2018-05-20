@@ -4,7 +4,7 @@ const zlib = require("zlib");
 const path = require("path");
 const weight_parser = require("../classes/weight_parser.js");
 
-(async () => {
+(async() => {
     let db;
     try {
         db = await MongoClient.connect("mongodb://localhost/test");

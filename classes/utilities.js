@@ -11,7 +11,7 @@ let gTaskSecret = "";
 /**
  * Sets the secret to be used for verification codes
  */
-function set_task_verification_secret (secret) {
+function set_task_verification_secret(secret) {
     gTaskSecret = secret;
 }
 
@@ -21,7 +21,7 @@ function set_task_verification_secret (secret) {
  * @param seed {string} Some value to compute a verification
  * @returns {string} The verification code
  */
-function compute_task_verification (seed) {
+function compute_task_verification(seed) {
     return checksum(gTaskSecret + seed, "sha256");
 }
 
@@ -34,7 +34,7 @@ function compute_task_verification (seed) {
  *          white_hash {string} Network for black included in verification
  *          options_hash {string} Existing hash to append verification
  */
-function add_match_verification (task) {
+function add_match_verification(task) {
     // Append the verification to options_hash as the client responds with it
     task.options_hash += compute_task_verification(task.random_seed + task.white_hash + task.black_hash);
 }
@@ -50,7 +50,7 @@ function add_match_verification (task) {
  *          verification {string} Will be updated with the verification
  * @returns {bool} True if the verification code is consistent with the data
  */
-function check_match_verification (data) {
+function check_match_verification(data) {
     // Allow for 2 expected verification codes for swapped networks
     const expected = compute_task_verification(data.random_seed + data.winnerhash + data.loserhash);
     const expected2 = compute_task_verification(data.random_seed + data.loserhash + data.winnerhash);
@@ -119,7 +119,7 @@ function objectIdFromDate(date) {
 
 // This comes from https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
 //
-const asyncMiddleware = fn => function (req, res, next, ...args) {
+const asyncMiddleware = fn => function(req, res, next, ...args) {
     const fnReturn = fn(req, res, next, ...args);
     return Promise.resolve(fnReturn).catch(next);
 };

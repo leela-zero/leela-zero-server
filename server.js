@@ -79,7 +79,7 @@ let db;
 let pending_matches = [];
 const MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
-function get_options_hash (options) {
+function get_options_hash(options) {
     if (options.visits) {
         return checksum("" + options.visits + options.resignation_percent + options.noise + options.randomcnt).slice(0, 6);
     } else {
@@ -87,7 +87,7 @@ function get_options_hash (options) {
     }
 }
 
-async function get_fast_clients () {
+async function get_fast_clients() {
     return new Promise( (resolve, reject) => {
         db.collection("games").aggregate( [
             { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } } },
@@ -108,7 +108,7 @@ async function get_fast_clients () {
 
 //  db.matches.aggregate( [ { "$redact": { "$cond": [ { "$gt": [ "$number_to_play", "$game_count" ] }, "$$KEEP", "$$PRUNE" ] } } ] )
 //
-async function get_pending_matches () {
+async function get_pending_matches() {
     pending_matches = [];
 
     return new Promise( (resolve, reject) => {
@@ -150,7 +150,7 @@ async function get_pending_matches () {
     });
 }
 
-async function get_best_network_hash () {
+async function get_best_network_hash() {
     // Check if file has changed. If not, send cached version instead.
     //
     return fs.stat(__dirname + "/network/best-network.gz")
@@ -291,7 +291,7 @@ MongoClient.connect("mongodb://localhost/test", (err, database) => {
 
 // Obsolete
 //
-app.use("/best-network-hash", asyncMiddleware( async (req, res) => {
+app.use("/best-network-hash", asyncMiddleware( async(req, res) => {
     const hash = await get_best_network_hash();
 
     res.write(hash);
@@ -307,7 +307,7 @@ app.use("/best-network-hash", asyncMiddleware( async (req, res) => {
 //
 // This is no longer used, as /network/ is served by nginx and best-network.gz downloaded directly from it
 //
-app.use("/best-network", asyncMiddleware( async (req, res) => {
+app.use("/best-network", asyncMiddleware( async(req, res) => {
     const hash = await get_best_network_hash();
     const readStream = fs.createReadStream(__dirname + "/network/best-network.gz");
 
@@ -489,7 +489,7 @@ app.post("/submit-network", asyncMiddleware((req, res) => {
             if (fs.existsSync(temp_file))
                 fs.removeSync(temp_file);
         });
-    }).on("finish", async () => {
+    }).on("finish", async() => {
         await file_promise;
 
         if (!req.body.key || req.body.key != auth_key) {
@@ -544,7 +544,7 @@ app.post("/submit-network", asyncMiddleware((req, res) => {
     });
 }));
 
-app.post("/submit-match", asyncMiddleware(async (req, res) => {
+app.post("/submit-match", asyncMiddleware(async(req, res) => {
     const logAndFail = msg => {
         console.log(`${req.ip} (${req.headers["x-real-ip"]}) /submit-match: ${msg}`);
         console.log(`files: ${JSON.stringify(Object.keys(req.files || {}))}, body: ${JSON.stringify(req.body)}`);
@@ -848,7 +848,7 @@ app.post("/submit", (req, res) => {
     }
 });
 
-app.get("/network-profiles", asyncMiddleware(async (req, res) => {
+app.get("/network-profiles", asyncMiddleware(async(req, res) => {
     const networks = await db.collection("networks")
         .find({
             hash: { $ne: ELF_NETWORK },
@@ -865,7 +865,7 @@ app.get("/network-profiles", asyncMiddleware(async (req, res) => {
     res.render("networks/index", pug_data);
 }));
 
-app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async (req, res) => {
+app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async(req, res) => {
     const network = await db.collection("networks")
         .findOne({ hash: req.params.hash });
 
@@ -928,7 +928,7 @@ app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async (req, res) => {
     res.render("networks/profile", pug_data);
 }));
 
-app.get("/rss", asyncMiddleware(async (req, res) => {
+app.get("/rss", asyncMiddleware(async(req, res) => {
     const rss_path = path.join(__dirname, "static", "rss.xml");
     const best_network_path = path.join(__dirname, "network", "best-network.gz");
     let should_generate = true;
@@ -960,7 +960,7 @@ app.get("/rss", asyncMiddleware(async (req, res) => {
     res.sendFile(rss_path);
 }));
 
-app.get("/",  asyncMiddleware( async (req, res) => {
+app.get("/",  asyncMiddleware( async(req, res) => {
     console.log(req.ip + " Sending index.html");
 
     let network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
@@ -1224,7 +1224,7 @@ app.get("/",  asyncMiddleware( async (req, res) => {
  * @param now {int} Timestamp right now
  * @returns {bool|object} False if no match to schedule; otherwise, match object
  */
-function shouldScheduleMatch (req, now) {
+function shouldScheduleMatch(req, now) {
   if (!(pending_matches.length && req.params.autogtp!=0 && fastClientsMap.get(req.ip))) {
     return false;
   }
@@ -1266,7 +1266,7 @@ function shouldScheduleMatch (req, now) {
  * Get a self-play or match task depending on various client versions.
  * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
  */
-app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware( async (req, res) => {
+app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware( async(req, res) => {
     const required_client_version = String(16);
     const required_leelaz_version = String("0.15");
 
@@ -1497,9 +1497,9 @@ app.get("/viewmatch/:hash(\\w+)", (req, res) => {
     });
 });
 
-app.get("/data/elograph.json",  asyncMiddleware( async (req, res) => {
+app.get("/data/elograph.json",  asyncMiddleware( async(req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
-    const json = await cachematches.wrap("elograph", "1d", async () => {
+    const json = await cachematches.wrap("elograph", "1d", async() => {
     console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared");
 
     const cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
@@ -1626,7 +1626,7 @@ app.get("/data/elograph.json",  asyncMiddleware( async (req, res) => {
     res.json(json);
 }));
 
-app.get("/opening/:start(\\w+)?", asyncMiddleware(async (req, res) => {
+app.get("/opening/:start(\\w+)?", asyncMiddleware(async(req, res) => {
     let start = req.params.start;
     const files = {
         44: "top10-Q16.json",
@@ -1643,4 +1643,4 @@ app.get("/opening/:start(\\w+)?", asyncMiddleware(async (req, res) => {
 }));
 
 // Catch all, return 404 page not found
-app.get("*", asyncMiddleware(async (req, res) => res.status(404).render("404")));
+app.get("*", asyncMiddleware(async(req, res) => res.status(404).render("404")));
