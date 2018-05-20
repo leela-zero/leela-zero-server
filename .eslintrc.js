@@ -21,6 +21,7 @@ module.exports = {
         "eol-last": "error",
         "func-call-spacing": "error",
         "generator-star-spacing": "error",
+        "implicit-arrow-linebreak": "error",
         "linebreak-style": "error",
         "lines-around-comment": "error",
         "lines-between-class-members": "error",

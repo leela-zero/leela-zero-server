@@ -119,8 +119,7 @@ function objectIdFromDate(date) {
 
 // This comes from https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
 //
-const asyncMiddleware = fn =>
-    function (req, res, next, ...args) {
+const asyncMiddleware = fn => function (req, res, next, ...args) {
         const fnReturn = fn(req, res, next, ...args)
         return Promise.resolve(fnReturn).catch(next)
     }

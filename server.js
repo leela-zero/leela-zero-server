@@ -1212,8 +1212,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             const games = recentSelfplay[type];
             if (games && games.length) {
                 page += `View ${type == "ip" ? "your " : ""}most recent self-play games: `;
-                page += games.map(({sgfhash, text}) =>
-                    `<a href="/view/${sgfhash}?viewer=wgo">${text}</a>`).join(", ");
+                page += games.map(({sgfhash, text}) => `<a href="/view/${sgfhash}?viewer=wgo">${text}</a>`).join(", ");
                 page += "<br>";
             }
         });
