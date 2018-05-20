@@ -42,7 +42,7 @@ for (let i = 0; i < process.argv.length; i++) {
 }
 
 if (!help) {
-    
+
     MongoClient.connect('mongodb://localhost/test', async (err, db) => {
         console.log(`Importing ${options.n} networks, ${options.g} self play games and ${options.m} matches.`);
 
@@ -100,7 +100,7 @@ if (!help) {
                 options_hash: crypto.randomBytes(2).toString('hex')
             };
 
-            // first match 
+            // first match
             if (network_idx > 0 && !first_match[network_idx]) {
                 match.network1 = networks[network_idx].hash;
                 match.network2 = networks[network_idx - 1].hash;

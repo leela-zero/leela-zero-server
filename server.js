@@ -494,7 +494,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
         });
 
     }).on('finish', async () => {
-        
+
         await file_promise;
 
         if (!req.body.key || req.body.key != auth_key) {
@@ -621,7 +621,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
     ))
         return logAndFail('Upload match with duplicate random_seed.');
 
-    // calculate sgfhash 
+    // calculate sgfhash
     try {
         const sgfbuffer = await new Promise((resolve, reject) => zlib.unzip(req.files.sgf.data, (err, res) => {
             if (err) {
@@ -659,7 +659,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
         return logAndFail('Error with sgf.');
     }
 
-    // prepare $inc 
+    // prepare $inc
     const $inc = { game_count: 1 };
     if (match.network1 == req.body.winnerhash)
         $inc.network1_wins = 1;
@@ -670,7 +670,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
     match = (await db.collection("matches").findOneAndUpdate(
         { _id: match._id },
         { $inc },
-        { returnOriginal: false }  // return modified document 
+        { returnOriginal: false }  // return modified document
     )).value;
 
     // get latest SPRT result
@@ -693,7 +693,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
                 m.requests.splice(index, 1);
             }
 
-            // update stats 
+            // update stats
             m.game_count++;
             if (m.network1 == req.body.winnerhash) {
                 m.network1_wins++;
@@ -867,7 +867,7 @@ app.get('/network-profiles', asyncMiddleware(async (req, res) => {
         })
         .sort({ _id: -1 })
         .toArray();
-    
+
     const pug_data = { networks, menu: 'network-profiles' };
 
     res.render('networks/index', pug_data);
@@ -902,7 +902,7 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
         const retricon = require('retricon-without-canvas');
 
         await new Promise((resolve, reject) => {
-            // GitHub style 
+            // GitHub style
             retricon(network.hash, { pixelSize: 70, imagePadding: 35, bgColor: '#F0F0F0' })
                 .pngStream()
                 .pipe(fs.createWriteStream(avatar_path))
@@ -1352,7 +1352,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
         // For now, have newer autogtp and leelaz play some self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
         if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < .25) {
-            task.hash = ELF_NETWORK;    
+            task.hash = ELF_NETWORK;
             options.resignation_percent = "5";
         }
 
@@ -1534,7 +1534,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
                 bestRatings.set(item.hash, 0);
 
             return {
-                "hash": item.hash, 
+                "hash": item.hash,
                 "game_count": item.game_count,
                 "net": (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
                 best
