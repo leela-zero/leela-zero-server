@@ -22,6 +22,7 @@ module.exports = {
         "func-call-spacing": "error",
         "generator-star-spacing": "error",
         "implicit-arrow-linebreak": "error",
+        "key-spacing": "error",
         "linebreak-style": "error",
         "lines-around-comment": "error",
         "lines-between-class-members": "error",

@@ -120,7 +120,7 @@ async function get_pending_matches () {
                     { "$gt": [ "$number_to_play", "$game_count" ] },
                     "$$KEEP", "$$PRUNE"
                 ] } }
-        ] ).sort({_id:-1}).forEach( match => {
+        ] ).sort({_id: -1}).forEach( match => {
             match.requests = []; // init request list.
 
             // Client only accepts strings for now
@@ -404,7 +404,7 @@ app.post('/request-match', (req, res) => {
         "network2": req.body.network2, "network1_losses": 0,
         "network1_wins": 0,
         "game_count": 0, "number_to_play": Number(req.body.number_to_play),
-        "is_test" : req.body.is_test,
+        "is_test": req.body.is_test,
         options, "options_hash": get_options_hash(options) };
 
     db.collection("matches").insertOne( match )
@@ -1294,7 +1294,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     const match = shouldScheduleMatch(req, now);
     if (match) {
-        const task = {"cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        const task = {"cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1344,7 +1344,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        const task  = {"cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        const task  = {"cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
@@ -1646,8 +1646,8 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     let start = req.params.start;
     const files = {
         "44": "top10-Q16.json",
-        "43" : "top10-R16.json",
-        "33" : "top10-R17.json"
+        "43": "top10-R16.json",
+        "33": "top10-R17.json"
     }
 
     if (!(start in files))
@@ -1655,7 +1655,7 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
 
     const top10 = JSON.parse(fs.readFileSync(path.join(__dirname, 'static', files[start])));
 
-    return res.render('opening', { top10, start, menu : 'opening' });
+    return res.render('opening', { top10, start, menu: 'opening' });
 }));
 
 // Catch all, return 404 page not found
