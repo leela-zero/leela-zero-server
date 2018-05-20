@@ -29,6 +29,7 @@ module.exports = {
         "no-useless-computed-key": "error",
         "no-useless-rename": "error",
         "no-useless-return": "error",
+        "no-var": "error",
         "no-whitespace-before-property": "error",
         "operator-assignment": "error",
         "prefer-arrow-callback": "error",

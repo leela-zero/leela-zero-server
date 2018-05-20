@@ -2,16 +2,17 @@ const MongoClient = require('mongodb').MongoClient;
 const fs = require("fs-extra");
 const zlib = require("zlib");
 const path = require('path');
-var weight_parser = require('../classes/weight_parser.js');
+let weight_parser = require('../classes/weight_parser.js');
 
 
 (async () => {
+    let db;
     try {
-        var db = await MongoClient.connect('mongodb://localhost/test');
+        db = await MongoClient.connect('mongodb://localhost/test');
 
         // Find networks that didn't have `filters` or `blocks`
         //
-        var networks = await db.collection("networks").find(
+        let networks = await db.collection("networks").find(
             {
                 $or: [
                     { filters: { $in: [null, 0] } },
@@ -22,20 +23,20 @@ var weight_parser = require('../classes/weight_parser.js');
 
         console.log(`Found ${networks.length} networks need re-scanning.`)
 
-        var network_folder = path.join(__dirname, "..", "network");
+        let network_folder = path.join(__dirname, "..", "network");
 
         // Start Re-Scanning
-        for (var network of networks) {
-            var network_path = path.join(network_folder, `${network.hash}.gz`);
+        for (let network of networks) {
+            let network_path = path.join(network_folder, `${network.hash}.gz`);
 
             if (!fs.existsSync(network_path)) {
                 console.log(`Network ${network.hash} not found`);
                 continue;
             }
 
-            var parser = new weight_parser;
+            let parser = new weight_parser;
 
-            var architecture = await new Promise(resolve => {
+            let architecture = await new Promise(resolve => {
                 fs.createReadStream(network_path)
                     .pipe(zlib.createGunzip())
                     .pipe(parser)

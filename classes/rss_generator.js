@@ -5,15 +5,15 @@ class rss_generator {
 
     generate(networks, http_host) {
 
-        var feed = new rss({
+        let feed = new rss({
             title: 'Leela Zero Best Networks',
             feed_url: `${http_host}/rss`,
             site_url: http_host,
         });
 
         for (let n in networks) {
-            var network = networks[n];
-            var date = new moment(network._id.getTimestamp());
+            let network = networks[n];
+            let date = new moment(network._id.getTimestamp());
 
             feed.item({
                 title: `LZ#${n} ${network.hash.slice(0, 6)}`,

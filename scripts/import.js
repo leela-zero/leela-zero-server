@@ -16,13 +16,13 @@ function getRandomInt(max) {
 process.argv.shift();   // node
 process.argv.shift();   // import.js
 
-var options = {
+let options = {
     n: 10,
     g: 10000,
     m: 100
 }, help = false;
 
-for (var i = 0; i < process.argv.length; i++) {
+for (let i = 0; i < process.argv.length; i++) {
     switch (process.argv[i]) {
         case "-n":
             options.n = +process.argv[++i] || options.n;
@@ -48,7 +48,7 @@ if (!help) {
         console.log(`Importing ${options.n} networks, ${options.g} self play games and ${options.m} matches.`);
 
         // Network
-        var networks = [], filters_step = [64, 128, 192, 256], blocks_step = [10, 15, 20, 25, 30, 35, 40];
+        let networks = [], filters_step = [64, 128, 192, 256], blocks_step = [10, 15, 20, 25, 30, 35, 40];
         for (let i = 0; i < options.n; i++) {
             networks.push({
                 hash: crypto.randomBytes(32).toString('hex'),
@@ -62,7 +62,7 @@ if (!help) {
         await db.collection('networks').insertMany(networks);
 
         // Self play games
-        var games = [];
+        let games = [];
         for (let i = 0; i < options.g; i++) {
             games.push({
                 ip: "127.0.0.1",
@@ -90,11 +90,11 @@ if (!help) {
         }
 
 
-        var first_match = {};
+        let first_match = {};
         // Matches
         for (let i = 0; i < options.m; i++) {
-            var network_idx = Math.floor(i / options.m * options.n);
-            var match = {
+            let network_idx = Math.floor(i / options.m * options.n);
+            let match = {
                 number_to_play: 400,
                 options: {},
                 options_hash: crypto.randomBytes(2).toString('hex')
