@@ -1,19 +1,19 @@
-require('./classes/prototypes.js');
-const moment = require('moment');
-const express = require('express');
-const fileUpload = require('express-fileupload');
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
-const fs = require('fs-extra');
-const MongoClient = require('mongodb').MongoClient;
-const Long = require('mongodb').Long;
-const ObjectId = require('mongodb').ObjectID;
-const zlib = require('zlib');
-const Cacheman = require('cacheman');
+require("./classes/prototypes.js");
+const moment = require("moment");
+const express = require("express");
+const fileUpload = require("express-fileupload");
+const bodyParser = require("body-parser");
+const crypto = require("crypto");
+const fs = require("fs-extra");
+const MongoClient = require("mongodb").MongoClient;
+const Long = require("mongodb").Long;
+const ObjectId = require("mongodb").ObjectID;
+const zlib = require("zlib");
+const Cacheman = require("cacheman");
 const app = express();
-const Busboy = require('busboy');
-const weight_parser = require('./classes/weight_parser.js');
-const rss_generator = require('./classes/rss_generator.js');
+const Busboy = require("busboy");
+const weight_parser = require("./classes/weight_parser.js");
+const rss_generator = require("./classes/rss_generator.js");
 const os = require("os");
 const path = require("path");
 const discord = require("./classes/discord");
@@ -37,31 +37,31 @@ const {
     LLR,
     asyncMiddleware,
     how_many_games_to_queue
-} = require('./classes/utilities.js');
+} = require("./classes/utilities.js");
 
 const ELF_NETWORK = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
 
 const auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 set_task_verification_secret(String(fs.readFileSync(__dirname + "/task_secret")).trim());
 
-const cacheIP24hr = new Cacheman('IP24hr');
-const cacheIP1hr = new Cacheman('IP1hr');
+const cacheIP24hr = new Cacheman("IP24hr");
+const cacheIP1hr = new Cacheman("IP1hr");
 
 // Cache information about matches and best network rating
-const cachematches = new Cacheman('matches');
+const cachematches = new Cacheman("matches");
 let bestRatings = new Map();
 
 const fastClientsMap = new Map();
 
-app.set('view engine', 'pug')
+app.set("view engine", "pug")
 
 // This shouldn't be needed but now and then when I restart test server, I see an uncaught ECONNRESET and I'm not sure
 // where it is coming from. In case a server restart did the same thing, this should prevent a crash that would stop nodemon.
 //
 // It was a bug in nodemon which has now been fixed. It is bad practice to leave this here, eventually remove it.
 //
-process.on('uncaughtException', err => {
-    console.error('Caught exception: ' + err);
+process.on("uncaughtException", err => {
+    console.error("Caught exception: " + err);
 });
 
 // https://blog.tompawlak.org/measure-execution-time-nodejs-javascript
@@ -153,7 +153,7 @@ async function get_pending_matches () {
 async function get_best_network_hash () {
     // Check if file has changed. If not, send cached version instead.
     //
-    return fs.stat(__dirname + '/network/best-network.gz')
+    return fs.stat(__dirname + "/network/best-network.gz")
     .then(stats => {
         if (!best_network_hash_promise || best_network_mtimeMs != stats.mtimeMs) {
             best_network_mtimeMs = stats.mtimeMs;
@@ -161,22 +161,22 @@ async function get_best_network_hash () {
             best_network_hash_promise = new Promise( (resolve, reject) => {
                 log_memory_stats("best_network_hash_promise begins");
 
-                const rstream = fs.createReadStream(__dirname + '/network/best-network.gz');
+                const rstream = fs.createReadStream(__dirname + "/network/best-network.gz");
                 const gunzip = zlib.createGunzip();
-                const hash = crypto.createHash('sha256')
+                const hash = crypto.createHash("sha256")
 
-                hash.setEncoding('hex');
+                hash.setEncoding("hex");
 
                 log_memory_stats("Streams prepared");
 
                 rstream
                 .pipe(gunzip)
                 .pipe(hash)
-                .on('error', err => {
+                .on("error", err => {
                     console.error("Error opening/gunzip/hash best-network.gz: " + err);
                     reject(err);
                 })
-                .on('finish', () => {
+                .on("finish", () => {
                     const best_network_hash = hash.read();
                     log_memory_stats("Streams completed: " + best_network_hash);
                     resolve(best_network_hash);
@@ -191,16 +191,16 @@ async function get_best_network_hash () {
 
 const PESSIMISTIC_RATE = 0.2;
 
-app.enable('trust proxy');
+app.enable("trust proxy");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(/\/((?!submit-network).)*/, fileUpload());
 
-app.use('/view/player', express.static('static/eidogo-player-1.2/player'));
-app.use('/viewmatch/player', express.static('static/eidogo-player-1.2/player'));
-app.use('/view/wgo', express.static('static/wgo'));
-app.use('/viewmatch/wgo', express.static('static/wgo'));
-app.use('/static', express.static('static', { maxage: '365d', etag: true }));
+app.use("/view/player", express.static("static/eidogo-player-1.2/player"));
+app.use("/viewmatch/player", express.static("static/eidogo-player-1.2/player"));
+app.use("/view/wgo", express.static("static/wgo"));
+app.use("/viewmatch/wgo", express.static("static/wgo"));
+app.use("/static", express.static("static", { maxage: "365d", etag: true }));
 
 // This is async but we don't need it to start the server. I'm calling it during startup so it'll get the value cached right away
 // instead of when the first /best-network request comes in, in case a lot of those requests come in at once when server
@@ -233,7 +233,7 @@ setInterval( () => {
     }
 }, 1000 * 60 * 1);
 
-MongoClient.connect('mongodb://localhost/test', (err, database) => {
+MongoClient.connect("mongodb://localhost/test", (err, database) => {
     if (err) return console.log(err);
 
     db = database;
@@ -270,7 +270,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         .catch();
 
         res.forEach(result => {
-            if (result._id.type == 'ELF')
+            if (result._id.type == "ELF")
                 elf_counter = result.total;
             else
                 counter = result.total;
@@ -278,7 +278,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
         console.log(counter + " LZ games, " + elf_counter + " ELF games.");
 
         app.listen(8080, () => {
-            console.log('listening on 8080')
+            console.log("listening on 8080")
         });
 
         // Listening to both ports while /next people are moving over to real server adddress
@@ -291,7 +291,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
 
 // Obsolete
 //
-app.use('/best-network-hash', asyncMiddleware( async (req, res) => {
+app.use("/best-network-hash", asyncMiddleware( async (req, res) => {
     const hash = await get_best_network_hash();
 
     res.write(hash);
@@ -307,49 +307,49 @@ app.use('/best-network-hash', asyncMiddleware( async (req, res) => {
 //
 // This is no longer used, as /network/ is served by nginx and best-network.gz downloaded directly from it
 //
-app.use('/best-network', asyncMiddleware( async (req, res) => {
+app.use("/best-network", asyncMiddleware( async (req, res) => {
     const hash = await get_best_network_hash();
-    const readStream = fs.createReadStream(__dirname + '/network/best-network.gz');
+    const readStream = fs.createReadStream(__dirname + "/network/best-network.gz");
 
-    readStream.on('error', err => {
+    readStream.on("error", err => {
         res.send("Error: " + err);
         console.error("ERROR /best-network : " + err);
     });
 
-    readStream.on('open', () => {
-        res.setHeader('Content-Disposition', 'attachment; filename=' + hash + ".gz");
-        res.setHeader('Content-Transfer-Encoding', 'binary');
-        res.setHeader('Content-Type', 'application/octet-stream');
+    readStream.on("open", () => {
+        res.setHeader("Content-Disposition", "attachment; filename=" + hash + ".gz");
+        res.setHeader("Content-Transfer-Encoding", "binary");
+        res.setHeader("Content-Type", "application/octet-stream");
     });
 
     readStream.pipe(res);
 
-    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " downloaded /best-network");
+    console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " downloaded /best-network");
 }));
 
-app.post('/request-match', (req, res) => {
+app.post("/request-match", (req, res) => {
     // "number_to_play" : 400, "options" : { "playouts" : 1600, "resignation_percent" : 1, "randomcnt" : 0, "noise" : "false" }
 
     if (!req.body.key || req.body.key != auth_key) {
         console.log("AUTH FAIL: '" + String(req.body.key) + "' VS '" + String(auth_key) + "'");
 
-        return res.status(400).send('Incorrect key provided.');
+        return res.status(400).send("Incorrect key provided.");
     }
 
     if (!req.body.network1)
-        return res.status(400).send('No network1 hash specified.');
+        return res.status(400).send("No network1 hash specified.");
     else if (!network_exists(req.body.network1))
-        return res.status(400).send('network1 hash not found.');
+        return res.status(400).send("network1 hash not found.");
 
     if (!req.body.network2)
         req.body.network2 = null;
     else if (!network_exists(req.body.network2))
-        return res.status(400).send('network2 hash not found.');
+        return res.status(400).send("network2 hash not found.");
 
     // TODO Need to support new --visits flag as an alternative to --playouts. Use visits if both are missing? Don't allow both to be set.
     //
     if (req.body.playouts && req.body.visits)
-        return res.status(400).send('Please set only playouts or visits, not both');
+        return res.status(400).send("Please set only playouts or visits, not both");
 
     if (!req.body.playouts && !req.body.visits)
         //req.body.playouts = 1600;
@@ -410,12 +410,12 @@ app.post('/request-match', (req, res) => {
         match.requests = []; // init request list.
         pending_matches.unshift( match );
 
-        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " Match added!");
+        console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " Match added!");
         res.send((match.is_test ? "Test" : "Regular") + " Match added!\n");
         console.log("Pending is now: " + JSON.stringify(pending_matches));
     } )
     .catch( err => {
-        console.error(req.ip + " (" + req.headers['x-real-ip'] + ") " + " ERROR: Match addition failed: " + err);
+        console.error(req.ip + " (" + req.headers["x-real-ip"] + ") " + " ERROR: Match addition failed: " + err);
         res.send("ERROR: Match addition failed\n");
     } );
 });
@@ -426,7 +426,7 @@ app.post('/request-match', (req, res) => {
 // So we don't think the network is newer than it really is. Actually, upsert shouldn't change
 // the ObjectID so date will remain original insertion date.
 //
-app.post('/submit-network', asyncMiddleware((req, res) => {
+app.post("/submit-network", asyncMiddleware((req, res) => {
     log_memory_stats("submit network start");
     const busboy = new Busboy({ headers: req.headers });
 
@@ -434,16 +434,16 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
 
     let file_promise = null;
 
-    req.pipe(busboy).on('field', (name, value) => {
+    req.pipe(busboy).on("field", (name, value) => {
         req.body[name] = value;
-    }).on('file', (name, file_stream, file_name) => {
+    }).on("file", (name, file_stream, file_name) => {
         if (!req.files)
             req.files = {};
 
         if (name != "weights") {
             // Not the file we expected, flush the stream and do nothing
             //
-            file_stream.on('readable', file_stream.read);
+            file_stream.on("readable", file_stream.read);
             return;
         }
 
@@ -454,18 +454,18 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
         //       - gunzip_stream.pipe(hasher)
         //       - gunzip_stream.pipe(parser)
         file_promise = new Promise((resolve, reject) => {
-            const fs_stream = file_stream.pipe(fs.createWriteStream(temp_file)).on('error', reject);
-            const gunzip_stream = file_stream.pipe(zlib.createGunzip()).on('error', reject);
+            const fs_stream = file_stream.pipe(fs.createWriteStream(temp_file)).on("error", reject);
+            const gunzip_stream = file_stream.pipe(zlib.createGunzip()).on("error", reject);
 
             Promise.all([
                 new Promise(resolve => {
-                    fs_stream.on('finish', () => resolve({ path: fs_stream.path }));
+                    fs_stream.on("finish", () => resolve({ path: fs_stream.path }));
                 }),
                 new Promise(resolve => {
-                    const hasher = gunzip_stream.pipe(crypto.createHash('sha256')).on('finish', () => resolve({ hash: hasher.read().toString('hex') }));
+                    const hasher = gunzip_stream.pipe(crypto.createHash("sha256")).on("finish", () => resolve({ hash: hasher.read().toString("hex") }));
                 }),
                 new Promise(resolve => {
-                    const parser = gunzip_stream.pipe(new weight_parser()).on('finish', () => resolve(parser.read()));
+                    const parser = gunzip_stream.pipe(new weight_parser()).on("finish", () => resolve(parser.read()));
                 })
             ]).then(results => {
                 // consolidate results
@@ -484,21 +484,21 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
             req.files[name] = { error: err };
 
             // Clean up, flush stream and delete temp file
-            file_stream.on('readable', file_stream.read);
+            file_stream.on("readable", file_stream.read);
 
             if (fs.existsSync(temp_file))
                 fs.removeSync(temp_file);
         });
-    }).on('finish', async () => {
+    }).on("finish", async () => {
         await file_promise;
 
         if (!req.body.key || req.body.key != auth_key) {
             console.log("AUTH FAIL: '" + String(req.body.key) + "' VS '" + String(auth_key) + "'");
-            return res.status(400).send('Incorrect key provided.');
+            return res.status(400).send("Incorrect key provided.");
         }
 
         if (!req.files || !req.files.weights)
-            return res.status(400).send('No weights file was uploaded.');
+            return res.status(400).send("No weights file was uploaded.");
 
         if (req.files.weights.error)
             return res.status(400).send(req.files.weights.error.message);
@@ -534,55 +534,55 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
                     res.end(err.message);
                     console.error(err);
                 } else {
-                    const msg = 'Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
+                    const msg = "Network weights (" + filters + " x " + blocks + ") " + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
                     res.end(msg);
                     console.log(msg);
-                    log_memory_stats('submit network ends');
+                    log_memory_stats("submit network ends");
                 }
             }
         );
     });
 }));
 
-app.post('/submit-match', asyncMiddleware(async (req, res) => {
+app.post("/submit-match", asyncMiddleware(async (req, res) => {
     const logAndFail = msg => {
-        console.log(`${req.ip} (${req.headers['x-real-ip']}) /submit-match: ${msg}`);
+        console.log(`${req.ip} (${req.headers["x-real-ip"]}) /submit-match: ${msg}`);
         console.log(`files: ${JSON.stringify(Object.keys(req.files || {}))}, body: ${JSON.stringify(req.body)}`);
         return res.status(400).send(msg);
     };
 
     if (!req.files)
-        return logAndFail('No files were uploaded.');
+        return logAndFail("No files were uploaded.");
 
     if (!req.files.sgf)
-        return logAndFail('No sgf file provided.');
+        return logAndFail("No sgf file provided.");
 
     if (!req.body.clientversion)
-        return logAndFail('No clientversion provided.');
+        return logAndFail("No clientversion provided.");
 
     if (!req.body.winnerhash)
-        return logAndFail('No winner hash provided.');
+        return logAndFail("No winner hash provided.");
 
     if (!req.body.loserhash)
-        return logAndFail('No loser hash provided.');
+        return logAndFail("No loser hash provided.");
 
     if (!req.body.winnercolor)
-        return logAndFail('No winnercolor provided.');
+        return logAndFail("No winnercolor provided.");
 
     if (!req.body.movescount)
-        return logAndFail('No movescount provided.');
+        return logAndFail("No movescount provided.");
 
     if (!req.body.score)
-        return logAndFail('No score provided.');
+        return logAndFail("No score provided.");
 
     if (!req.body.options_hash)
-        return logAndFail('No options_hash provided.');
+        return logAndFail("No options_hash provided.");
 
     if (!req.body.random_seed)
-        return logAndFail('No random_seed provided.');
+        return logAndFail("No random_seed provided.");
 
     if (!check_match_verification(req.body))
-        return logAndFail('Verification failed.');
+        return logAndFail("Verification failed.");
 
     // Convert random_seed to Long, which is signed, after verifying the string
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
@@ -601,7 +601,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
 
     // Match not found, abort!!
     if (!match)
-        return logAndFail('Match not found.');
+        return logAndFail("Match not found.");
 
     // Verify random_seed for the match hasn't been used
     if (await db.collection("match_games").findOne(
@@ -614,7 +614,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
             options_hash: req.body.options_hash
         }
     ))
-        return logAndFail('Upload match with duplicate random_seed.');
+        return logAndFail("Upload match with duplicate random_seed.");
 
     // calculate sgfhash
     try {
@@ -625,7 +625,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
                 resolve(res);
             }
         }));
-        const sgfhash = checksum(sgfbuffer, 'sha256');
+        const sgfhash = checksum(sgfbuffer, "sha256");
 
         // upload match game to database
         const dbres = await db.collection("match_games").updateOne(
@@ -645,13 +645,13 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
 
         // Not inserted, we got duplicate sgfhash, abort!
         if (!dbres.upsertedId)
-            return logAndFail('Upload match with duplicate sgf.');
+            return logAndFail("Upload match with duplicate sgf.");
 
-        console.log(`${req.ip} (${req.headers['x-real-ip']}) uploaded in ${Math.round(Date.now() / 1000 - req.body.task_time)}s match: ${sgfhash}`);
+        console.log(`${req.ip} (${req.headers["x-real-ip"]}) uploaded in ${Math.round(Date.now() / 1000 - req.body.task_time)}s match: ${sgfhash}`);
         res.send("Match data " + sgfhash + " stored in database\n");
     } catch (err) {
         console.error(err);
-        return logAndFail('Error with sgf.');
+        return logAndFail("Error with sgf.");
     }
 
     // prepare $inc
@@ -722,8 +722,8 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
             sprt_result === true
             || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55)
         )) {
-        fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
-        console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
+        fs.copyFileSync(__dirname + "/network/" + req.body.winnerhash + ".gz", __dirname + "/network/best-network.gz");
+        console.log("New best network copied from (normal check): " + __dirname + "/network/" + req.body.winnerhash + ".gz");
         discord.network_promotion_notify(req.body.winnerhash);
     }
 
@@ -733,39 +733,39 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
 // curl -F 'networkhash=abc123' -F 'file=@zero.prototxt' http://localhost:8080/submit
 // curl -F 'networkhash=abc123' -F 'sgf=@zero.prototxt' -F 'trainingdata=@zero.prototxt' http://localhost:8080/submit
 
-app.post('/submit', (req, res) => {
+app.post("/submit", (req, res) => {
     const logAndFail = msg => {
-        console.log(`${req.ip} (${req.headers['x-real-ip']}) /submit: ${msg}`);
+        console.log(`${req.ip} (${req.headers["x-real-ip"]}) /submit: ${msg}`);
         console.log(`files: ${JSON.stringify(Object.keys(req.files || {}))}, body: ${JSON.stringify(req.body)}`);
         return res.status(400).send(msg);
     };
 
     if (!req.files)
-        return logAndFail('No files were uploaded.');
+        return logAndFail("No files were uploaded.");
 
     if (!req.files.sgf)
-        return logAndFail('No sgf file provided.');
+        return logAndFail("No sgf file provided.");
 
     if (!req.files.trainingdata)
-        return logAndFail('No trainingdata file provided.');
+        return logAndFail("No trainingdata file provided.");
 
     if (!req.body.clientversion)
-        return logAndFail('No clientversion provided.');
+        return logAndFail("No clientversion provided.");
 
     if (!req.body.networkhash)
-        return logAndFail('No network hash provided.');
+        return logAndFail("No network hash provided.");
 
     if (!req.body.winnercolor)
-        return logAndFail('No winnercolor provided.');
+        return logAndFail("No winnercolor provided.");
 
     if (!req.body.movescount)
-        return logAndFail('No movescount provided.');
+        return logAndFail("No movescount provided.");
 
     if (!req.body.options_hash)
-        return logAndFail('No options_hash provided.');
+        return logAndFail("No options_hash provided.");
 
     if (!req.body.random_seed)
-        return logAndFail('No random_seed provided.');
+        return logAndFail("No random_seed provided.");
 
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
     req.body.task_time = get_timestamp_from_seed(req.body.random_seed);
@@ -781,20 +781,20 @@ app.post('/submit', (req, res) => {
 
     if (req.ip == "xxx") {
         res.send("Game data " + sgfhash + " stored in database\n");
-        console.log("FAKE/SPAM reply sent to " + "xxx" + " (" + req.headers['x-real-ip'] + ")");
+        console.log("FAKE/SPAM reply sent to " + "xxx" + " (" + req.headers["x-real-ip"] + ")");
     } else {
     zlib.unzip(sgfbuffer, (err, sgfbuffer) => {
         if (err) {
             console.error(err);
-            return logAndFail('Error with sgf.');
+            return logAndFail("Error with sgf.");
         } else {
             sgffile = sgfbuffer.toString();
-            sgfhash = checksum(sgffile, 'sha256');
+            sgfhash = checksum(sgffile, "sha256");
 
             zlib.unzip(trainbuffer, (err, trainbuffer) => {
                 if (err) {
                     console.error(err);
-                    return logAndFail('Error with trainingdata.');
+                    return logAndFail("Error with trainingdata.");
                 } else {
                     trainingdatafile = trainbuffer.toString();
 
@@ -809,7 +809,7 @@ app.post('/submit', (req, res) => {
                             // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
                             //
                             if (err) {
-                                console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded game #" + counter + ": " + sgfhash + " ERROR: " + err);
+                                console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " uploaded game #" + counter + ": " + sgfhash + " ERROR: " + err);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             } else {
                                 let message = `in ${Math.round(Date.now() / 1000 - req.body.task_time)}s `;
@@ -820,7 +820,7 @@ app.post('/submit', (req, res) => {
                                     counter++;
                                     message += `LZ game #${counter}`;
                                 }
-                                console.log(`${req.ip} (${req.headers['x-real-ip']}) uploaded ${message}: ${sgfhash}`);
+                                console.log(`${req.ip} (${req.headers["x-real-ip"]}) uploaded ${message}: ${sgfhash}`);
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             }
                         }
@@ -833,9 +833,9 @@ app.post('/submit', (req, res) => {
                         err => {
                             if (err) {
                                 if (networkhash == ELF_NETWORK)
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
+                                    console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
                                 else
-                                    console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
+                                    console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
                             } else {
                                 //console.log("Incremented " + networkhash);
                             }
@@ -848,7 +848,7 @@ app.post('/submit', (req, res) => {
     }
 });
 
-app.get('/network-profiles', asyncMiddleware(async (req, res) => {
+app.get("/network-profiles", asyncMiddleware(async (req, res) => {
     const networks = await db.collection("networks")
         .find({
             hash: { $ne: ELF_NETWORK },
@@ -860,12 +860,12 @@ app.get('/network-profiles', asyncMiddleware(async (req, res) => {
         .sort({ _id: -1 })
         .toArray();
 
-    const pug_data = { networks, menu: 'network-profiles' };
+    const pug_data = { networks, menu: "network-profiles" };
 
-    res.render('networks/index', pug_data);
+    res.render("networks/index", pug_data);
 }));
 
-app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
+app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async (req, res) => {
     const network = await db.collection("networks")
         .findOne({ hash: req.params.hash });
 
@@ -884,28 +884,28 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
     }
 
     // Prepare Avatar
-    const avatar_folder = path.join(__dirname, 'static', 'networks');
+    const avatar_folder = path.join(__dirname, "static", "networks");
     if (!await fs.pathExists(avatar_folder)) {
         await fs.mkdirs(avatar_folder);
     }
 
-    const avatar_path = path.join(avatar_folder, network.hash + '.png');
+    const avatar_path = path.join(avatar_folder, network.hash + ".png");
     if (!fs.pathExistsSync(avatar_path)) {
-        const retricon = require('retricon-without-canvas');
+        const retricon = require("retricon-without-canvas");
 
         await new Promise((resolve, reject) => {
             // GitHub style
-            retricon(network.hash, { pixelSize: 70, imagePadding: 35, bgColor: '#F0F0F0' })
+            retricon(network.hash, { pixelSize: 70, imagePadding: 35, bgColor: "#F0F0F0" })
                 .pngStream()
                 .pipe(fs.createWriteStream(avatar_path))
-                .on('finish', resolve)
-                .on('error', reject);
+                .on("finish", resolve)
+                .on("error", reject);
         });
     }
 
     const pug_data = {
         network,
-        http_host: req.protocol + '://' + req.get('host'),
+        http_host: req.protocol + "://" + req.get("host"),
         matches: await db.collection("matches")
             .aggregate([
                 { $match: { $or: [{ network1: network.hash }, { network2: network.hash }] } },
@@ -914,7 +914,7 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
                 { $sort: { _id: -1 } },
                 { $limit: 100 }
             ]).toArray(),
-        menu: 'network-profiles'
+        menu: "network-profiles"
     };
 
     // Calculate SPRT (Pass / Failed / Percentage %)
@@ -925,14 +925,14 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
         }
     });
 
-    res.render('networks/profile', pug_data);
+    res.render("networks/profile", pug_data);
 }));
 
-app.get('/rss', asyncMiddleware(async (req, res) => {
-    const rss_path = path.join(__dirname, 'static', 'rss.xml');
-    const best_network_path = path.join(__dirname, 'network', 'best-network.gz');
+app.get("/rss", asyncMiddleware(async (req, res) => {
+    const rss_path = path.join(__dirname, "static", "rss.xml");
+    const best_network_path = path.join(__dirname, "network", "best-network.gz");
     let should_generate = true;
-    const http_host = req.protocol + '://' + req.get('host');
+    const http_host = req.protocol + "://" + req.get("host");
 
     const rss_exists = await fs.pathExists(rss_path);
 
@@ -960,7 +960,7 @@ app.get('/rss', asyncMiddleware(async (req, res) => {
     res.sendFile(rss_path);
 }));
 
-app.get('/',  asyncMiddleware( async (req, res) => {
+app.get("/",  asyncMiddleware( async (req, res) => {
     console.log(req.ip + " Sending index.html");
 
     let network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
@@ -985,9 +985,9 @@ app.get('/',  asyncMiddleware( async (req, res) => {
     const best_network_hash = await get_best_network_hash();
 
     Promise.all([
-        cacheIP24hr.wrap('IP24hr', '5m', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })))
+        cacheIP24hr.wrap("IP24hr", "5m", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })))
         .then(list => (list.length + " clients in past 24 hours, ")),
-        cacheIP1hr.wrap('IP1hr', '30s', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })))
+        cacheIP1hr.wrap("IP1hr", "30s", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })))
         .then(list => (list.length + " in past hour.<br>")),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
         .then(count => `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `),
@@ -1004,7 +1004,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $ne: ELF_NETWORK } }] } },
             { $sort: { _id: 1 } },
             { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count", filters: "$filters", blocks: "$blocks" } } } },
-            { $unwind: { path: '$networks', includeArrayIndex: 'networkID' } },
+            { $unwind: { path: "$networks", includeArrayIndex: "networkID" } },
             { $project: { _id: "$networks._id", hash: "$networks.hash", game_count: "$networks.game_count", training_count: "$networks.training_count", filters: "$networks.filters", blocks: "$networks.blocks", networkID: 1 } },
             { $sort: { networkID: -1 } },
             { $limit: 10000 }
@@ -1058,7 +1058,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         }),
         db.collection("games").find({}, selfplayProjection).sort( { _id: -1 } ).limit(10).toArray()
         .then(saveSelfplay("all")),
-        cachematches.wrap('matches', '1d', () => Promise.resolve(
+        cachematches.wrap("matches", "1d", () => Promise.resolve(
         db.collection("matches").aggregate([ { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "merged" } }, { $unwind: "$merged" }, { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "merged1" } }, { $unwind: "$merged1" }, { $sort: { _id: -1 } }, { $limit: 100 } ])
         .toArray()
         .then(list => {
@@ -1159,7 +1159,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         const match_table = match_and_styles[1];
 
         let page = "<html><head>\n<title>Leela Zero</title>\n";
-        page += `<link rel="alternate" type="application/rss+xml" title="Leela Zero Best Networks" href="http://zero.sjeng.org/rss" />`
+        page += "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"Leela Zero Best Networks\" href=\"http://zero.sjeng.org/rss\" />"
         page += "<script type=\"text/javascript\" src=\"/static/timeago.js\"></script>\n";
         page += "<style>";
         page += "table.networks-table { float: left; margin-right: 40px; margin-bottom: 20px; }\n";
@@ -1207,8 +1207,8 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         page += "<a href=\"https://sjeng.org/zero/\">Raw SGF files</a>.<br>";
         page += "<a href=\"https://docs.google.com/spreadsheets/d/e/2PACX-1vTsHu7T9vbfLsYOIANnUX9rHAYu7lQ4AlpVIvCfn60G7BxNZ0JH4ulfbADEedPVgwHxaH5MczdH853l/pubchart?oid=286613333&format=interactive\">Original strength graph</a>. (Mostly obsolete.)<br>";
         page += "<br>";
-        page += `<h4>Recent Strength Graph (<a href="/static/elo.html">Full view</a>.)</h4>`;
-        page += `<iframe width="950" height="655" seamless frameborder="0" scrolling="no" src="/static/elo.html?0#recent=2500000"></iframe><script>(i => i.contentWindow.location = i.src)(document.querySelector("iframe"))</script>`;
+        page += "<h4>Recent Strength Graph (<a href=\"/static/elo.html\">Full view</a>.)</h4>";
+        page += "<iframe width=\"950\" height=\"655\" seamless frameborder=\"0\" scrolling=\"no\" src=\"/static/elo.html?0#recent=2500000\"></iframe><script>(i => i.contentWindow.location = i.src)(document.querySelector(\"iframe\"))</script>";
         page += "<br><br>Times are in GMT+0100 (CET)<br>\n";
         page += network_table;
         page += match_table;
@@ -1266,7 +1266,7 @@ function shouldScheduleMatch (req, now) {
  * Get a self-play or match task depending on various client versions.
  * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
  */
-app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res) => {
+app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware( async (req, res) => {
     const required_client_version = String(16);
     const required_leelaz_version = String("0.15");
 
@@ -1321,7 +1321,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
-        console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0, 8)} vs ${match.network2.slice(0, 8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
+        console.log(`${req.ip} (${req.headers["x-real-ip"]}) got task: match ${match.network1.slice(0, 8)} vs ${match.network2.slice(0, 8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
 //    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
 //        const task = { "cmd": "wait", "minutes": "5" };
 //
@@ -1354,14 +1354,14 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         res.send(JSON.stringify(task));
 
-        console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: selfplay ${JSON.stringify(task)}`);
+        console.log(`${req.ip} (${req.headers["x-real-ip"]}) got task: selfplay ${JSON.stringify(task)}`);
     }
 }));
 
-app.get('/view/:hash(\\w+).sgf', (req, res) => {
+app.get("/view/:hash(\\w+).sgf", (req, res) => {
     db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
     .then(({ sgf }) => {
-        sgf = sgf.replace(/(\n|\r)+/g, '');
+        sgf = sgf.replace(/(\n|\r)+/g, "");
 
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
         res.setHeader("Content-Type", "application/x-go-sgf");
@@ -1371,27 +1371,27 @@ app.get('/view/:hash(\\w+).sgf', (req, res) => {
     });
 });
 
-app.get('/view/:hash(\\w+)', (req, res) => {
+app.get("/view/:hash(\\w+)", (req, res) => {
     db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
     .then(({ sgf }) => {
-        sgf = sgf.replace(/(\n|\r)+/g, '');
+        sgf = sgf.replace(/(\n|\r)+/g, "");
 
         switch (req.query.viewer) {
             case "eidogo":
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
+                res.render("eidogo", { title: "View training game " + req.params.hash, sgf });
                 break;
             case "wgo":
-                res.render('wgo', { title: "View training game " + req.params.hash, sgf });
+                res.render("wgo", { title: "View training game " + req.params.hash, sgf });
                 break;
             default:
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
+                res.render("eidogo", { title: "View training game " + req.params.hash, sgf });
         }
     }).catch(() => {
         res.send("No selfplay game was found with hash " + req.params.hash);
     });
 });
 
-app.get('/self-plays', (req, res) => {
+app.get("/self-plays", (req, res) => {
     const ipMap = new Map();
 
     db.collection("games").find({}).sort({ _id: -1 }).limit(400).toArray()
@@ -1424,7 +1424,7 @@ app.get('/self-plays', (req, res) => {
     });
 });
 
-app.get('/match-games/:matchid(\\w+)', (req, res) => {
+app.get("/match-games/:matchid(\\w+)", (req, res) => {
     if (!req.params.matchid) {
         res.send("matchid missing");
         return;
@@ -1464,10 +1464,10 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
         });
 });
 
-app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
+app.get("/viewmatch/:hash(\\w+).sgf", (req, res) => {
     db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
     .then(({ sgf }) => {
-        sgf = sgf.replace(/(\n|\r)+/g, '');
+        sgf = sgf.replace(/(\n|\r)+/g, "");
 
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
         res.setHeader("Content-Type", "application/x-go-sgf");
@@ -1477,27 +1477,27 @@ app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
     });
 });
 
-app.get('/viewmatch/:hash(\\w+)', (req, res) => {
+app.get("/viewmatch/:hash(\\w+)", (req, res) => {
     db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
     .then(({ sgf }) => {
-        sgf = sgf.replace(/(\n|\r)+/g, '');
+        sgf = sgf.replace(/(\n|\r)+/g, "");
 
         switch (req.query.viewer) {
             case "eidogo":
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
+                res.render("eidogo", { title: "View training game " + req.params.hash, sgf });
                 break;
             case "wgo":
-                res.render('wgo', { title: "View match " + req.params.hash, sgf });
+                res.render("wgo", { title: "View match " + req.params.hash, sgf });
                 break;
             default:
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
+                res.render("eidogo", { title: "View training game " + req.params.hash, sgf });
         }
     }).catch(() => {
         res.send("No match was found with hash " + req.params.hash);
     });
 });
 
-app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
+app.get("/data/elograph.json",  asyncMiddleware( async (req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
     const json = await cachematches.wrap("elograph", "1d", async () => {
     console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
@@ -1594,7 +1594,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
         });
 
         // Matches table uses data from bestRatings, so allow it to refresh
-        cachematches.del('matches', () => console.log('Cleared match table cache.'));
+        cachematches.del("matches", () => console.log("Cleared match table cache."));
 
         // prepare json result
         const json = [];
@@ -1626,7 +1626,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
     res.json(json);
 }));
 
-app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
+app.get("/opening/:start(\\w+)?", asyncMiddleware(async (req, res) => {
     let start = req.params.start;
     const files = {
         44: "top10-Q16.json",
@@ -1637,10 +1637,10 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     if (!(start in files))
         start = "44";
 
-    const top10 = JSON.parse(fs.readFileSync(path.join(__dirname, 'static', files[start])));
+    const top10 = JSON.parse(fs.readFileSync(path.join(__dirname, "static", files[start])));
 
-    return res.render('opening', { top10, start, menu: 'opening' });
+    return res.render("opening", { top10, start, menu: "opening" });
 }));
 
 // Catch all, return 404 page not found
-app.get('*', asyncMiddleware(async (req, res) => res.status(404).render("404")));
+app.get("*", asyncMiddleware(async (req, res) => res.status(404).render("404")));

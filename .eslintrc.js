@@ -53,6 +53,7 @@ module.exports = {
         "prefer-numeric-literals": "error",
         "prefer-spread": "error",
         "quote-props": ["error", "as-needed"],
+        "quotes": "error",
         "rest-spread-spacing": "error",
         "semi-spacing": "error",
         "sort-imports": "error",

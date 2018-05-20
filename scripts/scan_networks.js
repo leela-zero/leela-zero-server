@@ -1,13 +1,13 @@
-const MongoClient = require('mongodb').MongoClient;
+const MongoClient = require("mongodb").MongoClient;
 const fs = require("fs-extra");
 const zlib = require("zlib");
-const path = require('path');
-const weight_parser = require('../classes/weight_parser.js');
+const path = require("path");
+const weight_parser = require("../classes/weight_parser.js");
 
 (async () => {
     let db;
     try {
-        db = await MongoClient.connect('mongodb://localhost/test');
+        db = await MongoClient.connect("mongodb://localhost/test");
 
         // Find networks that didn't have `filters` or `blocks`
         //
@@ -39,7 +39,7 @@ const weight_parser = require('../classes/weight_parser.js');
                 fs.createReadStream(network_path)
                     .pipe(zlib.createGunzip())
                     .pipe(parser)
-                    .on('finish', () => resolve(parser.read()))
+                    .on("finish", () => resolve(parser.read()))
             });
 
             await db.collection("networks").updateOne(

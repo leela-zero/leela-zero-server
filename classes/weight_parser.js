@@ -1,4 +1,4 @@
-const { Writable } = require('stream');
+const { Writable } = require("stream");
 
 class weight_parser extends Writable {
     constructor(options) {

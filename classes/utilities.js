@@ -1,8 +1,8 @@
 const path = require("path");
-const fs = require('fs-extra');
-const converter = require('hex2dec');
-const { Long, ObjectId } = require('mongodb');
-const crypto = require('crypto');
+const fs = require("fs-extra");
+const converter = require("hex2dec");
+const { Long, ObjectId } = require("mongodb");
+const crypto = require("crypto");
 const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 
 // Default secret for task verification codes
@@ -22,7 +22,7 @@ function set_task_verification_secret (secret) {
  * @returns {string} The verification code
  */
 function compute_task_verification (seed) {
-    return checksum(gTaskSecret + seed, 'sha256');
+    return checksum(gTaskSecret + seed, "sha256");
 }
 
 /**
@@ -74,9 +74,9 @@ function CalculateEloFromPercent(percentage) {
 
 function checksum(str, algorithm, encoding) {
     return crypto
-        .createHash(algorithm || 'md5')
-        .update(str, 'utf8')
-        .digest(encoding || 'hex')
+        .createHash(algorithm || "md5")
+        .update(str, "utf8")
+        .digest(encoding || "hex")
 }
 
 /**
@@ -87,7 +87,7 @@ function checksum(str, algorithm, encoding) {
  * @returns {Long} A random number
  */
 function make_seed(seconds = Date.now() / 1000,
-                   highBits = converter.hexToDec(`0x${crypto.randomBytes(4).toString('hex')}`).toString() >>> 1) {
+                   highBits = converter.hexToDec(`0x${crypto.randomBytes(4).toString("hex")}`).toString() >>> 1) {
     return new Long(seconds, highBits);
 }
 
