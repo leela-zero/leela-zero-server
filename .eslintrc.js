@@ -18,6 +18,7 @@ module.exports = {
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],
         "dot-notation": "error",
+        "eol-last": "error",
         "generator-star-spacing": "error",
         "linebreak-style": "error",
         "lines-around-comment": "error",
