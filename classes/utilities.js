@@ -76,7 +76,7 @@ function checksum(str, algorithm, encoding) {
     return crypto
         .createHash(algorithm || "md5")
         .update(str, "utf8")
-        .digest(encoding || "hex")
+        .digest(encoding || "hex");
 }
 
 /**
@@ -120,9 +120,9 @@ function objectIdFromDate(date) {
 // This comes from https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
 //
 const asyncMiddleware = fn => function (req, res, next, ...args) {
-        const fnReturn = fn(req, res, next, ...args)
-        return Promise.resolve(fnReturn).catch(next)
-    }
+    const fnReturn = fn(req, res, next, ...args);
+    return Promise.resolve(fnReturn).catch(next);
+};
 
 function log_memory_stats(string) {
     console.log(string);
@@ -188,7 +188,7 @@ function canReachLimit(w, l, max, aim) {
     const aimPerc = aim / max;
     const remaining = max - w - l;
     const expected = remaining * aimPerc;
-    const maxExpected = expected + 3 * stDev(remaining)
+    const maxExpected = expected + 3 * stDev(remaining);
     const needed = aim - w;
     return maxExpected > needed;
 }
@@ -240,4 +240,4 @@ module.exports = {
     LLR,
     asyncMiddleware,
     how_many_games_to_queue
-}
+};

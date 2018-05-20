@@ -20,7 +20,7 @@ const weight_parser = require("../classes/weight_parser.js");
             }
         ).toArray();
 
-        console.log(`Found ${networks.length} networks need re-scanning.`)
+        console.log(`Found ${networks.length} networks need re-scanning.`);
 
         const network_folder = path.join(__dirname, "..", "network");
 
@@ -39,7 +39,7 @@ const weight_parser = require("../classes/weight_parser.js");
                 fs.createReadStream(network_path)
                     .pipe(zlib.createGunzip())
                     .pipe(parser)
-                    .on("finish", () => resolve(parser.read()))
+                    .on("finish", () => resolve(parser.read()));
             });
 
             await db.collection("networks").updateOne(

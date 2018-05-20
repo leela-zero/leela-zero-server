@@ -120,7 +120,7 @@ if (!help) {
                     blocks: blocks_step[Math.floor(i / options.n * blocks_step.length)],
                     training_count: 100000 * i,
                     training_steps: 32000 * (i % 8 + 1)
-                })
+                });
             }
 
             await db.collection("matches").insertOne(match);

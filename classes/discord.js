@@ -14,4 +14,4 @@ function network_promotion_notify(hash) {
 
 module.exports = {
     network_promotion_notify
-}
+};

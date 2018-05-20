@@ -55,6 +55,7 @@ module.exports = {
         "quote-props": ["error", "as-needed"],
         "quotes": "error",
         "rest-spread-spacing": "error",
+        "semi": "error",
         "semi-spacing": "error",
         "sort-imports": "error",
         "space-before-blocks": "error",

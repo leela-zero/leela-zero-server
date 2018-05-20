@@ -53,7 +53,7 @@ let bestRatings = new Map();
 
 const fastClientsMap = new Map();
 
-app.set("view engine", "pug")
+app.set("view engine", "pug");
 
 // This shouldn't be needed but now and then when I restart test server, I see an uncaught ECONNRESET and I'm not sure
 // where it is coming from. In case a server restart did the same thing, this should prevent a crash that would stop nodemon.
@@ -163,7 +163,7 @@ async function get_best_network_hash () {
 
                 const rstream = fs.createReadStream(__dirname + "/network/best-network.gz");
                 const gunzip = zlib.createGunzip();
-                const hash = crypto.createHash("sha256")
+                const hash = crypto.createHash("sha256");
 
                 hash.setEncoding("hex");
 
@@ -278,7 +278,7 @@ MongoClient.connect("mongodb://localhost/test", (err, database) => {
         console.log(counter + " LZ games, " + elf_counter + " ELF games.");
 
         app.listen(8080, () => {
-            console.log("listening on 8080")
+            console.log("listening on 8080");
         });
 
         // Listening to both ports while /next people are moving over to real server adddress
@@ -679,7 +679,7 @@ app.post("/submit-match", asyncMiddleware(async (req, res) => {
         if (sprt_result === false) {
             // remove from pending matches
             console.log("SPRT: Early fail pop: " + JSON.stringify(m));
-            pending_matches.splice(pending_match_index, 1)
+            pending_matches.splice(pending_match_index, 1);
             console.log("SPRT: Early fail post-pop: " + JSON.stringify(pending_matches));
         } else {
             // remove the match from the requests array.
@@ -1107,7 +1107,7 @@ app.get("/",  asyncMiddleware( async (req, res) => {
                         + (item.merged.training_steps ? "+" + item.merged.training_steps.abbr(3) : "")
                         + (item.merged.filters && item.merged.blocks ? `<br/>${item.merged.filters}x${item.merged.blocks}` : "")
                         + (item.merged.description ? `<br/>${item.merged.description}` : "")
-                        + "</span></div>"
+                        + "</span></div>";
                 } else {
                     match_table += "BEST";
                 }
@@ -1159,7 +1159,7 @@ app.get("/",  asyncMiddleware( async (req, res) => {
         const match_table = match_and_styles[1];
 
         let page = "<html><head>\n<title>Leela Zero</title>\n";
-        page += "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"Leela Zero Best Networks\" href=\"http://zero.sjeng.org/rss\" />"
+        page += "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"Leela Zero Best Networks\" href=\"http://zero.sjeng.org/rss\" />";
         page += "<script type=\"text/javascript\" src=\"/static/timeago.js\"></script>\n";
         page += "<style>";
         page += "table.networks-table { float: left; margin-right: 40px; margin-bottom: 20px; }\n";
@@ -1304,7 +1304,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware( async
             });
         }
 
-        match.game_color = !match.game_color
+        match.game_color = !match.game_color;
 
         if (match.game_color) {
             task.white_hash = match.network1;
@@ -1500,7 +1500,7 @@ app.get("/viewmatch/:hash(\\w+)", (req, res) => {
 app.get("/data/elograph.json",  asyncMiddleware( async (req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
     const json = await cachematches.wrap("elograph", "1d", async () => {
-    console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
+    console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared");
 
     const cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
     const totalgames = await cursor.next();
@@ -1571,7 +1571,7 @@ app.get("/data/elograph.json",  asyncMiddleware( async (req, res) => {
                     break;
 
                 default:
-                    sprt = "???"
+                    sprt = "???";
             }
 
             // Force the match to show up as a test instead of the usual SPRT
@@ -1632,7 +1632,7 @@ app.get("/opening/:start(\\w+)?", asyncMiddleware(async (req, res) => {
         44: "top10-Q16.json",
         43: "top10-R16.json",
         33: "top10-R17.json"
-    }
+    };
 
     if (!(start in files))
         start = "44";
