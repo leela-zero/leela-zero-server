@@ -16,7 +16,7 @@ const weight_parser = require('../classes/weight_parser.js');
             {
                 $or: [
                     { filters: { $in: [null, 0] } },
-                    { blocks: { $in: [null, 0] } },
+                    { blocks: { $in: [null, 0] } }
                 ]
             }
         ).toArray();

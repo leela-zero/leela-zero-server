@@ -8,7 +8,7 @@ class rss_generator {
         const feed = new rss({
             title: 'Leela Zero Best Networks',
             feed_url: `${http_host}/rss`,
-            site_url: http_host,
+            site_url: http_host
         });
 
         for (const n in networks) {

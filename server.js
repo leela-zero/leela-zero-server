@@ -521,7 +521,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
             training_steps: +req.body.training_steps || null,
             filters: req.files.weights.filters,
             blocks: req.files.weights.blocks,
-            description: req.body.description,
+            description: req.body.description
         };
 
         // No training count given, we'll calculate it from database.
@@ -606,7 +606,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
                 { network1: req.body.winnerhash, network2: req.body.loserhash },
                 { network2: req.body.winnerhash, network1: req.body.loserhash }
             ],
-            options_hash: req.body.options_hash,
+            options_hash: req.body.options_hash
         }
     );
 
@@ -868,7 +868,7 @@ app.get('/network-profiles', asyncMiddleware(async (req, res) => {
             hash: { $ne: ELF_NETWORK },
             $or: [
                 { game_count: { $gt: 0 } },
-                { hash: get_best_network_hash() },
+                { hash: get_best_network_hash() }
             ]
         })
         .sort({ _id: -1 })
@@ -1165,7 +1165,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             match_table += "</table>\n";
             return [styles, match_table];
         })
-        )),
+        ))
     ]).then(responses => {
         const match_and_styles = responses.pop();
 
@@ -1648,7 +1648,7 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     const files = {
         "44": "top10-Q16.json",
         "43" : "top10-R16.json",
-        "33" : "top10-R17.json",
+        "33" : "top10-R17.json"
     }
 
     if (!(start in files))

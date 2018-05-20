@@ -13,6 +13,7 @@ module.exports = {
         "arrow-parens": ["error", "as-needed"],
         "arrow-spacing": "error",
         "brace-style": "error",
+        "comma-dangle": "error",
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],
         "dot-notation": "error",

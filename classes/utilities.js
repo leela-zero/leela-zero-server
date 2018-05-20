@@ -240,5 +240,5 @@ module.exports = {
     SPRT,
     LLR,
     asyncMiddleware,
-    how_many_games_to_queue,
+    how_many_games_to_queue
 }
