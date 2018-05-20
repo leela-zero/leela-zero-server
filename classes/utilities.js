@@ -64,7 +64,7 @@ function check_match_verification (data) {
 }
 
 function network_exists(hash) {
-    let network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
+    const network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
     return fs.pathExistsSync(network_file);
 }
 
@@ -149,14 +149,14 @@ function LLR(W, L, elo0, elo1) {
     if (!W) W = 1;
     if (!L) L = 1;
 
-    let N = W + L;
-    let w = W / N;
-    let s = w;
-    let m2 = w;
-    let variance = m2 - s ** 2;
-    let variance_s = variance / N;
-    let s0 = LL(elo0);
-    let s1 = LL(elo1);
+    const N = W + L;
+    const w = W / N;
+    const s = w;
+    const m2 = w;
+    const variance = m2 - s ** 2;
+    const variance_s = variance / N;
+    const s0 = LL(elo0);
+    const s1 = LL(elo1);
 
     return (s1 - s0) * (2 * s - s0 - s1) / variance_s / 2.0;
 }
@@ -168,9 +168,9 @@ function SPRTold(W, L) {
     const alpha = .05;
     const beta = .05;
 
-    let LLR_ = LLR(W, L, elo0, elo1);
-    let LA = Math.log(beta / (1 - alpha));
-    let LB = Math.log((1 - beta) / alpha);
+    const LLR_ = LLR(W, L, elo0, elo1);
+    const LA = Math.log(beta / (1 - alpha));
+    const LB = Math.log((1 - beta) / alpha);
 
     if (LLR_ > LB && W + L > 100) {
         return true;
@@ -186,26 +186,26 @@ function stDev(n) {
 }
 
 function canReachLimit(w, l, max, aim) {
-    let aimPerc = aim / max;
-    let remaining = max - w - l;
-    let expected = remaining * aimPerc;
-    let maxExpected = expected + 3 * stDev(remaining)
-    let needed = aim - w;
+    const aimPerc = aim / max;
+    const remaining = max - w - l;
+    const expected = remaining * aimPerc;
+    const maxExpected = expected + 3 * stDev(remaining)
+    const needed = aim - w;
     return maxExpected > needed;
 }
 
 function SPRT(w, l) {
-    let max = 400;
-    let aim = max / 2 + 2 * stDev(max);
+    const max = 400;
+    const aim = max / 2 + 2 * stDev(max);
     if (w + l >= max && w / (w + l) >= (aim / max)) return true;
     if (!canReachLimit(w, l, max, aim)) return false;
     return SPRTold(w, l);
 }
 
-let QUEUE_BUFFER = 25;
+const QUEUE_BUFFER = 25;
 
 function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate, isBest) {
-    let games_left = max_games - w_obs - l_obs;
+    const games_left = max_games - w_obs - l_obs;
 
     if (isBest || SPRT(w_obs, l_obs) === true) {
         return games_left;

@@ -4,17 +4,17 @@ const SI_PREFIXES = ["", "k", "M", "G", "T", "P", "E"];
 //
 function abbreviateNumber(number, length) {
     // what tier? (determines SI prefix)
-    let tier = Math.log10(number) / 3 | 0;
+    const tier = Math.log10(number) / 3 | 0;
 
     // if zero, we don't need a prefix
     if (tier == 0) return number;
 
     // get prefix and determine scale
-    let prefix = SI_PREFIXES[tier];
-    let scale = Math.pow(10, tier * 3);
+    const prefix = SI_PREFIXES[tier];
+    const scale = Math.pow(10, tier * 3);
 
     // scale the number
-    let scaled = number / scale;
+    const scaled = number / scale;
 
     // format number and add prefix as suffix
     return scaled.toPrecision(length) + prefix;

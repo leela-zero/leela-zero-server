@@ -41,17 +41,17 @@ const {
 
 const ELF_NETWORK = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
 
-let auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
+const auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 set_task_verification_secret(String(fs.readFileSync(__dirname + "/task_secret")).trim());
 
-let cacheIP24hr = new Cacheman('IP24hr');
-let cacheIP1hr = new Cacheman('IP1hr');
+const cacheIP24hr = new Cacheman('IP24hr');
+const cacheIP1hr = new Cacheman('IP1hr');
 
 // Cache information about matches and best network rating
-let cachematches = new Cacheman('matches');
+const cachematches = new Cacheman('matches');
 let bestRatings = new Map;
 
-let fastClientsMap = new Map;
+const fastClientsMap = new Map;
 
 app.set('view engine', 'pug')
 
@@ -77,7 +77,7 @@ let db;
 // all matches except just the current one (end of queue).
 //
 let pending_matches = [];
-let MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
+const MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. After that the match will be lost and an extra request will be made.
 
 
 
@@ -165,9 +165,9 @@ async function get_best_network_hash () {
             best_network_hash_promise = new Promise( (resolve, reject) => {
                 log_memory_stats("best_network_hash_promise begins");
 
-                let rstream = fs.createReadStream(__dirname + '/network/best-network.gz');
-                let gunzip = zlib.createGunzip();
-                let hash = crypto.createHash('sha256')
+                const rstream = fs.createReadStream(__dirname + '/network/best-network.gz');
+                const gunzip = zlib.createGunzip();
+                const hash = crypto.createHash('sha256')
 
                 hash.setEncoding('hex');
 
@@ -181,7 +181,7 @@ async function get_best_network_hash () {
                     reject(err);
                 })
                 .on('finish', () => {
-                    let best_network_hash = hash.read();
+                    const best_network_hash = hash.read();
                     log_memory_stats("Streams completed: " + best_network_hash);
                     resolve(best_network_hash);
                 });
@@ -196,7 +196,7 @@ async function get_best_network_hash () {
 
 
 
-let PESSIMISTIC_RATE = 0.2;
+const PESSIMISTIC_RATE = 0.2;
 
 app.enable('trust proxy');
 
@@ -225,7 +225,7 @@ setInterval( () => {
 let last_match_db_check = Date.now();
 
 setInterval( () => {
-    let now = Date.now();
+    const now = Date.now();
 
     // In case we have no matches scheduled, we check the db.
     //
@@ -299,7 +299,7 @@ MongoClient.connect('mongodb://localhost/test', (err, database) => {
 // Obsolete
 //
 app.use('/best-network-hash', asyncMiddleware( async (req, res) => {
-    let hash = await get_best_network_hash();
+    const hash = await get_best_network_hash();
 
     res.write(hash);
     res.write("\n");
@@ -315,8 +315,8 @@ app.use('/best-network-hash', asyncMiddleware( async (req, res) => {
 // This is no longer used, as /network/ is served by nginx and best-network.gz downloaded directly from it
 //
 app.use('/best-network', asyncMiddleware( async (req, res) => {
-    let hash = await get_best_network_hash();
-    let readStream = fs.createReadStream(__dirname + '/network/best-network.gz');
+    const hash = await get_best_network_hash();
+    const readStream = fs.createReadStream(__dirname + '/network/best-network.gz');
 
     readStream.on('error', err => {
         res.send("Error: " + err);
@@ -379,7 +379,7 @@ app.post('/request-match', (req, res) => {
         req.body.number_to_play = 400;
         //return res.status(400).send('No number_to_play specified.');
 
-    let options = { "resignation_percent": Number(req.body.resignation_percent),
+    const options = { "resignation_percent": Number(req.body.resignation_percent),
         "randomcnt": Number(req.body.randomcnt),
         "noise": String(req.body.noise) };
 
@@ -400,7 +400,7 @@ app.post('/request-match', (req, res) => {
     //
     req.body.is_test = ["true", "1"].includes(req.body.is_test);
 
-    let match = { "network1": req.body.network1,
+    const match = { "network1": req.body.network1,
         "network2": req.body.network2, "network1_losses": 0,
         "network1_wins": 0,
         "game_count": 0, "number_to_play": Number(req.body.number_to_play),
@@ -435,7 +435,7 @@ app.post('/request-match', (req, res) => {
 //
 app.post('/submit-network', asyncMiddleware((req, res) => {
     log_memory_stats("submit network start");
-    let busboy = new Busboy({ headers: req.headers });
+    const busboy = new Busboy({ headers: req.headers });
 
     req.body = {};
 
@@ -454,15 +454,15 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
             return;
         }
 
-        let temp_file = path.join(os.tmpdir(), file_name);
+        const temp_file = path.join(os.tmpdir(), file_name);
         // Pipes
         //   - file_stream.pipe(fs_stream)
         //   - file_stream.pipe(gunzip_stream)
         //       - gunzip_stream.pipe(hasher)
         //       - gunzip_stream.pipe(parser)
         file_promise = new Promise((resolve, reject) => {
-            let fs_stream = file_stream.pipe(fs.createWriteStream(temp_file)).on('error', reject);
-            let gunzip_stream = file_stream.pipe(zlib.createGunzip()).on('error', reject);
+            const fs_stream = file_stream.pipe(fs.createWriteStream(temp_file)).on('error', reject);
+            const gunzip_stream = file_stream.pipe(zlib.createGunzip()).on('error', reject);
 
             Promise.all([
                 new Promise(resolve => {
@@ -514,7 +514,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
         if (req.files.weights.error)
             return res.status(400).send(req.files.weights.error.message);
 
-        let set = {
+        const set = {
             hash: req.files.weights.hash,
             ip: req.ip,
             training_count: +req.body.training_count || null,
@@ -527,8 +527,8 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
         // No training count given, we'll calculate it from database.
         //
         if (!set.training_count) {
-            let cursor = db.collection("networks").aggregate([{ $group: { _id: 1, count: { $sum: "$game_count" } } }]);
-            let totalgames = await cursor.next();
+            const cursor = db.collection("networks").aggregate([{ $group: { _id: 1, count: { $sum: "$game_count" } } }]);
+            const totalgames = await cursor.next();
             set.training_count = totalgames.count;
         }
 
@@ -546,7 +546,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
                     console.error(err);
                 }
                 else {
-                    let msg = 'Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
+                    const msg = 'Network weights (' + filters + ' x ' + blocks + ') ' + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
                     res.end(msg);
                     console.log(msg);
                     log_memory_stats('submit network ends');
@@ -640,7 +640,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
         const sgfhash = checksum(sgfbuffer, 'sha256');
 
         // upload match game to database
-        let dbres = await db.collection("match_games").updateOne(
+        const dbres = await db.collection("match_games").updateOne(
             { sgfhash },
             {
                 $set: {
@@ -667,7 +667,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
     }
 
     // prepare $inc 
-    let $inc = { game_count: 1 };
+    const $inc = { game_count: 1 };
     if (match.network1 == req.body.winnerhash)
         $inc.network1_wins = 1;
     else
@@ -682,11 +682,11 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
 
     // get latest SPRT result
     const sprt_result = SPRT(match.network1_wins, match.network1_losses);
-    let pending_match_index = pending_matches.findIndex(m => m._id.equals(match._id));
+    const pending_match_index = pending_matches.findIndex(m => m._id.equals(match._id));
 
     // match is found in pending_matches
     if (pending_match_index >= 0) {
-        let m = pending_matches[pending_match_index];
+        const m = pending_matches[pending_match_index];
 
         if (sprt_result === false) {
             // remove from pending matches
@@ -695,7 +695,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
             console.log("SPRT: Early fail post-pop: " + JSON.stringify(pending_matches));
         } else {
             // remove the match from the requests array.
-            let index = m.requests.findIndex(e => e.seed === seed_from_mongolong(req.body.random_seed));
+            const index = m.requests.findIndex(e => e.seed === seed_from_mongolong(req.body.random_seed));
             if (index !== -1) {
                 m.requests.splice(index, 1);
             }
@@ -721,7 +721,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
     // Check if network2 == best_network_hash and if so, check SPRT. If SPRT pass, promote network1 as new best-network.
     // This is for the case where a match comes in to promote us, after it is no longer the active match in queue.
     //
-    let best_network_hash = await get_best_network_hash();
+    const best_network_hash = await get_best_network_hash();
     if (
         // Best network has lost
         req.body.loserhash == best_network_hash
@@ -783,14 +783,14 @@ app.post('/submit', (req, res) => {
     req.body.random_seed = Long.fromString(req.body.random_seed, 10);
     req.body.task_time = get_timestamp_from_seed(req.body.random_seed);
 
-    let clientversion = req.body.clientversion;
-    let networkhash = req.body.networkhash;
+    const clientversion = req.body.clientversion;
+    const networkhash = req.body.networkhash;
     let trainingdatafile;
     let sgffile;
     let sgfhash;
 
-    let sgfbuffer = Buffer.from(req.files.sgf.data);
-    let trainbuffer = Buffer.from(req.files.trainingdata.data);
+    const sgfbuffer = Buffer.from(req.files.sgf.data);
+    const trainbuffer = Buffer.from(req.files.trainingdata.data);
 
     if (req.ip == "xxx") {
         res.send("Game data " + sgfhash + " stored in database\n");
@@ -864,7 +864,7 @@ app.post('/submit', (req, res) => {
 });
 
 app.get('/network-profiles', asyncMiddleware(async (req, res) => {
-    let networks = await db.collection("networks")
+    const networks = await db.collection("networks")
         .find({
             hash: { $ne: ELF_NETWORK },
             $or: [
@@ -875,13 +875,13 @@ app.get('/network-profiles', asyncMiddleware(async (req, res) => {
         .sort({ _id: -1 })
         .toArray();
     
-    let pug_data = { networks, menu: 'network-profiles' };
+    const pug_data = { networks, menu: 'network-profiles' };
 
     res.render('networks/index', pug_data);
 }));
 
 app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
-    let network = await db.collection("networks")
+    const network = await db.collection("networks")
         .findOne({ hash: req.params.hash });
 
     if (!network) {
@@ -899,14 +899,14 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
     }
 
     // Prepare Avatar
-    let avatar_folder = path.join(__dirname, 'static', 'networks');
+    const avatar_folder = path.join(__dirname, 'static', 'networks');
     if (!await fs.pathExists(avatar_folder)) {
         await fs.mkdirs(avatar_folder);
     }
 
-    let avatar_path = path.join(avatar_folder, network.hash + '.png');
+    const avatar_path = path.join(avatar_folder, network.hash + '.png');
     if (!fs.pathExistsSync(avatar_path)) {
-        let retricon = require('retricon-without-canvas');
+        const retricon = require('retricon-without-canvas');
 
         await new Promise((resolve, reject) => {
             // GitHub style 
@@ -918,7 +918,7 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
         });
     }
 
-    let pug_data = {
+    const pug_data = {
         network,
         http_host: req.protocol + '://' + req.get('host'),
         matches: await db.collection("matches")
@@ -949,24 +949,24 @@ app.get('/rss', asyncMiddleware(async (req, res) => {
     let should_generate = true;
     const http_host = req.protocol + '://' + req.get('host');
 
-    let rss_exists = await fs.pathExists(rss_path);
+    const rss_exists = await fs.pathExists(rss_path);
 
     if (rss_exists) {
-        let best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
-        let rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
+        const best_network_mtimeMs = (await fs.stat(best_network_path)).mtimeMs;
+        const rss_mtimeMs = (await fs.stat(rss_path)).mtimeMs;
 
         // We have new network promoted since rss last generated
         should_generate = best_network_mtimeMs > rss_mtimeMs;
     }
 
     if (should_generate || req.query.force) {
-        let hash = get_best_network_hash();
-        let networks = await db.collection("networks")
+        const hash = get_best_network_hash();
+        const networks = await db.collection("networks")
             .find({ $or: [{ game_count: { $gt: 0 } }, { hash }], hash: { $ne: ELF_NETWORK } })
             .sort({ _id: 1 })
             .toArray();
 
-        let rss_xml = new rss_generator().generate(networks, http_host);
+        const rss_xml = new rss_generator().generate(networks, http_host);
 
         await fs.writeFile(rss_path, rss_xml);
     }
@@ -984,9 +984,9 @@ app.get('/',  asyncMiddleware( async (req, res) => {
     let styles = "";
 
     // Display some self-play for all and by current ip
-    let recentSelfplay = {};
-    let selfplayProjection = { _id: 0, movescount: 1, networkhash: 1, sgfhash: 1, winnercolor: 1 };
-    let saveSelfplay = type => games => {
+    const recentSelfplay = {};
+    const selfplayProjection = { _id: 0, movescount: 1, networkhash: 1, sgfhash: 1, winnercolor: 1 };
+    const saveSelfplay = type => games => {
         recentSelfplay[type] = games.map(({movescount, networkhash, sgfhash, winnercolor}) => ({
             sgfhash,
             text: `${networkhash.slice(0, 4)}/${movescount}${winnercolor.slice(0, 1)}`
@@ -994,10 +994,10 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         return "";
     };
 
-    let cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
-    let totalgames = await cursor.next();
+    const cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
+    const totalgames = await cursor.next();
 
-    let best_network_hash = await get_best_network_hash();
+    const best_network_hash = await get_best_network_hash();
 
     Promise.all([
         cacheIP24hr.wrap('IP24hr', '5m', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })))
@@ -1027,8 +1027,8 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         //db.collection("networks").find({ game_count: { $gt: 0 } }, { _id: 1, hash: 1, game_count: 1, training_count: 1}).sort( { _id: -1 } ).limit(100)
         .toArray()
         .then(list => {
-            for (let item of list) {
-                let itemmoment = new moment(item._id.getTimestamp());
+            for (const item of list) {
+                const itemmoment = new moment(item._id.getTimestamp());
 
                 totalgames.count -= item.game_count;
 
@@ -1080,13 +1080,13 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             let match_table = "<table class=\"matches-table\" border=1><tr><th colspan=5>Test Matches (100 Most Recent)</th></tr>\n";
             match_table += "<tr><th>Start Date</th><th>Network Hashes</th><th>Wins / Losses</th><th>Games</th><th>SPRT</th></tr>\n";
 
-            for (let item of list) {
+            for (const item of list) {
                 // The aggregate query above should not return any null network2 matches, but let's be safe.
                 //
                 if (item.network2 === null) continue;
 
                 let win_percent = item.game_count ? (100 * item.network1_wins / item.game_count).toFixed(2) : null;
-                let itemmoment = new moment(item._id.getTimestamp());
+                const itemmoment = new moment(item._id.getTimestamp());
 
                 if (win_percent) {
                     if (win_percent >= 55) {
@@ -1168,10 +1168,10 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         })
         )),
     ]).then(responses => {
-        let match_and_styles = responses.pop();
+        const match_and_styles = responses.pop();
 
-        let styles = match_and_styles[0];
-        let match_table = match_and_styles[1];
+        const styles = match_and_styles[0];
+        const match_table = match_and_styles[1];
 
         let page = "<html><head>\n<title>Leela Zero</title>\n";
         page += `<link rel="alternate" type="application/rss+xml" title="Leela Zero Best Networks" href="http://zero.sjeng.org/rss" />`
@@ -1210,7 +1210,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         responses.map( response => page += response );
 
         ["all", "ip"].forEach(type => {
-            let games = recentSelfplay[type];
+            const games = recentSelfplay[type];
             if (games && games.length) {
                 page += `View ${type == "ip" ? "your " : ""}most recent self-play games: `;
                 page += games.map(({sgfhash, text}) =>
@@ -1262,17 +1262,17 @@ function shouldScheduleMatch (req, now) {
   // Don't schedule if we ran out of potential matches for this client
   if (i < 0) return false;
 
-  let deleted = match.requests.filter(e => e.timestamp < now - MATCH_EXPIRE_TIME).length;
-  let oldest = (match.requests.length > 0 ? (now - match.requests[0].timestamp) / 1000 / 60 : 0).toFixed(2);
+  const deleted = match.requests.filter(e => e.timestamp < now - MATCH_EXPIRE_TIME).length;
+  const oldest = (match.requests.length > 0 ? (now - match.requests[0].timestamp) / 1000 / 60 : 0).toFixed(2);
   match.requests.splice(0, deleted);
-  let requested = match.requests.length;
-  let needed = how_many_games_to_queue(
+  const requested = match.requests.length;
+  const needed = how_many_games_to_queue(
                 match.number_to_play,
                 match.network1_wins,
                 match.network1_losses,
                 PESSIMISTIC_RATE,
                 bestRatings.has(match.network1));
-  let result = needed > requested;
+  const result = needed > requested;
   console.log(`Need ${needed} match games. Requested ${requested}, deleted ${deleted}. Oldest ${oldest}m ago. Will schedule ${result ? "match" : "selfplay"}.`);
 
   return result && match;
@@ -1283,20 +1283,20 @@ function shouldScheduleMatch (req, now) {
  * E.g., /get-task/0, /get-task/16, /get-task/0/0.14, /get-task/16/0.14
  */
 app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async (req, res) => {
-    let required_client_version = String(16);
-    let required_leelaz_version = String("0.15");
+    const required_client_version = String(16);
+    const required_leelaz_version = String("0.15");
 
     // Pulling this now because if I wait inside the network2==null test, possible race condition if another get-task pops end of array?
     //
-    let best_network_hash = await get_best_network_hash();
-    let now = Date.now();
-    let random_seed = make_seed(now / 1000).toString();
+    const best_network_hash = await get_best_network_hash();
+    const now = Date.now();
+    const random_seed = make_seed(now / 1000).toString();
 
     // Track match assignments as they go out, so we don't send out too many. If more needed request them, otherwise selfplay.
     //
-    let match = shouldScheduleMatch(req, now);
+    const match = shouldScheduleMatch(req, now);
     if (match) {
-        let task = {"cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        const task = {"cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1339,19 +1339,19 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
 //    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
-//        let task = { "cmd": "wait", "minutes": "5" };
+//        const task = { "cmd": "wait", "minutes": "5" };
 //
 //        res.send(JSON.stringify(task));
 //
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        let task  = {"cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        const task  = {"cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        let options = {"playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "999"};
+        const options = {"playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "999"};
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
@@ -1408,11 +1408,11 @@ app.get('/view/:hash(\\w+)', (req, res) => {
 });
 
 app.get('/self-plays', (req, res) => {
-    let ipMap = new Map();
+    const ipMap = new Map();
 
     db.collection("games").find({}).sort({ _id: -1 }).limit(400).toArray()
     .then(list => {
-        for (let item of list) {
+        for (const item of list) {
             if (!ipMap.has(item.ip)) {
                 ipMap.set(item.ip, item.ip == req.ip ? "you" : ipMap.size + 1);
             }
@@ -1420,15 +1420,15 @@ app.get('/self-plays', (req, res) => {
             item.ip = ipMap.get(item.ip);
 
             // Calculate how long ago did the game start
-            let seed = (s => s instanceof Long ? s : new Long(s))(item.random_seed);
-            let startTime = get_timestamp_from_seed(seed);
-            let minutesAgo = (Date.now() / 1000 - startTime) / 60;
+            const seed = (s => s instanceof Long ? s : new Long(s))(item.random_seed);
+            const startTime = get_timestamp_from_seed(seed);
+            const minutesAgo = (Date.now() / 1000 - startTime) / 60;
 
             // Display some times if they're reasonable
             item.duration = item.started = "???";
             if (minutesAgo >= 0 && minutesAgo <= 24 * 60) {
                 item.started = `${minutesAgo.toFixed(1)} minutes ago`;
-                let duration = (item._id.getTimestamp() / 1000 - startTime) / 60;
+                const duration = (item._id.getTimestamp() / 1000 - startTime) / 60;
                 item.duration = `${duration.toFixed(1)} minutes`;
             }
         }
@@ -1446,7 +1446,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
         return;
     }
 
-    let ipMap = new Map();
+    const ipMap = new Map();
 
     db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
         .then(match => {
@@ -1462,7 +1462,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
                 { "$sort": { _id: 1 } }
             ]).toArray()
                 .then(list => {
-                    for (let item of list) {
+                    for (const item of list) {
                         if (ipMap.get(item.ip) == null) {
                             ipMap.set(item.ip, ipMap.size + 1);
                         }
@@ -1516,11 +1516,11 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
 
 app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
-    let json = await cachematches.wrap("elograph", "1d", async () => {
+    const json = await cachematches.wrap("elograph", "1d", async () => {
     console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared")
 
-    let cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
-    let totalgames = await cursor.next();
+    const cursor = db.collection("networks").aggregate( [ { $group: { _id: 1, count: { $sum: "$game_count" } } } ]);
+    const totalgames = await cursor.next();
 
     return Promise.all([
         db.collection("networks").find().sort({_id: -1}).toArray(),
@@ -1534,11 +1534,11 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
         bestRatings = new Map();
 
         // prepare networks
-        let networks = dataArray[0].map(item => {
+        const networks = dataArray[0].map(item => {
             totalgames.count -= item.game_count || 0;
 
             // The ELF network has games but is not actually best
-            let best = item.game_count && !ELF_NETWORK.startsWith(item.hash);
+            const best = item.game_count && !ELF_NETWORK.startsWith(item.hash);
             if (best)
                 bestRatings.set(item.hash, 0);
 
@@ -1551,9 +1551,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
         });
 
         // prepare ratingsMap
-        let ratingsMap = new Map();
+        const ratingsMap = new Map();
         dataArray[1].forEach(match => {
-            let network2_rating = ratingsMap.get(match.network2) ? ratingsMap.get(match.network2).rating : 0;
+            const network2_rating = ratingsMap.get(match.network2) ? ratingsMap.get(match.network2).rating : 0;
             let sprt;
             let elo;
 
@@ -1577,7 +1577,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
                 elo = CalculateEloFromPercent( fakewins / fakecount );
             }
 
-            let isBest = bestRatings.has(match.network1);
+            const isBest = bestRatings.has(match.network1);
             switch (isBest || SPRT(match.network1_wins, match.network1_losses)) {
                 case false:
                     sprt = "FAIL";
@@ -1597,16 +1597,16 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
             }
 
             // Save ratings of best networks
-            let rating = elo + network2_rating;
+            const rating = elo + network2_rating;
             if (isBest)
                 bestRatings.set(match.network1, rating);
 
             // Use opponent's net for ELF as its training_count is arbitrary
-            let net = match.network1 == ELF_NETWORK && match.merged.training_count;
+            const net = match.network1 == ELF_NETWORK && match.merged.training_count;
 
             // Chain together previous infos if we have any
-            let previous = ratingsMap.get(match.network1);
-            let info = { net, previous, rating, sprt };
+            const previous = ratingsMap.get(match.network1);
+            const info = { net, previous, rating, sprt };
             ratingsMap.set(match.network1, info);
         });
 
@@ -1614,9 +1614,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
         cachematches.del('matches', () => console.log('Cleared match table cache.'));
 
         // prepare json result
-        let json = [];
+        const json = [];
         const addNetworkRating = (item, info = { rating: 0, sprt: "???" }) => {
-            let rating = Math.max(0, Math.round(info.rating));
+            const rating = Math.max(0, Math.round(info.rating));
             json.push({
                 rating,
                 "net": Math.max(0.0, Number((info.net || item.net) + rating/100000)),
@@ -1646,7 +1646,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
 
 app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     let start = req.params.start;
-    let files = {
+    const files = {
         "44": "top10-Q16.json",
         "43" : "top10-R16.json",
         "33" : "top10-R17.json",
@@ -1655,7 +1655,7 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     if (!(start in files))
         start = "44";
 
-    let top10 = JSON.parse(fs.readFileSync(path.join(__dirname, 'static', files[start])));
+    const top10 = JSON.parse(fs.readFileSync(path.join(__dirname, 'static', files[start])));
 
     return res.render('opening', { top10, start, menu : 'opening' });
 }));

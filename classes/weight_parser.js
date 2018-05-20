@@ -13,7 +13,7 @@ class weight_parser extends Writable {
         //   - blocks, https://github.com/gcp/leela-zero/blob/97c2f8137a3ea24938116bfbb2b0ff05c83903f0/src/Network.cpp#L217
         //
         for (let x = 0; x < chunk.length; ++x) {
-            let c = chunk[x];
+            const c = chunk[x];
 
             if (c == 0x0A)   // 0X0A = '\n' = newline
                 this.newline++;

@@ -93,11 +93,11 @@ if (!help) {
         }
 
 
-        let first_match = {};
+        const first_match = {};
         // Matches
         for (let i = 0; i < options.m; i++) {
-            let network_idx = Math.floor(i / options.m * options.n);
-            let match = {
+            const network_idx = Math.floor(i / options.m * options.n);
+            const match = {
                 number_to_play: 400,
                 options: {},
                 options_hash: crypto.randomBytes(2).toString('hex')

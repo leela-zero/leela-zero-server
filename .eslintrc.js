@@ -35,6 +35,7 @@ module.exports = {
         "one-var": ["error", "never"],
         "operator-assignment": "error",
         "prefer-arrow-callback": "error",
+        "prefer-const": "error",
         "prefer-numeric-literals": "error",
         "prefer-spread": "error",
         "rest-spread-spacing": "error",
