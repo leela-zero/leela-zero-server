@@ -404,7 +404,7 @@ app.post('/request-match', (req, res) => {
         "network1_wins": 0,
         "game_count": 0, "number_to_play": Number(req.body.number_to_play),
         "is_test" : req.body.is_test,
-        "options": options, "options_hash": get_options_hash(options) };
+        options, "options_hash": get_options_hash(options) };
 
     db.collection("matches").insertOne( match )
     .then( () => {
@@ -644,7 +644,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
 
         // upload match game to database
         let dbres = await db.collection("match_games").updateOne(
-            { sgfhash: sgfhash },
+            { sgfhash },
             {
                 $set: {
                     ip: req.ip, winnerhash: req.body.winnerhash, loserhash: req.body.loserhash, sgf: sgfbuffer.toString(),
@@ -679,7 +679,7 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
     // save to database using $inc and get modified document
     match = (await db.collection("matches").findOneAndUpdate(
         { _id: match._id },
-        { $inc: $inc },
+        { $inc },
         { returnOriginal: false }  // return modified document 
     )).value;
 
@@ -816,8 +816,8 @@ app.post('/submit', (req, res) => {
                     trainingdatafile = trainbuffer.toString();
 
                     db.collection("games").updateOne(
-                        { sgfhash: sgfhash },
-                        { $set: { ip: req.ip, networkhash: networkhash, sgf: sgffile, options_hash: req.body.options_hash,
+                        { sgfhash },
+                        { $set: { ip: req.ip, networkhash, sgf: sgffile, options_hash: req.body.options_hash,
                                     movescount: (req.body.movescount ? Number(req.body.movescount) : null),
                                 data: trainingdatafile, clientversion: Number(clientversion),
                                     winnercolor: req.body.winnercolor, random_seed: req.body.random_seed }},
@@ -1299,7 +1299,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     let match = shouldScheduleMatch(req, now);
     if (match) {
-        let task = {"cmd": "match", "required_client_version": required_client_version, "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task = {"cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1349,7 +1349,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        let task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task  = {"cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
@@ -1397,13 +1397,13 @@ app.get('/view/:hash(\\w+)', (req, res) => {
 
         switch (req.query.viewer) {
             case "eidogo":
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
                 break;
             case "wgo":
-                res.render('wgo', { title: "View training game " + req.params.hash, sgf: sgf });
+                res.render('wgo', { title: "View training game " + req.params.hash, sgf });
                 break;
             default:
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
         }
     }).catch(() => {
         res.send("No selfplay game was found with hash " + req.params.hash);
@@ -1503,13 +1503,13 @@ app.get('/viewmatch/:hash(\\w+)', (req, res) => {
 
         switch (req.query.viewer) {
             case "eidogo":
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
                 break;
             case "wgo":
-                res.render('wgo', { title: "View match " + req.params.hash, sgf: sgf });
+                res.render('wgo', { title: "View match " + req.params.hash, sgf });
                 break;
             default:
-                res.render('eidogo', { title: "View training game " + req.params.hash, sgf: sgf });
+                res.render('eidogo', { title: "View training game " + req.params.hash, sgf });
         }
     }).catch(() => {
         res.send("No match was found with hash " + req.params.hash);

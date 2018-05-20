@@ -30,7 +30,7 @@ class weight_parser extends Writable {
         if(!Number.isInteger(blocks))
             blocks = 0;
 
-        return { filters : filters, blocks : blocks };
+        return { filters, blocks };
     }
 }
 
