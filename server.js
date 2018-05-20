@@ -1316,7 +1316,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     var match = shouldScheduleMatch(req, now);
     if (match) {
-        let task = {"cmd": "match", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task = {"cmd": "match", "required_client_version": required_client_version, "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1366,7 +1366,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        let task  = {"cmd": "selfplay", "hash": "", "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
+        let task  = {"cmd": "selfplay", "hash": "", "required_client_version": required_client_version, "minimum_autogtp_version": required_client_version, "random_seed": random_seed, "minimum_leelaz_version" : required_leelaz_version};
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
