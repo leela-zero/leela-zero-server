@@ -14,6 +14,7 @@ module.exports = {
         "arrow-spacing": "error",
         "brace-style": "error",
         "comma-dangle": "error",
+        "comma-spacing": "error",
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],
         "dot-notation": "error",

@@ -83,9 +83,9 @@ const MATCH_EXPIRE_TIME = 30 * 60 * 1000; // matches expire after 30 minutes. Af
 
 function get_options_hash (options) {
     if (options.visits) {
-        return checksum("" + options.visits + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
+        return checksum("" + options.visits + options.resignation_percent + options.noise + options.randomcnt).slice(0, 6);
     } else {
-        return checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
+        return checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0, 6);
     }
 }
 
@@ -1038,7 +1038,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
                     + "</td><td><a href=\"/networks/"
                     + item.hash
                     + ".gz\">"
-                    + item.hash.slice(0,8)
+                    + item.hash.slice(0, 8)
                     + "</a></td><td>"
                     + (item.filters && item.blocks ? `${item.filters}x${item.blocks}` : "TBD")
                     + "</td><td>"
@@ -1062,7 +1062,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         .then(game => {
             if (game[0]) {
                 return "<br>"
-                    + "View most recent match win by best network " + game[0].winnerhash.slice(0,8) + " vs " + game[0].loserhash.slice(0,8) + ": "
+                    + "View most recent match win by best network " + game[0].winnerhash.slice(0, 8) + " vs " + game[0].loserhash.slice(0, 8) + ": "
                     + "[<a href=\"/viewmatch/" + game[0].sgfhash + "?viewer=eidogo\">EidoGo</a> / "
                     + "<a href=\"/viewmatch/" + game[0].sgfhash + "?viewer=wgo\">WGo</a>] "
                     + "<br>";
@@ -1098,7 +1098,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
                     + "<td>" + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm") + "</td>"
                     + "<td>"
                     + "<div class=\"tooltip\">"
-                    + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0,8) + "</a>"
+                    + "<a href=\"/networks/" + item.network1 + ".gz\">" + item.network1.slice(0, 8) + "</a>"
                     + "<span class=\"tooltiptextleft\">"
                     + item.merged1.training_count.abbr(4)
                     + (item.merged1.training_steps ? "+" + item.merged1.training_steps.abbr(3) : "")
@@ -1115,7 +1115,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
 
                 if (item.network2) {
                     match_table += "<div class=\"tooltip\">"
-                        + "<a href=\"/networks/" + item.network2 + ".gz\">" + item.network2.slice(0,8) + "</a>"
+                        + "<a href=\"/networks/" + item.network2 + ".gz\">" + item.network2.slice(0, 8) + "</a>"
                         + "<span class=\"tooltiptextright\">"
                         + item.merged.training_count.abbr(4)
                         + (item.merged.training_steps ? "+" + item.merged.training_steps.abbr(3) : "")
@@ -1154,8 +1154,8 @@ app.get('/',  asyncMiddleware( async (req, res) => {
                             color = "59E817";
                         }
 
-                        styles += ".n" + item.network1.slice(0,8) + "{ width: " + width + "%; background-color: #" + color + ";}\n";
-                        match_table += "<div class=\"n" + item.network1.slice(0,8) + "\">&nbsp;</div>";
+                        styles += ".n" + item.network1.slice(0, 8) + "{ width: " + width + "%; background-color: #" + color + ";}\n";
+                        match_table += "<div class=\"n" + item.network1.slice(0, 8) + "\">&nbsp;</div>";
                     }
                 }
 
@@ -1336,7 +1336,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
-        console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0,8)} vs ${match.network2.slice(0,8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
+        console.log(`${req.ip} (${req.headers['x-real-ip']}) got task: match ${match.network1.slice(0, 8)} vs ${match.network2.slice(0, 8)} ${match.game_count + match.requests.length} of ${match.number_to_play} ${JSON.stringify(task)}`);
 //    } else if ( req.params.autogtp==1 && Math.random() > .2 ) {
 //        const task = { "cmd": "wait", "minutes": "5" };
 //
