@@ -1121,8 +1121,8 @@ app.get('/',  asyncMiddleware( async (req, res) => {
                 }
 
                 match_table += "</td>"
-                    + "<td>" + item.network1_wins + " : " + item.network1_losses +
-                        ( win_percent ? win_percent + "</td>" : "</td>")
+                    + "<td>" + item.network1_wins + " : " + item.network1_losses
+                        + ( win_percent ? win_percent + "</td>" : "</td>")
                     + "<td>" + item.game_count + " / " + item.number_to_play + "</td>"
                     + "<td>";
 
@@ -1245,8 +1245,8 @@ function shouldScheduleMatch (req, now) {
 
     // For now, only allow newer autogtp and leelaz to take any match while
     // older clients can take a match that don't include ELF (network v2).
-    if (req.params.autogtp >= 16 || req.params.leelaz >= 0.14 ||
-        match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
+    if (req.params.autogtp >= 16 || req.params.leelaz >= 0.14
+        || match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
       break;
     }
   }

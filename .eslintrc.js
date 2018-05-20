@@ -46,6 +46,7 @@ module.exports = {
         "object-shorthand": "error",
         "one-var": ["error", "never"],
         "operator-assignment": "error",
+        "operator-linebreak": ["error", "before"],
         "prefer-arrow-callback": "error",
         "prefer-const": "error",
         "prefer-numeric-literals": "error",
