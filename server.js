@@ -90,9 +90,9 @@ function get_options_hash (options) {
 async function get_fast_clients () {
     return new Promise( (resolve, reject) => {
         db.collection("games").aggregate( [
-            { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60)}}},
-            { $group: { _id: "$ip", total: { $sum: 1 }}},
-            { $match: { total: { $gt: 4 }}}
+            { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } } },
+            { $group: { _id: "$ip", total: { $sum: 1 } } },
+            { $match: { total: { $gt: 4 } } }
         ] ).forEach( match => {
             fastClientsMap.set(match._id, true);
         }, err => {
@@ -118,7 +118,7 @@ async function get_pending_matches () {
                     { "$gt": [ "$number_to_play", "$game_count" ] },
                     "$$KEEP", "$$PRUNE"
                 ] } }
-        ] ).sort({_id: -1}).forEach( match => {
+        ] ).sort({ _id: -1 }).forEach( match => {
             match.requests = []; // init request list.
 
             // Client only accepts strings for now
@@ -194,7 +194,7 @@ const PESSIMISTIC_RATE = 0.2;
 
 app.enable('trust proxy');
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(/\/((?!submit-network).)*/, fileUpload());
 
 app.use('/view/player', express.static('static/eidogo-player-1.2/player'));
@@ -528,7 +528,7 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
 
         // Prepare variables for printing messages
         //
-        const {blocks, filters, hash, training_count} = set;
+        const { blocks, filters, hash, training_count } = set;
 
         db.collection("networks").updateOne(
             { hash: set.hash },
@@ -810,7 +810,7 @@ app.post('/submit', (req, res) => {
                         { $set: { ip: req.ip, networkhash, sgf: sgffile, options_hash: req.body.options_hash,
                                     movescount: (req.body.movescount ? Number(req.body.movescount) : null),
                                 data: trainingdatafile, clientversion: Number(clientversion),
-                                    winnercolor: req.body.winnercolor, random_seed: req.body.random_seed }},
+                                    winnercolor: req.body.winnercolor, random_seed: req.body.random_seed } },
                   { upsert: true },
                         err => {
                             // Need to catch this better perhaps? Although an error here really is totally unexpected/critical.
@@ -980,7 +980,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
     const recentSelfplay = {};
     const selfplayProjection = { _id: 0, movescount: 1, networkhash: 1, sgfhash: 1, winnercolor: 1 };
     const saveSelfplay = type => games => {
-        recentSelfplay[type] = games.map(({movescount, networkhash, sgfhash, winnercolor}) => ({
+        recentSelfplay[type] = games.map(({ movescount, networkhash, sgfhash, winnercolor }) => ({
             sgfhash,
             text: `${networkhash.slice(0, 4)}/${movescount}${winnercolor.slice(0, 1)}`
         }));
@@ -1206,7 +1206,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             const games = recentSelfplay[type];
             if (games && games.length) {
                 page += `View ${type == "ip" ? "your " : ""}most recent self-play games: `;
-                page += games.map(({sgfhash, text}) => `<a href="/view/${sgfhash}?viewer=wgo">${text}</a>`).join(", ");
+                page += games.map(({ sgfhash, text }) => `<a href="/view/${sgfhash}?viewer=wgo">${text}</a>`).join(", ");
                 page += "<br>";
             }
         });
@@ -1288,7 +1288,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     const match = shouldScheduleMatch(req, now);
     if (match) {
-        const task = {"cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version};
+        const task = { "cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version };
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1325,7 +1325,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
         add_match_verification(task);
         res.send(JSON.stringify(task));
 
-        match.requests.push({timestamp: now, seed: random_seed});
+        match.requests.push({ timestamp: now, seed: random_seed });
 
         if (match.game_count >= match.number_to_play) pending_matches.pop();
 
@@ -1338,12 +1338,12 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        const task  = {"cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version};
+        const task  = { "cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version };
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        const options = {"playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "999"};
+        const options = { "playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "999" };
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
@@ -1368,7 +1368,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 
 app.get('/view/:hash(\\w+).sgf', (req, res) => {
     db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-    .then(({sgf}) => {
+    .then(({ sgf }) => {
         sgf = sgf.replace(/(\n|\r)+/g, '');
 
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
@@ -1381,7 +1381,7 @@ app.get('/view/:hash(\\w+).sgf', (req, res) => {
 
 app.get('/view/:hash(\\w+)', (req, res) => {
     db.collection("games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-    .then(({sgf}) => {
+    .then(({ sgf }) => {
         sgf = sgf.replace(/(\n|\r)+/g, '');
 
         switch (req.query.viewer) {
@@ -1474,7 +1474,7 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
 app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
     db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-    .then(({sgf}) => {
+    .then(({ sgf }) => {
         sgf = sgf.replace(/(\n|\r)+/g, '');
 
         res.setHeader("Content-Disposition", "attachment; filename=\"" + req.params.hash + ".sgf\"");
@@ -1487,7 +1487,7 @@ app.get('/viewmatch/:hash(\\w+).sgf', (req, res) => {
 
 app.get('/viewmatch/:hash(\\w+)', (req, res) => {
     db.collection("match_games").findOne({ sgfhash: req.params.hash }, { _id: 0, sgf: 1 })
-    .then(({sgf}) => {
+    .then(({ sgf }) => {
         sgf = sgf.replace(/(\n|\r)+/g, '');
 
         switch (req.query.viewer) {
@@ -1514,7 +1514,7 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
     const totalgames = await cursor.next();
 
     return Promise.all([
-        db.collection("networks").find().sort({_id: -1}).toArray(),
+        db.collection("networks").find().sort({ _id: -1 }).toArray(),
         db.collection("matches").aggregate([
             { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } },
             { "$unwind": "$merged" },

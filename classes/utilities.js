@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require('fs-extra');
 const converter = require('hex2dec');
-const {Long, ObjectId} = require('mongodb');
+const { Long, ObjectId } = require('mongodb');
 const crypto = require('crypto');
 const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 

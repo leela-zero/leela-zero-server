@@ -42,6 +42,7 @@ module.exports = {
         "no-useless-return": "error",
         "no-var": "error",
         "no-whitespace-before-property": "error",
+        "object-curly-spacing": ["error", "always"],
         "object-shorthand": "error",
         "one-var": ["error", "never"],
         "operator-assignment": "error",
