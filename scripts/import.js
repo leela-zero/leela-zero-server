@@ -42,7 +42,6 @@ for (let i = 0; i < process.argv.length; i++) {
 }
 
 if (!help) {
-
     MongoClient.connect('mongodb://localhost/test', async (err, db) => {
         console.log(`Importing ${options.n} networks, ${options.g} self play games and ${options.m} matches.`);
 
@@ -131,5 +130,4 @@ if (!help) {
     });
 
     // Network
-
 }

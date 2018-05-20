@@ -182,7 +182,6 @@ async function get_best_network_hash () {
                     resolve(best_network_hash);
                 });
             });
-
         }
 
         return best_network_hash_promise;
@@ -480,7 +479,6 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
                 // We are all done (hash, parse and save file)
                 resolve();
             });
-
         }).catch(err => {
             console.error(err);
             req.files[name] = { error: err };
@@ -490,11 +488,8 @@ app.post('/submit-network', asyncMiddleware((req, res) => {
 
             if (fs.existsSync(temp_file))
                 fs.removeSync(temp_file);
-
         });
-
     }).on('finish', async () => {
-
         await file_promise;
 
         if (!req.body.key || req.body.key != auth_key) {
@@ -727,7 +722,6 @@ app.post('/submit-match', asyncMiddleware(async (req, res) => {
             sprt_result === true
             || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55)
         )) {
-
         fs.copyFileSync(__dirname + '/network/' + req.body.winnerhash + '.gz', __dirname + '/network/best-network.gz');
         console.log("New best network copied from (normal check): " + __dirname + '/network/' + req.body.winnerhash + '.gz');
         discord.network_promotion_notify(req.body.winnerhash);
@@ -789,7 +783,6 @@ app.post('/submit', (req, res) => {
         res.send("Game data " + sgfhash + " stored in database\n");
         console.log("FAKE/SPAM reply sent to " + "xxx" + " (" + req.headers['x-real-ip'] + ")");
     } else {
-
     zlib.unzip(sgfbuffer, (err, sgfbuffer) => {
         if (err) {
             console.error(err);
@@ -852,7 +845,6 @@ app.post('/submit', (req, res) => {
             });
         }
     });
-
     }
 });
 
@@ -1629,7 +1621,6 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
         console.log("ERROR data/elograph.json: " + err);
         res.send("ERROR data/elograph.json: " + err);
     });
-
     });
 
     res.json(json);

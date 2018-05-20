@@ -2,9 +2,7 @@ const rss = require('rss');
 const moment = require('moment');
 
 class rss_generator {
-
     generate(networks, http_host) {
-
         const feed = new rss({
             title: 'Leela Zero Best Networks',
             feed_url: `${http_host}/rss`,

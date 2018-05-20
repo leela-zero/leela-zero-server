@@ -47,6 +47,7 @@ module.exports = {
         "one-var": ["error", "never"],
         "operator-assignment": "error",
         "operator-linebreak": ["error", "before"],
+        "padded-blocks": ["error", "never"],
         "prefer-arrow-callback": "error",
         "prefer-const": "error",
         "prefer-numeric-literals": "error",
