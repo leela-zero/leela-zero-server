@@ -985,9 +985,9 @@ app.get("/",  asyncMiddleware(async(req, res) => {
     const best_network_hash = await get_best_network_hash();
 
     Promise.all([
-        cacheIP24hr.wrap("IP24hr", "5m", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })))
+        cacheIP24hr.wrap("IP24hr", "5m", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } })))
         .then(list => (list.length + " clients in past 24 hours, ")),
-        cacheIP1hr.wrap("IP1hr", "30s", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })))
+        cacheIP1hr.wrap("IP1hr", "30s", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } })))
         .then(list => (list.length + " in past hour.<br>")),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
         .then(count => `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `),
@@ -995,9 +995,9 @@ app.get("/",  asyncMiddleware(async(req, res) => {
         .then(count => `${count} in past hour, <a href="https://github.com/gcp/leela-zero/issues/1311#issuecomment-386422486">includes ${elf_counter} ELF</a>).<br/>`),
         db.collection("match_games").find().count()
         .then(count => `${count} total match games (`),
-        db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
+        db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
         .then(count => `${count} in past 24 hours, `),
-        db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
+        db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
         .then(count => `${count} in past hour).<br>`),
         db.collection("networks").aggregate([
             // Exclude ELF network
@@ -1225,7 +1225,7 @@ app.get("/",  asyncMiddleware(async(req, res) => {
  * @returns {bool|object} False if no match to schedule; otherwise, match object
  */
 function shouldScheduleMatch(req, now) {
-  if (!(pending_matches.length && req.params.autogtp!=0 && fastClientsMap.get(req.ip))) {
+  if (!(pending_matches.length && req.params.autogtp != 0 && fastClientsMap.get(req.ip))) {
     return false;
   }
 
@@ -1602,7 +1602,7 @@ app.get("/data/elograph.json",  asyncMiddleware(async(req, res) => {
             const rating = Math.max(0, Math.round(info.rating));
             json.push({
                 rating,
-                net: Math.max(0.0, Number((info.net || item.net) + rating/100000)),
+                net: Math.max(0.0, Number((info.net || item.net) + rating / 100000)),
                 sprt: info.sprt,
                 hash: item.hash.slice(0, 6),
                 best: item.best
