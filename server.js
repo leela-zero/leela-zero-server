@@ -1337,13 +1337,13 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
         const options = { playouts: "0", visits: "3201", resignation_percent: "5", noise: "true", randomcnt: "999" };
 
-        if (Math.random() < .2) options.resignation_percent = "0";
+        if (Math.random() < 0.2) options.resignation_percent = "0";
 
         task.hash = best_network_hash;
 
         // For now, have newer autogtp and leelaz play some self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < .25) {
+        if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < 0.25) {
             task.hash = ELF_NETWORK;
             options.resignation_percent = "5";
         }

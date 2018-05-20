@@ -31,6 +31,7 @@ module.exports = {
         "no-console": "off",
         "no-extra-bind": "error",
         "no-extra-label": "error",
+        "no-floating-decimal": "error",
         "no-lonely-if": "error",
         "no-multi-spaces": "error",
         "no-multiple-empty-lines": ["error", {max: 1, maxBOF: 0, maxEOF: 0}],

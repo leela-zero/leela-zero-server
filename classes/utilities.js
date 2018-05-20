@@ -164,8 +164,8 @@ function LLR(W, L, elo0, elo1) {
 function SPRTold(W, L) {
     const elo0 = 0;
     const elo1 = 35;
-    const alpha = .05;
-    const beta = .05;
+    const alpha = 0.05;
+    const beta = 0.05;
 
     const LLR_ = LLR(W, L, elo0, elo1);
     const LA = Math.log(beta / (1 - alpha));
