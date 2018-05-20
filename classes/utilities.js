@@ -1,17 +1,17 @@
 const path = require("path");
-const fs = require('fs-extra');
-const converter = require('hex2dec');
-const {Long, ObjectId} = require('mongodb');
-const crypto = require('crypto');
+const fs = require("fs-extra");
+const converter = require("hex2dec");
+const { Long, ObjectId } = require("mongodb");
+const crypto = require("crypto");
 const safeObjectId = s => ObjectId.isValid(s) ? new ObjectId(s) : null;
 
 // Default secret for task verification codes
-var gTaskSecret = "";
+let gTaskSecret = "";
 
 /**
  * Sets the secret to be used for verification codes
  */
-function set_task_verification_secret (secret) {
+function set_task_verification_secret(secret) {
     gTaskSecret = secret;
 }
 
@@ -21,8 +21,8 @@ function set_task_verification_secret (secret) {
  * @param seed {string} Some value to compute a verification
  * @returns {string} The verification code
  */
-function compute_task_verification (seed) {
-    return checksum(gTaskSecret + seed, 'sha256');
+function compute_task_verification(seed) {
+    return checksum(gTaskSecret + seed, "sha256");
 }
 
 /**
@@ -34,7 +34,7 @@ function compute_task_verification (seed) {
  *          white_hash {string} Network for black included in verification
  *          options_hash {string} Existing hash to append verification
  */
-function add_match_verification (task) {
+function add_match_verification(task) {
     // Append the verification to options_hash as the client responds with it
     task.options_hash += compute_task_verification(task.random_seed + task.white_hash + task.black_hash);
 }
@@ -50,7 +50,7 @@ function add_match_verification (task) {
  *          verification {string} Will be updated with the verification
  * @returns {bool} True if the verification code is consistent with the data
  */
-function check_match_verification (data) {
+function check_match_verification(data) {
     // Allow for 2 expected verification codes for swapped networks
     const expected = compute_task_verification(data.random_seed + data.winnerhash + data.loserhash);
     const expected2 = compute_task_verification(data.random_seed + data.loserhash + data.winnerhash);
@@ -64,7 +64,7 @@ function check_match_verification (data) {
 }
 
 function network_exists(hash) {
-    var network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
+    const network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
     return fs.pathExistsSync(network_file);
 }
 
@@ -74,9 +74,9 @@ function CalculateEloFromPercent(percentage) {
 
 function checksum(str, algorithm, encoding) {
     return crypto
-        .createHash(algorithm || 'md5')
-        .update(str, 'utf8')
-        .digest(encoding || 'hex')
+        .createHash(algorithm || "md5")
+        .update(str, "utf8")
+        .digest(encoding || "hex");
 }
 
 /**
@@ -87,7 +87,7 @@ function checksum(str, algorithm, encoding) {
  * @returns {Long} A random number
  */
 function make_seed(seconds = Date.now() / 1000,
-                   highBits = converter.hexToDec(`0x${crypto.randomBytes(4).toString('hex')}`).toString() >>> 1) {
+                   highBits = converter.hexToDec(`0x${crypto.randomBytes(4).toString("hex")}`).toString() >>> 1) {
     return new Long(seconds, highBits);
 }
 
@@ -119,18 +119,17 @@ function objectIdFromDate(date) {
 
 // This comes from https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
 //
-const asyncMiddleware = fn =>
-    function (req, res, next, ...args) {
-        const fnReturn = fn(req, res, next, ...args)
-        return Promise.resolve(fnReturn).catch(next)
-    }
+const asyncMiddleware = fn => function(req, res, next, ...args) {
+    const fnReturn = fn(req, res, next, ...args);
+    return Promise.resolve(fnReturn).catch(next);
+};
 
 function log_memory_stats(string) {
     console.log(string);
     const used = process.memoryUsage();
 
     for (let key in used) {
-        var size = (used[key] / 1024 / 1024).toFixed(2);
+        let size = (used[key] / 1024 / 1024).toFixed(2);
 
         size = " ".repeat(6 - size.length) + size;
         key += " ".repeat(9 - key.length);
@@ -149,26 +148,28 @@ function LLR(W, L, elo0, elo1) {
     if (!W) W = 1;
     if (!L) L = 1;
 
-    var N = W + L;
-    var w = W / N;
-    var s = w;
-    var m2 = w;
-    var variance = m2 - s ** 2;
-    var variance_s = variance / N;
-    var s0 = LL(elo0);
-    var s1 = LL(elo1);
+    const N = W + L;
+    const w = W / N;
+    const s = w;
+    const m2 = w;
+    const variance = m2 - s ** 2;
+    const variance_s = variance / N;
+    const s0 = LL(elo0);
+    const s1 = LL(elo1);
 
     return (s1 - s0) * (2 * s - s0 - s1) / variance_s / 2.0;
 }
 
 //function SPRTold(W,L,elo0,elo1)
 function SPRTold(W, L) {
-    var elo0 = 0, elo1 = 35;
-    var alpha = .05, beta = .05;
+    const elo0 = 0;
+    const elo1 = 35;
+    const alpha = 0.05;
+    const beta = 0.05;
 
-    var LLR_ = LLR(W, L, elo0, elo1);
-    var LA = Math.log(beta / (1 - alpha));
-    var LB = Math.log((1 - beta) / alpha);
+    const LLR_ = LLR(W, L, elo0, elo1);
+    const LA = Math.log(beta / (1 - alpha));
+    const LB = Math.log((1 - beta) / alpha);
 
     if (LLR_ > LB && W + L > 100) {
         return true;
@@ -184,26 +185,26 @@ function stDev(n) {
 }
 
 function canReachLimit(w, l, max, aim) {
-    var aimPerc = aim / max;
-    var remaining = max - w - l;
-    var expected = remaining * aimPerc;
-    var maxExpected = expected + 3 * stDev(remaining)
-    var needed = aim - w;
+    const aimPerc = aim / max;
+    const remaining = max - w - l;
+    const expected = remaining * aimPerc;
+    const maxExpected = expected + 3 * stDev(remaining);
+    const needed = aim - w;
     return maxExpected > needed;
 }
 
 function SPRT(w, l) {
-    var max = 400;
-    var aim = max / 2 + 2 * stDev(max);
+    const max = 400;
+    const aim = max / 2 + 2 * stDev(max);
     if (w + l >= max && w / (w + l) >= (aim / max)) return true;
     if (!canReachLimit(w, l, max, aim)) return false;
     return SPRTold(w, l);
 }
 
-var QUEUE_BUFFER = 25;
+const QUEUE_BUFFER = 25;
 
 function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate, isBest) {
-    var games_left = max_games - w_obs - l_obs;
+    const games_left = max_games - w_obs - l_obs;
 
     if (isBest || SPRT(w_obs, l_obs) === true) {
         return games_left;
@@ -213,7 +214,7 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate, isBe
         return 0;
     }
 
-    for (var queued_games = 0; queued_games < games_left; queued_games++) {
+    for (let queued_games = 0; queued_games < games_left; queued_games++) {
         if (SPRT(w_obs + queued_games * pessimistic_rate, l_obs + queued_games * (1 - pessimistic_rate)) === false) {
             return queued_games + QUEUE_BUFFER;
         }
@@ -238,5 +239,5 @@ module.exports = {
     SPRT,
     LLR,
     asyncMiddleware,
-    how_many_games_to_queue,
-}
+    how_many_games_to_queue
+};

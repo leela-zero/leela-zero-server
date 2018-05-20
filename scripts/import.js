@@ -1,5 +1,5 @@
-const MongoClient = require('mongodb').MongoClient;
-const crypto = require('crypto');
+const MongoClient = require("mongodb").MongoClient;
+const crypto = require("crypto");
 
 function usage() {
     console.log(
@@ -13,16 +13,17 @@ function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
 
-process.argv.shift();   // node
-process.argv.shift();   // import.js
+process.argv.shift(); // node
+process.argv.shift(); // import.js
 
-var options = {
+const options = {
     n: 10,
     g: 10000,
     m: 100
-}, help = false;
+};
+let help = false;
 
-for (var i = 0; i < process.argv.length; i++) {
+for (let i = 0; i < process.argv.length; i++) {
     switch (process.argv[i]) {
         case "-n":
             options.n = +process.argv[++i] || options.n;
@@ -40,18 +41,17 @@ for (var i = 0; i < process.argv.length; i++) {
     }
 }
 
-
 if (!help) {
-    
-    
-    MongoClient.connect('mongodb://localhost/test', async (err, db) => {
+    MongoClient.connect("mongodb://localhost/test", async(err, db) => {
         console.log(`Importing ${options.n} networks, ${options.g} self play games and ${options.m} matches.`);
 
         // Network
-        var networks = [], filters_step = [64, 128, 192, 256], blocks_step = [10, 15, 20, 25, 30, 35, 40];
+        const networks = [];
+        const filters_step = [64, 128, 192, 256];
+        const blocks_step = [10, 15, 20, 25, 30, 35, 40];
         for (let i = 0; i < options.n; i++) {
             networks.push({
-                hash: crypto.randomBytes(32).toString('hex'),
+                hash: crypto.randomBytes(32).toString("hex"),
                 filters: filters_step[Math.floor(i / options.n * filters_step.length)],
                 blocks: blocks_step[Math.floor(i / options.n * blocks_step.length)],
                 training_count: 100000 * i,
@@ -59,48 +59,47 @@ if (!help) {
                 game_count: Math.floor(options.g / options.n)
             });
         }
-        await db.collection('networks').insertMany(networks);
+        await db.collection("networks").insertMany(networks);
 
         // Self play games
-        var games = [];
+        let games = [];
         for (let i = 0; i < options.g; i++) {
             games.push({
                 ip: "127.0.0.1",
                 networkhash: networks[Math.floor(i / options.g * options.n)].hash,
-                sgf: crypto.randomBytes(16).toString('hex'),
-                sgfhash: crypto.randomBytes(16).toString('hex'),
-                options_hash: crypto.randomBytes(2).toString('hex'),
+                sgf: crypto.randomBytes(16).toString("hex"),
+                sgfhash: crypto.randomBytes(16).toString("hex"),
+                options_hash: crypto.randomBytes(2).toString("hex"),
                 movescount: getRandomInt(722),
-                data: crypto.randomBytes(16).toString('hex'),
+                data: crypto.randomBytes(16).toString("hex"),
                 clientversion: getRandomInt(16),
                 winnercolor: ["W", "B"][getRandomInt(2)],
-                random_seed: parseInt(crypto.randomBytes(7).toString('hex'), 16)
+                random_seed: parseInt(crypto.randomBytes(7).toString("hex"), 16)
             });
 
             if (games.length == 10000) {
                 // batch insert every 10000 games
-                await db.collection('games').insertMany(games);
+                await db.collection("games").insertMany(games);
                 games = [];
             }
         }
 
         // insert last batch
         if (games.length) {
-            await db.collection('games').insertMany(games);
+            await db.collection("games").insertMany(games);
         }
 
-
-        var first_match = {};
+        const first_match = {};
         // Matches
         for (let i = 0; i < options.m; i++) {
-            var network_idx = Math.floor(i / options.m * options.n);
-            var match = {
+            const network_idx = Math.floor(i / options.m * options.n);
+            const match = {
                 number_to_play: 400,
                 options: {},
-                options_hash: crypto.randomBytes(2).toString('hex')
+                options_hash: crypto.randomBytes(2).toString("hex")
             };
 
-            // first match 
+            // first match
             if (network_idx > 0 && !first_match[network_idx]) {
                 match.network1 = networks[network_idx].hash;
                 match.network2 = networks[network_idx - 1].hash;
@@ -109,32 +108,26 @@ if (!help) {
                 match.game_count = 400;
                 first_match[network_idx] = true;
             } else {
-                match.network1 = crypto.randomBytes(32).toString('hex');
+                match.network1 = crypto.randomBytes(32).toString("hex");
                 match.network2 = networks[network_idx].hash;
                 match.network1_losses = 220;
                 match.network1_wins = 180;
                 match.game_count = 400;
 
-                await db.collection('networks').insertOne({
+                await db.collection("networks").insertOne({
                     hash: match.network1,
                     filters: filters_step[Math.floor(i / options.n * filters_step.length)],
                     blocks: blocks_step[Math.floor(i / options.n * blocks_step.length)],
                     training_count: 100000 * i,
                     training_steps: 32000 * (i % 8 + 1)
-                })
+                });
             }
 
-            await db.collection('matches').insertOne(match);
+            await db.collection("matches").insertOne(match);
         }
-        
 
         db.close();
     });
 
-
     // Network
-
 }
-
-
-
