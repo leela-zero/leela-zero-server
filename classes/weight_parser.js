@@ -28,7 +28,7 @@ class weight_parser extends Writable {
         const filters = this.space + 1;
         let blocks = (this.newline + (this.lastNewline ? 0 : 1) - (1 + 4 + 14)) / 8;
 
-        if(!Number.isInteger(blocks))
+        if (!Number.isInteger(blocks))
             blocks = 0;
 
         return { filters, blocks };

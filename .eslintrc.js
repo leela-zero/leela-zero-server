@@ -23,6 +23,7 @@ module.exports = {
         "generator-star-spacing": "error",
         "implicit-arrow-linebreak": "error",
         "key-spacing": "error",
+        "keyword-spacing": "error",
         "linebreak-style": "error",
         "lines-around-comment": "error",
         "lines-between-class-members": "error",

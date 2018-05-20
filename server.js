@@ -131,7 +131,7 @@ async function get_pending_matches () {
 
             // If SPRT=pass use unshift() instead of push() so "Elo only" matches go last in priority
             //
-            switch(SPRT(match.network1_wins, match.network1_losses)) {
+            switch (SPRT(match.network1_wins, match.network1_losses)) {
                 case false:
                     break;
                 case true:
@@ -1132,7 +1132,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
                     + "<td>" + item.game_count + " / " + item.number_to_play + "</td>"
                     + "<td>";
 
-                switch(bestRatings.has(item.network1) || SPRT(item.network1_wins, item.network1_losses)) {
+                switch (bestRatings.has(item.network1) || SPRT(item.network1_wins, item.network1_losses)) {
                     case true:
                         match_table += "<b>PASS</b>";
                         break;
