@@ -113,9 +113,9 @@ async function get_pending_matches () {
 
     return new Promise( (resolve, reject) => {
         db.collection("matches").aggregate( [
-            { "$redact": { "$cond":
+            { $redact: { $cond:
                 [
-                    { "$gt": [ "$number_to_play", "$game_count" ] },
+                    { $gt: [ "$number_to_play", "$game_count" ] },
                     "$$KEEP", "$$PRUNE"
                 ] } }
         ] ).sort({ _id: -1 }).forEach( match => {
@@ -372,9 +372,9 @@ app.post('/request-match', (req, res) => {
         req.body.number_to_play = 400;
         //return res.status(400).send('No number_to_play specified.');
 
-    const options = { "resignation_percent": Number(req.body.resignation_percent),
-        "randomcnt": Number(req.body.randomcnt),
-        "noise": String(req.body.noise) };
+    const options = { resignation_percent: Number(req.body.resignation_percent),
+        randomcnt: Number(req.body.randomcnt),
+        noise: String(req.body.noise) };
 
     if (req.body.playouts) {
         options.playouts = Number(req.body.playouts);
@@ -393,12 +393,12 @@ app.post('/request-match', (req, res) => {
     //
     req.body.is_test = ["true", "1"].includes(req.body.is_test);
 
-    const match = { "network1": req.body.network1,
-        "network2": req.body.network2, "network1_losses": 0,
-        "network1_wins": 0,
-        "game_count": 0, "number_to_play": Number(req.body.number_to_play),
-        "is_test": req.body.is_test,
-        options, "options_hash": get_options_hash(options) };
+    const match = { network1: req.body.network1,
+        network2: req.body.network2, network1_losses: 0,
+        network1_wins: 0,
+        game_count: 0, number_to_play: Number(req.body.number_to_play),
+        is_test: req.body.is_test,
+        options, options_hash: get_options_hash(options) };
 
     db.collection("matches").insertOne( match )
     .then( () => {
@@ -908,11 +908,11 @@ app.get('/network-profiles/:hash(\\w+)', asyncMiddleware(async (req, res) => {
         http_host: req.protocol + '://' + req.get('host'),
         matches: await db.collection("matches")
             .aggregate([
-                { "$match": { $or: [{ network1: network.hash }, { network2: network.hash }] } },
-                { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "network2" } }, { "$unwind": "$network2" },
-                { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "network1" } }, { "$unwind": "$network1" },
-                { "$sort": { _id: -1 } },
-                { "$limit": 100 }
+                { $match: { $or: [{ network1: network.hash }, { network2: network.hash }] } },
+                { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "network2" } }, { $unwind: "$network2" },
+                { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "network1" } }, { $unwind: "$network1" },
+                { $sort: { _id: -1 } },
+                { $limit: 100 }
             ]).toArray(),
         menu: 'network-profiles'
     };
@@ -1059,7 +1059,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         db.collection("games").find({}, selfplayProjection).sort( { _id: -1 } ).limit(10).toArray()
         .then(saveSelfplay("all")),
         cachematches.wrap('matches', '1d', () => Promise.resolve(
-        db.collection("matches").aggregate([ { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "merged1" } }, { "$unwind": "$merged1" }, { "$sort": { _id: -1 } }, { "$limit": 100 } ])
+        db.collection("matches").aggregate([ { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "merged" } }, { $unwind: "$merged" }, { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "merged1" } }, { $unwind: "$merged1" }, { $sort: { _id: -1 } }, { $limit: 100 } ])
         .toArray()
         .then(list => {
             let match_table = "<table class=\"matches-table\" border=1><tr><th colspan=5>Test Matches (100 Most Recent)</th></tr>\n";
@@ -1280,7 +1280,7 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
     //
     const match = shouldScheduleMatch(req, now);
     if (match) {
-        const task = { "cmd": "match", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version };
+        const task = { cmd: "match", required_client_version, minimum_autogtp_version: required_client_version, random_seed, minimum_leelaz_version: required_leelaz_version };
 
         if (match.options.visits) match.options.playouts = "0";
 
@@ -1330,12 +1330,12 @@ app.get('/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)', asyncMiddleware( async
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        const task  = { "cmd": "selfplay", "hash": "", required_client_version, "minimum_autogtp_version": required_client_version, random_seed, "minimum_leelaz_version": required_leelaz_version };
+        const task  = { cmd: "selfplay", hash: "", required_client_version, minimum_autogtp_version: required_client_version, random_seed, minimum_leelaz_version: required_leelaz_version };
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        const options = { "playouts": "0", "visits": "3201", "resignation_percent": "5", "noise": "true", "randomcnt": "999" };
+        const options = { playouts: "0", visits: "3201", resignation_percent: "5", noise: "true", randomcnt: "999" };
 
         if (Math.random() < .2) options.resignation_percent = "0";
 
@@ -1432,18 +1432,18 @@ app.get('/match-games/:matchid(\\w+)', (req, res) => {
 
     const ipMap = new Map();
 
-    db.collection("matches").findOne({ "_id": new ObjectId(req.params.matchid) })
+    db.collection("matches").findOne({ _id: new ObjectId(req.params.matchid) })
         .then(match => {
             db.collection("match_games").aggregate([
                 {
-                    "$match": {
-                        "$or": [
+                    $match: {
+                        $or: [
                             { winnerhash: match.network1, loserhash: match.network2, options_hash: match.options_hash },
                             { winnerhash: match.network2, loserhash: match.network1, options_hash: match.options_hash }
                         ]
                     }
                 },
-                { "$sort": { _id: 1 } }
+                { $sort: { _id: 1 } }
             ]).toArray()
                 .then(list => {
                     for (const item of list) {
@@ -1508,9 +1508,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
     return Promise.all([
         db.collection("networks").find().sort({ _id: -1 }).toArray(),
         db.collection("matches").aggregate([
-            { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } },
-            { "$unwind": "$merged" },
-            { "$sort": { "merged._id": 1 } }
+            { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "merged" } },
+            { $unwind: "$merged" },
+            { $sort: { "merged._id": 1 } }
         ]).toArray()
     ]).then(dataArray => {
         // initialize mapping of best networks to Elo rating cached globally
@@ -1526,9 +1526,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
                 bestRatings.set(item.hash, 0);
 
             return {
-                "hash": item.hash,
-                "game_count": item.game_count,
-                "net": (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
+                hash: item.hash,
+                game_count: item.game_count,
+                net: (item.training_count === 0 || item.training_count) ? item.training_count : totalgames.count, // mycount
                 best
             };
         });
@@ -1602,10 +1602,10 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
             const rating = Math.max(0, Math.round(info.rating));
             json.push({
                 rating,
-                "net": Math.max(0.0, Number((info.net || item.net) + rating/100000)),
-                "sprt": info.sprt,
-                "hash": item.hash.slice(0, 6),
-                "best": item.best
+                net: Math.max(0.0, Number((info.net || item.net) + rating/100000)),
+                sprt: info.sprt,
+                hash: item.hash.slice(0, 6),
+                best: item.best
             });
 
             // Add additional result for multiple matches
@@ -1629,9 +1629,9 @@ app.get('/data/elograph.json',  asyncMiddleware( async (req, res) => {
 app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
     let start = req.params.start;
     const files = {
-        "44": "top10-Q16.json",
-        "43": "top10-R16.json",
-        "33": "top10-R17.json"
+        44: "top10-Q16.json",
+        43: "top10-R16.json",
+        33: "top10-R17.json"
     }
 
     if (!(start in files))
