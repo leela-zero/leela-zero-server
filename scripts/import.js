@@ -13,8 +13,8 @@ function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
 
-process.argv.shift();   // node
-process.argv.shift();   // import.js
+process.argv.shift(); // node
+process.argv.shift(); // import.js
 
 const options = {
     n: 10,

@@ -665,7 +665,7 @@ app.post("/submit-match", asyncMiddleware(async(req, res) => {
     match = (await db.collection("matches").findOneAndUpdate(
         { _id: match._id },
         { $inc },
-        { returnOriginal: false }  // return modified document
+        { returnOriginal: false } // return modified document
     )).value;
 
     // get latest SPRT result
@@ -698,8 +698,8 @@ app.post("/submit-match", asyncMiddleware(async(req, res) => {
 
             if (sprt_result === true) {
                 console.log("SPRT: Early pass unshift: " + JSON.stringify(m));
-                pending_matches.splice(pending_match_index, 1);  // cut out the match
-                if (m.game_count < m.number_to_play) pending_matches.unshift(m);   // continue a SPRT pass at end of queue
+                pending_matches.splice(pending_match_index, 1); // cut out the match
+                if (m.game_count < m.number_to_play) pending_matches.unshift(m); // continue a SPRT pass at end of queue
                 console.log("SPRT: Early pass post-unshift: " + JSON.stringify(pending_matches));
             }
         }
@@ -960,7 +960,7 @@ app.get("/rss", asyncMiddleware(async(req, res) => {
     res.sendFile(rss_path);
 }));
 
-app.get("/",  asyncMiddleware(async(req, res) => {
+app.get("/", asyncMiddleware(async(req, res) => {
     console.log(req.ip + " Sending index.html");
 
     let network_table = "<table class=\"networks-table\" border=1><tr><th colspan=7>Best Network Hash</th></tr>\n";
@@ -1330,7 +1330,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
 //        console.log(req.ip + " (" + req.headers['x-real-ip'] + ") " + " got task: wait");
     } else {
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
-        const task  = { cmd: "selfplay", hash: "", required_client_version, minimum_autogtp_version: required_client_version, random_seed, minimum_leelaz_version: required_leelaz_version };
+        const task = { cmd: "selfplay", hash: "", required_client_version, minimum_autogtp_version: required_client_version, random_seed, minimum_leelaz_version: required_leelaz_version };
 
         // TODO In time we'll change this to a visits default instead of options default, for new --visits command
         //
@@ -1497,7 +1497,7 @@ app.get("/viewmatch/:hash(\\w+)", (req, res) => {
     });
 });
 
-app.get("/data/elograph.json",  asyncMiddleware(async(req, res) => {
+app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
     // cache in `cachematches`, so when new match result is uploaded, it gets cleared as well
     const json = await cachematches.wrap("elograph", "1d", async() => {
     console.log("fetching data for elograph.json, should be called once per day or when `cachematches` is cleared");

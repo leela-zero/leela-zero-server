@@ -15,9 +15,9 @@ class weight_parser extends Writable {
         for (let x = 0; x < chunk.length; ++x) {
             const c = chunk[x];
 
-            if (c == 0x0A)   // 0X0A = '\n' = newline
+            if (c == 0x0A) // 0X0A = '\n' = newline
                 this.newline++;
-            else if (this.newline == 2 && c == 0x20)  // 0x20 = ' ' = space
+            else if (this.newline == 2 && c == 0x20) // 0x20 = ' ' = space
                 this.space++;
         }
         // track whether the weight file ended with newline
