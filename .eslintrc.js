@@ -9,6 +9,7 @@ module.exports = {
     },
     "rules": {
         "array-bracket-newline": "error",
+        "arrow-body-style": "error",
         "arrow-spacing": "error",
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],

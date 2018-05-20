@@ -1003,38 +1003,20 @@ app.get('/',  asyncMiddleware( async (req, res) => {
     var best_network_hash = await get_best_network_hash();
 
     Promise.all([
-        cacheIP24hr.wrap('IP24hr', '5m', () => { return Promise.resolve(
-        db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })
-        )})
-        .then((list) => {
-            return (list.length + " clients in past 24 hours, ");
-        }),
-        cacheIP1hr.wrap('IP1hr', '30s', () => { return Promise.resolve(
-        db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })
-        )})
-        .then((list) => {
-            return (list.length + " in past hour.<br>");
-        }),
+        cacheIP24hr.wrap('IP24hr', '5m', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } })))
+        .then((list) => (list.length + " clients in past 24 hours, ")),
+        cacheIP1hr.wrap('IP1hr', '30s', () => Promise.resolve(db.collection("games").distinct('ip', { _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } })))
+        .then((list) => (list.length + " in past hour.<br>")),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count()
-        .then((count) => {
-            return `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `;
-        }),
+        .then((count) => `${counter} total <a href="/self-plays">self-play games</a> (${count} in past 24 hours, `),
         db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count()
-        .then((count) => {
-            return `${count} in past hour, <a href="https://github.com/gcp/leela-zero/issues/1311#issuecomment-386422486">includes ${elf_counter} ELF</a>).<br/>`;
-        }),
+        .then((count) => `${count} in past hour, <a href="https://github.com/gcp/leela-zero/issues/1311#issuecomment-386422486">includes ${elf_counter} ELF</a>).<br/>`),
         db.collection("match_games").find().count()
-        .then((count) => {
-            return `${count} total match games (`;
-        }),
+        .then((count) => `${count} total match games (`),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60 * 24) } }).count()
-        .then((count) => {
-            return `${count} in past 24 hours, `;
-        }),
+        .then((count) => `${count} in past 24 hours, `),
         db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now()- 1000 * 60 * 60) } }).count()
-        .then((count) => {
-            return `${count} in past hour).<br>`;
-        }),
+        .then((count) => `${count} in past hour).<br>`),
         db.collection("networks").aggregate([
             // Exclude ELF network
             { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $ne: ELF_NETWORK } }] } },
@@ -1094,7 +1076,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
         }),
         db.collection("games").find({}, selfplayProjection).sort( { _id: -1 } ).limit(10).toArray()
         .then(saveSelfplay("all")),
-        cachematches.wrap('matches', '1d', () => { return Promise.resolve(
+        cachematches.wrap('matches', '1d', () => Promise.resolve(
         db.collection("matches").aggregate([ { "$lookup": { "localField": "network2", "from": "networks", "foreignField": "hash", "as": "merged" } }, { "$unwind": "$merged" }, { "$lookup": { "localField": "network1", "from": "networks", "foreignField": "hash", "as": "merged1" } }, { "$unwind": "$merged1" }, { "$sort": { _id: -1 } }, { "$limit": 100 } ])
         .toArray()
         .then((list) => {
@@ -1186,7 +1168,7 @@ app.get('/',  asyncMiddleware( async (req, res) => {
             match_table += "</table>\n";
             return [styles, match_table];
         })
-        )}),
+        )),
     ]).then((responses) => {
         var match_and_styles = responses.pop();
 
@@ -1681,6 +1663,4 @@ app.get('/opening/:start(\\w+)?', asyncMiddleware(async (req, res) => {
 }));
 
 // Catch all, return 404 page not found
-app.get('*', asyncMiddleware(async (req, res) => {
-    return res.status(404).render("404");
-}));
+app.get('*', asyncMiddleware(async (req, res) => res.status(404).render("404")));
