@@ -1,13 +1,13 @@
 module.exports = {
-    "env": {
-        "es6": true,
-        "node": true
+    env: {
+        es6: true,
+        node: true
     },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 2017
+    extends: "eslint:recommended",
+    parserOptions: {
+        ecmaVersion: 2017
     },
-    "rules": {
+    rules: { /* eslint-disable quote-props */
         "array-bracket-newline": "error",
         "arrow-body-style": "error",
         "arrow-parens": ["error", "as-needed"],
@@ -36,7 +36,7 @@ module.exports = {
         "no-floating-decimal": "error",
         "no-lonely-if": "error",
         "no-multi-spaces": "error",
-        "no-multiple-empty-lines": ["error", {max: 1, maxBOF: 0, maxEOF: 0}],
+        "no-multiple-empty-lines": ["error", { max: 1, maxBOF: 0, maxEOF: 0 }],
         "no-trailing-spaces": "error",
         "no-undef-init": "error",
         "no-unneeded-ternary": "error",
@@ -76,6 +76,6 @@ module.exports = {
         "unicode-bom": "error",
         "wrap-iife": "error",
         "yield-star-spacing": "error",
-        "yoda": "error",
+        "yoda": "error"
     }
 };
