@@ -4,7 +4,7 @@
   "description": "Leela Zero Server",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint classes scripts server.js",
+    "lint": "eslint .",
     "test": "mocha",
     "dev": "nodemon server.js",
     "import": "node scripts/import.js"
