@@ -8,24 +8,37 @@ html(lang="en")
         table(id="sort" border="1")
             thead
                 tr
-                    th Client
+                    th Game
+                    th Win Rate
                     th Match Hash
                     th Winner
                     th Score
                     th Move Count
+                    th Duration
                     th Download
+                    th Client
+                    th Version
             tbody
                 each item in data
                     tr
-                        td #{item.ip}
+                        td #{item.num}
+                        td #{item.winrate}%
                         td
-                            a(href="/viewmatch/" + item.sgfhash + "?viewer=wgo")  #{item.sgfhash}
+                            a(href="/viewmatch/" + item.sgfhash + "?viewer=wgo")  #{item.sgfhash.slice(0, 32)}
                         td #{item.winnerhash.slice(0, 8)}
                         td #{item.score}
                         td #{item.movescount}
+                        td #{item.duration} minutes
                         td
                             a(href="/viewmatch/" + item.sgfhash + ".sgf")  sgf
+                        td #{item.ip}
+                        td #{item.clientversion}
         script.
+            Tablesort.extend('minutes', item => /minutes/.test(item), (a, b) => {
+                a = (a.match(/([.\d]+) minutes/) || [])[1] || 0;
+                b = (b.match(/([.\d]+) minutes/) || [])[1] || 0;
+                return b - a;
+            });
             Tablesort.extend('score', function(item) {
                 return item.match(/(?:b|w)+([\d.]+|resign)/i);
             }, function(a, b) {

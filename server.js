@@ -30,6 +30,7 @@ const {
     make_seed,
     get_timestamp_from_seed,
     seed_from_mongolong,
+    process_games_list,
     CalculateEloFromPercent,
     objectIdFromDate,
     log_memory_stats,
@@ -1392,31 +1393,9 @@ app.get("/view/:hash(\\w+)", (req, res) => {
 });
 
 app.get("/self-plays", (req, res) => {
-    const ipMap = new Map();
-
     db.collection("games").find({}).sort({ _id: -1 }).limit(400).toArray()
     .then(list => {
-        for (const item of list) {
-            if (!ipMap.has(item.ip)) {
-                ipMap.set(item.ip, item.ip == req.ip ? "you" : ipMap.size + 1);
-            }
-            // replace IP here before going to pug view
-            item.ip = ipMap.get(item.ip);
-
-            // Calculate how long ago did the game start
-            const seed = (s => s instanceof Long ? s : new Long(s))(item.random_seed);
-            const startTime = get_timestamp_from_seed(seed);
-            const minutesAgo = (Date.now() / 1000 - startTime) / 60;
-
-            // Display some times if they're reasonable
-            item.duration = item.started = "???";
-            if (minutesAgo >= 0 && minutesAgo <= 24 * 60) {
-                item.started = `${minutesAgo.toFixed(1)} minutes ago`;
-                const duration = (item._id.getTimestamp() / 1000 - startTime) / 60;
-                item.duration = `${duration.toFixed(1)} minutes`;
-            }
-        }
-
+        process_games_list(list, req.ip);
         // render pug view self-plays
         res.render("self-plays", { data: list });
     }).catch(() => {
@@ -1429,8 +1408,6 @@ app.get("/match-games/:matchid(\\w+)", (req, res) => {
         res.send("matchid missing");
         return;
     }
-
-    const ipMap = new Map();
 
     db.collection("matches").findOne({ _id: new ObjectId(req.params.matchid) })
         .then(match => {
@@ -1446,14 +1423,7 @@ app.get("/match-games/:matchid(\\w+)", (req, res) => {
                 { $sort: { _id: 1 } }
             ]).toArray()
                 .then(list => {
-                    for (const item of list) {
-                        if (ipMap.get(item.ip) == null) {
-                            ipMap.set(item.ip, ipMap.size + 1);
-                        }
-                        // replace IP here before going to pug view
-                        item.ip = ipMap.get(item.ip);
-                    }
-
+                    process_games_list(list, req.ip, match.network1);
                     // render pug view match-games
                     res.render("match-games", { data: list });
                 }).catch(() => {
