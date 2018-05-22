@@ -89,22 +89,35 @@ function get_options_hash(options) {
 }
 
 async function get_fast_clients() {
-    return new Promise((resolve, reject) => {
-        db.collection("games").aggregate([
-            { $match: { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } } },
-            { $group: { _id: "$ip", total: { $sum: 1 } } },
-            { $match: { total: { $gt: 4 } } }
-        ]).forEach(match => {
-            fastClientsMap.set(match._id, true);
-        }, err => {
-            if (err) {
-                console.error("Error fetching matches: " + err);
-                return reject(err);
+    const start = Date.now();
+    try {
+        // Get some recent self-play games to calculate durations from seeds
+        const games = await db.collection("games").find({}, { ip: 1, random_seed: 1 })
+            .sort({ _id: -1 }).limit(1000).toArray();
+
+        // Count the number of games that were completed faster than 15 minutes
+        fastClientsMap.clear();
+        games.forEach(game => {
+            const seed = (s => s instanceof Long ? s : new Long(s))(game.random_seed);
+            const startTime = get_timestamp_from_seed(seed);
+            const duration = game._id.getTimestamp() / 1000 - startTime;
+            if (duration > 0 && duration <= 60 * 15) {
+                fastClientsMap.set(game.ip, ~~fastClientsMap.get(game.ip) + 1);
             }
         });
 
-        resolve();
-    });
+        // Remove clients that submitted only a couple fast games (in case some
+        // unexpected seed just happens to match the duration)
+        for (const [ip, count] of fastClientsMap) {
+            if (count < 3) {
+                fastClientsMap.delete(ip);
+            }
+        }
+
+        console.log(`In ${Date.now() - start}ms from recent ${games.length} games, found ${fastClientsMap.size} fast clients:`, fastClientsMap);
+    } catch (err) {
+        console.log("Failed to get recent games for fast clients:", err);
+    }
 }
 
 //  db.matches.aggregate( [ { "$redact": { "$cond": [ { "$gt": [ "$number_to_play", "$game_count" ] }, "$$KEEP", "$$PRUNE" ] } } ] )
