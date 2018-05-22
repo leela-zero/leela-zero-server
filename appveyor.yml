@@ -1,0 +1,14 @@
+version: '{build}'
+image: Ubuntu
+stack: node 9, mongodb
+install:
+- sh: npm install
+cache: node_modules
+build: off
+test_script:
+- sh: >-
+    export PATH=node_modules/.bin:$PATH
+
+    npm run lint
+
+    npm run test
