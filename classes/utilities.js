@@ -112,6 +112,38 @@ function seed_from_mongolong(seed) {
 //console.log("Small int test 777: " + seed_from_mongolong(Long.fromString("777", 10)));
 //console.log("Broken int test 883863265504794200: " + seed_from_mongolong(Long.fromString("883863265504794200", 10)));
 
+/**
+ * Process a list of games and modify items to hide IP, calculate duration, etc.
+ */
+function process_games_list(list, ip, winner = "") {
+    const ipMap = new Map();
+    let wins = 0;
+    list.forEach((item, index) => {
+        if (!ipMap.has(item.ip)) {
+            ipMap.set(item.ip, item.ip == ip ? "you" : ipMap.size + 1);
+        }
+        // Replace IP here before going to pug view
+        item.ip = ipMap.get(item.ip);
+
+        // Update win rate stats from games so far
+        wins += item.winnerhash == winner;
+        item.num = index + 1;
+        item.winrate = (wins / item.num * 100).toFixed(2);
+
+        // Extract timestamp from seed to calculate game start time and duration
+        const seed = (s => s instanceof Long ? s : new Long(s))(item.random_seed);
+        const startTime = get_timestamp_from_seed(seed);
+
+        // Display some times if they're reasonable
+        const displayMinutes = (key, reference) => {
+            const minutes = (reference / 1000 - startTime) / 60;
+            item[key] = minutes >= 0 && minutes <= 24 * 60 ? minutes.toFixed(1) : "???";
+        }
+        displayMinutes("started", Date.now());
+        displayMinutes("duration", item._id.getTimestamp());
+    });
+}
+
 function objectIdFromDate(date) {
     //return Math.floor(date.getTime() / 1000).toString(16) + "0000000000000000";
     return safeObjectId(Math.floor(date / 1000).toString(16) + "0000000000000000");
@@ -233,6 +265,7 @@ module.exports = {
     make_seed,
     get_timestamp_from_seed,
     seed_from_mongolong,
+    process_games_list,
     CalculateEloFromPercent,
     objectIdFromDate,
     log_memory_stats,

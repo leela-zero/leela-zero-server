@@ -8,31 +8,31 @@ html(lang="en")
         table(id="sort" border="1")
             thead
                 tr
-                    th Client
-                    th Version
                     th Self-Play Hash
                     th Network
-                    th Move Count
                     th Winner
+                    th Move Count
                     th Started
                     th Duration
                     th Download
+                    th Client
+                    th Version
             tbody
                 each item in data
                     tr
-                        td #{item.ip}
-                        td #{item.clientversion}
                         td
-                            a(href="/view/" + item.sgfhash + "?viewer=wgo")  #{item.sgfhash}
+                            a(href="/view/" + item.sgfhash + "?viewer=wgo")  #{item.sgfhash.slice(0, 32)}
                         td #{item.networkhash.slice(0, 8)}
-                        td #{item.movescount}
                         td #{item.winnercolor}
-                        td #{item.started}
-                        td #{item.duration}
+                        td #{item.movescount}
+                        td #{item.started} minutes ago
+                        td #{item.duration} minutes
                         td
                             a(href="/view/" + item.sgfhash + ".sgf")  sgf
+                        td #{item.ip}
+                        td #{item.clientversion}
         script.
-            Tablesort.extend('minutes', item => /(^\?\?\?$|minutes)/.test(item), (a, b) => {
+            Tablesort.extend('minutes', item => /minutes/.test(item), (a, b) => {
                 a = (a.match(/([.\d]+) minutes/) || [])[1] || 0;
                 b = (b.match(/([.\d]+) minutes/) || [])[1] || 0;
                 return b - a;
