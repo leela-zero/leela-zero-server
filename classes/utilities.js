@@ -138,7 +138,7 @@ function process_games_list(list, ip, winner = "") {
         const displayMinutes = (key, reference) => {
             const minutes = (reference / 1000 - startTime) / 60;
             item[key] = minutes >= 0 && minutes <= 24 * 60 ? minutes.toFixed(1) : "???";
-        }
+        };
         displayMinutes("started", Date.now());
         displayMinutes("duration", item._id.getTimestamp());
     });
