@@ -95,23 +95,47 @@ async function get_fast_clients() {
         const games = await db.collection("games").find({}, { ip: 1, movescount: 1, random_seed: 1 })
             .sort({ _id: -1 }).limit(1000).toArray();
 
-        // Count the number of games that played at least 10 moves per minute
+        // Keep track of the move rate of each game by client
         fastClientsMap.clear();
         games.forEach(game => {
             const seed = (s => s instanceof Long ? s : new Long(s))(game.random_seed);
             const startTime = get_timestamp_from_seed(seed);
             const minutes = (game._id.getTimestamp() / 1000 - startTime) / 60;
-            if (minutes > 0 && game.movescount / minutes >= 10) {
-                fastClientsMap.set(game.ip, ~~fastClientsMap.get(game.ip) + 1);
-            }
+
+            // Make sure we have some reasonable duration
+            if (minutes > 0 && minutes <= 60 * 24)
+                fastClientsMap.set(game.ip, [...(fastClientsMap.get(game.ip) || []), game.movescount / minutes]);
         });
 
-        // Remove clients that submitted only a couple fast games (in case some
-        // unexpected seed just happens to match the duration)
-        for (const [ip, count] of fastClientsMap) {
-            if (count < 3) {
+        // Clean up the map to be a single rate value with enough entries
+        for (const [ip, rates] of fastClientsMap) {
+            // Remove clients that submitted only a couple fast games (in case
+            // some unexpected seed just happens to match the duration)
+            if (rates.length < 3)
                 fastClientsMap.delete(ip);
-            }
+            else
+                fastClientsMap.set(ip, rates.reduce((t, v) => t + v) / rates.length);
+        }
+
+        // Short circuit if there's nothing interesting to do
+        if (fastClientsMap.size == 0) {
+            console.log("No clients found with sufficient rate data");
+            return;
+        }
+
+        // Print out some statistics on rates
+        const sortedRates = [...fastClientsMap.values()].sort((a, b) => a - b);
+        const quartile = n => {
+            const index = n / 4 * (sortedRates.length - 1);
+            return index % 1 == 0 ? sortedRates[index] : (sortedRates[Math.floor(index)] + sortedRates[Math.ceil(index)]) / 2;
+        };
+        console.log("Client moves per minute rates:", ["min", "25%", "median", "75%", "max"].map((text, index) => `${quartile(index).toFixed(1)} ${text}`).join(", "));
+
+        // Keep only clients that have the top 25% rates
+        const top25Rate = quartile(3);
+        for (const [ip, rate] of fastClientsMap) {
+            if (rate < top25Rate)
+                fastClientsMap.delete(ip);
         }
 
         console.log(`In ${Date.now() - start}ms from recent ${games.length} games, found ${fastClientsMap.size} fast clients:`, fastClientsMap);
