@@ -92,16 +92,16 @@ async function get_fast_clients() {
     const start = Date.now();
     try {
         // Get some recent self-play games to calculate durations from seeds
-        const games = await db.collection("games").find({}, { ip: 1, random_seed: 1 })
+        const games = await db.collection("games").find({}, { ip: 1, movescount: 1, random_seed: 1 })
             .sort({ _id: -1 }).limit(1000).toArray();
 
-        // Count the number of games that were completed faster than 15 minutes
+        // Count the number of games that played at least 10 moves per minute
         fastClientsMap.clear();
         games.forEach(game => {
             const seed = (s => s instanceof Long ? s : new Long(s))(game.random_seed);
             const startTime = get_timestamp_from_seed(seed);
-            const duration = game._id.getTimestamp() / 1000 - startTime;
-            if (duration > 0 && duration <= 60 * 15) {
+            const minutes = (game._id.getTimestamp() / 1000 - startTime) / 60;
+            if (minutes > 0 && game.movescount / minutes >= 10) {
                 fastClientsMap.set(game.ip, ~~fastClientsMap.get(game.ip) + 1);
             }
         });
