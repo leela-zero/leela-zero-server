@@ -227,7 +227,7 @@ async function get_best_network_hash() {
     .catch(err => console.error(err));
 }
 
-const PESSIMISTIC_RATE = 0.2;
+const PESSIMISTIC_RATE = 0.4;
 
 app.enable("trust proxy");
 
