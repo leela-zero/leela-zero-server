@@ -983,7 +983,7 @@ app.get("/rss", asyncMiddleware(async(req, res) => {
     }
 
     if (should_generate || req.query.force) {
-        const hash = get_best_network_hash();
+        const hash = await get_best_network_hash();
         const networks = await db.collection("networks")
             .find({ $or: [{ game_count: { $gt: 0 } }, { hash }], hash: { $ne: ELF_NETWORK } })
             .sort({ _id: 1 })
