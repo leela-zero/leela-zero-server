@@ -132,7 +132,7 @@ async function get_fast_clients() {
         console.log("Client moves per minute rates:", ["min", "25%", "median", "75%", "max"].map((text, index) => `${quartile(index).toFixed(1)} ${text}`).join(", "));
 
         // Keep only clients that have the top 25% rates
-        const top25Rate = quartile(3);
+        const top25Rate = quartile(2);
         for (const [ip, rate] of fastClientsMap) {
             if (rate < top25Rate)
                 fastClientsMap.delete(ip);
