@@ -20,7 +20,7 @@ block script
 
                 var options = {
                     title: `Seen total ${$this.data('total')} times`,
-                    hAxis: {title: 'Networks by Training #', maxValue: 8000000},
+                    hAxis: {title: 'Networks by Training #', minValue: 0, maxValue: 8000000},
                     vAxis: {title: 'Frequency'},
                     tooltip: {isHtml: true},
                     legend: { position : 'none'},
@@ -37,7 +37,7 @@ block content
     .row.mt-4
         .col
             h1 Leela Zero Opening Analysis
-            p Total 336,595 match games as of 04-May-2018
+            p Total 361,908 match games as of 23-May-2018
 
             ul.nav.nav-tabs
                 li.nav-item
