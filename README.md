@@ -1,3 +1,7 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/00n43r3349yrqpsk/branch/next?svg=true)](https://ci.appveyor.com/project/gcp/leela-zero-server/branch/next)
+
+
+
 # leela-zero-server
 ## Dev Environment Setup
 ### Requirements

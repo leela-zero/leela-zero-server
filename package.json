@@ -4,6 +4,7 @@
   "description": "Leela Zero Server",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint .",
     "test": "mocha",
     "dev": "nodemon server.js",
     "import": "node scripts/import.js"
@@ -37,6 +38,7 @@
     "zlib": "^1.0.5"
   },
   "devDependencies": {
+    "eslint": "^4.19.1",
     "mocha": "^5.1.1"
   }
 }

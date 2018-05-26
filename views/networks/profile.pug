@@ -81,8 +81,8 @@ block content
                                 tr
                                     td.time-ago {{ '#{match._id.getTimestamp().getTime()}' | timeAgo }}
                                     td 
-                                        - var title1 = `${match.network1.training_count.abbr(4)}${match.network1.training_steps ? '+' + match.network1.training_steps.abbr(3):''}`
-                                        - var title2 = `${match.network2.training_count.abbr(4)}${match.network2.training_steps ? '+' + match.network2.training_steps.abbr(3):''}`
+                                        - var title1 = `${(match.network1.training_count || 0).abbr(4)}${match.network1.training_steps ? '+' + match.network1.training_steps.abbr(3):''}`
+                                        - var title2 = `${(match.network2.training_count || 0).abbr(4)}${match.network2.training_steps ? '+' + match.network2.training_steps.abbr(3):''}`
                                         a(href=`/networks/${match.network1.hash}.gz` data-toggle="tooltip" title=`${title1}`) #{match.network1.hash.slice(0,6)} 
                                         a(href=`/match-games/${match._id}` data-toggle="tooltip" title=`${match.is_test ? "Test" : "Regular"} Match`) VS 
                                         a(href=`/networks/${match.network2.hash}.gz` data-toggle="tooltip" title=`${title2}`) #{match.network2.hash.slice(0,6)} 
