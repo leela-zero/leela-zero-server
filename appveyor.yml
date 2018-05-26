@@ -1,6 +1,11 @@
 version: '{build}'
 image: Ubuntu
 stack: node 9, mongodb
+skip_commits:
+  files:
+    - '**/*.md'
+    - '**/.gitignore'
+    - static/
 install:
 - sh: npm install
 cache: node_modules
