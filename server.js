@@ -900,6 +900,10 @@ app.get("/network-profiles", asyncMiddleware(async(req, res) => {
 
     const pug_data = { networks, menu: "network-profiles" };
 
+    pug_data.networks.forEach(network => {
+        network.time = network._id.getTimestamp().getTime();
+    });
+
     res.render("networks/index", pug_data);
 }));
 
