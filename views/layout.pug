@@ -13,11 +13,16 @@ html(lang="en")
             v-app
                 v-toolbar(app dark)
                     v-toolbar-title Leela Zero
-                    v-tabs(slot="extension")
-                        v-tab(href="/") Home
-                        v-tab(href="/network-profiles") Networks
-                        v-tab(href="/opening") Opening
-
+                    v-toolbar-items
+                        v-btn(flat href="/") Home
+                        v-btn(flat href="/network-profiles") Networks
+                        v-btn(flat href="/opening") Opening
+                    v-spacer
+                    v-toolbar-items
+                        v-btn(flat href="https://github.com/gcp/leela-zero") Github
+                        v-btn(flat href="https://github.com/gcp/leela-zero/releases") Releases
+                        v-btn(flat href="https://github.com/gcp/leela-zero/blob/master/FAQ.md") FAQ
+                        v-btn(flat href="https://github.com/gcp/leela-zero/blob/master/README.md") README
                 v-content
                     block content
 
