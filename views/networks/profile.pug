@@ -25,77 +25,71 @@ block script
             el: 'main',
             data: {
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                matches: !{ JSON.stringify(matches) },
+            },
+            methods: {
+                getWinrate(match) {
+                    let winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
+                    return winrate.toFixed(2);
+                }
             }
         })
 
+    style.
+        td > .btn {
+            min-width: 0;
+        }
+
 block content
-    .row.mt-4
-        .col-12
-            nav(aria-label="breadcrumb")
-                ol.breadcrumb
-                    li.breadcrumb-item 
-                        a(href="/") Home
-                    li.breadcrumb-item
-                        a(href="/network-profiles") Networks
-                    li.breadcrumb-item.active #{network.hash.slice(0, 6)}
-        .col-md-3
-            .card.border-0
-                img.card-img-top.rounded(src=`${identicon}` alt=`LZ ${title}`)
-                .card-body
-                    h2.text-center
-                        if(network.networkID != null)
-                            span.badge.badge-success LZ##{network.networkID}
-                        |
-                        |
-                        b #{title} 
-                    a.btn.btn-light.btn-block.border-dark(href=`${http_host}/networks/${network.hash}.gz`) Download
-                ul.list-group.list-group-flush
-                    li.list-group-item Architecture 
-                        span.float-right #{network.filters}x#{network.blocks}
-                    li.list-group-item Training 
-                        span.float-right #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
-                    li.list-group-item Since
-                        span.float-right.time-ago #{network._id.getTimestamp().getTime()}
-                    li.list-group-item #{network.description}
-        
-        .col-md-9
-            ul.nav.nav-tabs
-                li.nav-item
-                    a.nav-link(class={ active : matches } href=`/network-profiles/${network.hash}/matches`) Match Games
-            .tab-content.pt-4
-                .table-responsive
-                    table.table.table-bordered.table-hover
-                        caption.
-                             (*) Times are displayed in {{ timezone }} time zone
-                        
-                        //- Start Match Table
-                        - if(matches)
-                            thead.thead-light: tr
-                                th Uploaded(*)
-                                th Network Hashes
-                                th Result
-                                th Games
-                                th SPRT
-                            tbody
-                            - for(let match of matches) 
-                                tr
-                                    td.time-ago {{ '#{match._id.getTimestamp().getTime()}' | timeAgo }}
-                                    td 
-                                        - var title1 = `${(match.network1.training_count || 0).abbr(4)}${match.network1.training_steps ? '+' + match.network1.training_steps.abbr(3):''}`
-                                        - var title2 = `${(match.network2.training_count || 0).abbr(4)}${match.network2.training_steps ? '+' + match.network2.training_steps.abbr(3):''}`
-                                        a(href=`/networks/${match.network1.hash}.gz` data-toggle="tooltip" title=`${title1}`) #{match.network1.hash.slice(0,6)} 
-                                        a(href=`/match-games/${match._id}` data-toggle="tooltip" title=`${match.is_test ? "Test" : "Regular"} Match`) VS 
-                                        a(href=`/networks/${match.network2.hash}.gz` data-toggle="tooltip" title=`${title2}`) #{match.network2.hash.slice(0,6)} 
-                                    - var winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
-                                    td #{match.network1_wins} : #{match.network1_losses} #[span(class={'font-weight-bold': winrate >= 55}) (#{winrate.toFixed(2)}%)]
-                                    td #{match.network1_wins + match.network1_losses} / #{match.number_to_play}
-                                    td.align-middle
-                                        -if(match.SPRT === true)
-                                            .progress
-                                                .progress-bar.bg-success(style=`width:100%`) Pass
-                                        -else if(match.SPRT === false)
-                                            .progress
-                                                .progress-bar.bg-dark(style=`width:100%`) Failed
-                                        -else
-                                            .progress
-                                                .progress-bar.progress-bar-striped.progress-bar-animated(style=`width:${match.SPRT}%`)
+    v-container(grid-list-md text-xs-center)
+        v-layout(row wrap)
+            v-flex(xs3)
+                v-card
+                    v-card-media(src=`${identicon}` height="200")
+                    v-card-text
+                        h2.text-center
+                            if(network.networkID != null)
+                                div.green LZ##{network.networkID}
+                            b #{title} 
+                        a.btn.btn-light.btn-block.border-dark(href=`${http_host}/networks/${network.hash}.gz`) Download
+                        v-list
+                            v-list-tile
+                                div Architecture
+                                v-spacer
+                                div #{network.filters}x#{network.blocks}
+                            v-list-tile
+                                div Training 
+                                v-spacer
+                                div #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
+                            v-list-tile
+                                div Since
+                                v-spacer
+                                div.time-ago #{network._id.getTimestamp().getTime()}
+                            v-list-tile #{network.description}
+            
+            v-flex(xs9)
+                v-tabs
+                    v-tab(href=`/network-profiles/${network.hash}/matches`) Match Games
+                v-data-table(:items="matches" item-key="_id" hide-actions)
+                    template(slot="headers"  slot-scope="props")
+                        tr
+                            th Uploaded(*)
+                            th Network Hashes
+                            th Result
+                            th Games
+                            th SPRT
+                    
+                    template(slot="items"  slot-scope="props")
+                        tr
+                            td.time-ago {{ props.item.time | timeAgo }}
+                            td
+                                v-btn(flat small :href="`/networks/${props.item.network1.hash}.gz`") {{ props.item.network1.hash.slice(0,6) }}
+                                v-btn(flat small :href="`/match-games/${props.item._id}`" id="vs") VS 
+                                v-btn(flat small :href="`/networks/${props.item.network2.hash}.gz`") {{ props.item.network2.hash.slice(0,6) }}
+                            td {{ `${props.item.network1_wins} : ${props.item.network1_losses}` }} {{ `(${getWinrate(props.item)}%)` }}
+                            td {{ `${props.item.network1_wins + props.item.network1_losses} / ${props.item.number_to_play}` }}
+                            td
+                                span.caption(v-if="props.item.SPRT === true || props.item.SPRT === false" :class="props.item.SPRT ? 'green white--text pa-1' : 'black white--text pa-1'")
+                                    b {{ props.item.SPRT ? 'Pass' : 'Failed' }}
+                                v-progress-linear(v-else v-model="props.item.SPRT")
+

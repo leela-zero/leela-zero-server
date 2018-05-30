@@ -23,17 +23,11 @@ block script
         })
 
 block content
-    .row.mt-4
-        .col-12
-            nav(aria-label="breadcrumb")
-                ol.breadcrumb
-                    li.breadcrumb-item 
-                        a(href="/") Home
-                    li.breadcrumb-item.active Networks
-
+    v-container(grid-list-md text-xs-center)
+        v-card
             h1 Best Networks
             
-            .table-responsive
+            v-card-text
                 table.table.table-bordered.table-hover
                     thead 
                         tr
