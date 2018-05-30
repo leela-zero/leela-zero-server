@@ -11,16 +11,6 @@ block meta
 block script
     script(src="/static/timeago.js")
     script.
-        Vue.filter('timeAgo', function(value) {
-            var epoch = +value, delta = Date.now() - epoch;
-
-            if(delta > 60 * 60 * 24 * 1000) {
-                let date = new Date(epoch);
-                return date.toLocaleDateString() + " " + date.toLocaleTimeString();
-            } else {
-                return deltaToAgo(delta);
-            }
-        })
         var app = new Vue({
             el: 'main',
             data: {
