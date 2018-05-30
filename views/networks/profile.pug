@@ -73,9 +73,13 @@ block content
                         tr
                             td.time-ago {{ props.item.time | timeAgo }}
                             td
-                                v-btn(flat small :href="`/networks/${props.item.network1.hash}.gz`") {{ props.item.network1.hash.slice(0,6) }}
-                                v-btn(flat small :href="`/match-games/${props.item._id}`" id="vs") VS 
-                                v-btn(flat small :href="`/networks/${props.item.network2.hash}.gz`") {{ props.item.network2.hash.slice(0,6) }}
+                                v-tooltip(top)
+                                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network1.hash}.gz`") {{ props.item.network1.hash.slice(0,6) }}
+                                    span {{ props.item.network1.training_count | abbr(4) }} +{{ props.item.network1.training_steps | abbr(3)}}
+                                v-btn(flat small :href="`/match-games/${props.item._id}`" id="vs") VS
+                                v-tooltip(top)
+                                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network2.hash}.gz`") {{ props.item.network2.hash.slice(0,6) }}
+                                    span {{ props.item.network2.training_count | abbr(4) }} +{{ props.item.network2.training_steps | abbr(3)}}
                             td {{ `${props.item.network1_wins} : ${props.item.network1_losses}` }} {{ `(${getWinrate(props.item)}%)` }}
                             td {{ `${props.item.network1_wins + props.item.network1_losses} / ${props.item.number_to_play}` }}
                             td
