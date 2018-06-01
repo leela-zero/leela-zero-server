@@ -900,6 +900,10 @@ app.get("/network-profiles", asyncMiddleware(async(req, res) => {
 
     const pug_data = { networks, menu: "network-profiles" };
 
+    pug_data.networks.forEach(network => {
+        network.time = network._id.getTimestamp().getTime();
+    });
+
     res.render("networks/index", pug_data);
 }));
 
@@ -957,6 +961,7 @@ app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async(req, res) => {
 
     // Calculate SPRT (Pass / Failed / Percentage %)
     pug_data.matches.forEach(match => {
+        match.time = match._id.getTimestamp().getTime();
         match.SPRT = SPRT(match.network1_wins, match.network1_losses);
         if (match.SPRT === null) {
             match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);

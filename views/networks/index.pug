@@ -8,34 +8,21 @@ block meta
 block script
     script(src="/static/timeago.js")
     script.
-        Vue.filter('timeAgo', function(value) {
-            var epoch = +value, delta = Date.now() - epoch;
-
-            if(delta > 60 * 60 * 24 * 1000) {
-                let date = new Date(epoch);
-                return date.toLocaleDateString() + " " + date.toLocaleTimeString();
-            } else {
-                return deltaToAgo(delta);
-            }
-        })
         var app = new Vue({
             el: 'main',
+            data: {
+                networks: !{ JSON.stringify(networks) },
+            },
         })
 
 block content
-    .row.mt-4
-        .col-12
-            nav(aria-label="breadcrumb")
-                ol.breadcrumb
-                    li.breadcrumb-item 
-                        a(href="/") Home
-                    li.breadcrumb-item.active Networks
-
+    v-container(grid-list-md text-xs-center)
+        v-card
             h1 Best Networks
             
-            .table-responsive
-                table.table.table-bordered.table-hover
-                    thead 
+            v-card-text
+                v-data-table(:items="networks" item-key="_id" hide-actions)
+                    template(slot="headers"  slot-scope="props")
                         tr
                             th #
                             th Upload Date
@@ -44,21 +31,18 @@ block content
                             th Self Play Games
                             th Training
                             th Links
-                    tbody
-                    - for(var n in networks) 
-                        - var network = networks[n]
+                    template(slot="items"  slot-scope="props")
                         tr
-                            td #{networks.length - n - 1}
-                            td 
-                                span.time-ago {{ '#{network._id.getTimestamp().getTime()}' | timeAgo }}
-                            td #{network.hash.slice(0, 6)}
-                            td #{network.filters}x#{network.blocks}
-                            td #{network.game_count}
-                            td #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
+                            td {{ networks.length - props.index - 1 }}
+                            td {{ props.item.time | timeAgo }}
+                            td {{ props.item.hash.slice(0, 6) }}
+                            td {{ props.item.filters }} x {{ props.item.blocks }}
+                            td {{ props.item.game_count }}
+                            td {{ props.item.training_count | abbr(4) }} +{{ props.item.training_steps | abbr(3)}}
                             td
-                                a(href=`/network-profiles/${network.hash}`) Profile 
+                                a(:href="`/network-profiles/${props.item.hash}`") Profile
                                 |
                                 .
                                      | 
                                 |
-                                a(href=`/networks/${network.hash}.gz`) Download
+                                a(:href="`/networks/${props.item.hash}.gz`") Download
