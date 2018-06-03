@@ -1463,7 +1463,7 @@ app.get("/view/:hash(\\w+)", (req, res) => {
 });
 
 app.get("/self-plays", (req, res) => {
-    db.collection("games").find({}).sort({ _id: -1 }).limit(400).toArray()
+    db.collection("games").find({}, { data: 0 }).sort({ _id: -1 }).limit(400).toArray()
     .then(list => {
         process_games_list(list, req.ip);
         // render pug view self-plays
