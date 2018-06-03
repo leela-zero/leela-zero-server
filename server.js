@@ -17,6 +17,34 @@ const rss_generator = require("./classes/rss_generator.js");
 const os = require("os");
 const path = require("path");
 const discord = require("./classes/discord");
+const morgan = require("morgan");
+const rfs = require("rotating-file-stream");
+
+/**
+ * Request Logging
+ */
+const logDir = path.join(__dirname, "logs");
+fs.ensureDirSync(logDir);
+const logStream = rfs("access.log", {
+    interval: "1d", // rotate daily
+    maxFiles: 7, // keep 1 week worth of logs
+    path: logDir
+});
+morgan.token("memory", () => {
+    const used = process.memoryUsage();
+    const usage = [];
+
+    for (const key in used) {
+        const size = (used[key] / 1024 / 1024).toFixed(2);
+
+        usage.push(`${key}: ${size} MB`);
+    }
+
+    return usage.join(", ");
+});
+app.use(morgan("-->Before :memory", { stream: logStream, immediate: true }));
+app.use(morgan(":method :url :status :req[content-length] :response-time ms", { stream: logStream, immediate: false }));
+app.use(morgan("-->After  :memory", { stream: logStream, immediate: false }));
 
 /**
  * Utilities
