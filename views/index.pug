@@ -10,6 +10,7 @@ block script
         var app = new Vue({
             el: 'main',
             data: {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 matches: !{ JSON.stringify(matches) },
             },
             methods: {
@@ -29,10 +30,11 @@ block content
     v-alert(:value="true" color="warning") 2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b>
     div(class="text-xs-center")
         iframe(width="950" height="655" seamless frameborder="0" scrolling="no" src="/static/elo.html?0#recent=2500000")
-    v-container(grid-list-md text-xs-center)
+    v-container(grid-list-md)
         v-card
-            h1 Matches
-            v-card-text
+            h1(class="text-xs-center") Matches
+            div (*) Times are displayed in {{ timezone }} time zone
+            v-card-text(text-xs-center)
                 v-data-table(:items="matches" item-key="_id" hide-actions)
                     template(slot="headers"  slot-scope="props")
                         tr

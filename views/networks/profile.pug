@@ -60,6 +60,7 @@ block content
             v-flex(xs9)
                 v-tabs
                     v-tab(href=`/network-profiles/${network.hash}/matches`) Match Games
+                div(class="text-xs-left") (*) Times are displayed in {{ timezone }} time zone
                 v-data-table(:items="matches" item-key="_id" hide-actions)
                     template(slot="headers"  slot-scope="props")
                         tr
