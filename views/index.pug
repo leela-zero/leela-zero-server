@@ -1,0 +1,61 @@
+extends ./layout.pug
+
+block meta
+    meta(property="og:title" content=`Leela Zero`)
+    meta(property="og:type" content="website")
+
+block script
+    script(src="/static/timeago.js")
+    script.
+        var app = new Vue({
+            el: 'main',
+            data: {
+                matches: !{ JSON.stringify(matches) },
+            },
+            methods: {
+                getWinrate(match) {
+                    let winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
+                    return winrate.toFixed(2);
+                }
+            }
+        })
+
+block content
+    v-alert(:value="true" color="info") Autogtp will automatically download better networks once found. <br/>
+        | Not each trained network will be a strength improvement over the prior one. Patience please. :) <br/>
+        | Match games are played at full strength (only 3200 visits). <br/>
+        | Self-play games are played with some randomness and noise for all moves. <br/>
+        | Training data from self-play games are full strength even if plays appear weak. <br/>
+    v-alert(:value="true" color="warning") 2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b>
+    div(class="text-xs-center")
+        iframe(width="950" height="655" seamless frameborder="0" scrolling="no" src="/static/elo.html?0#recent=2500000")
+    v-container(grid-list-md text-xs-center)
+        v-card
+            h1 Matches
+            v-card-text
+                v-data-table(:items="matches" item-key="_id" hide-actions)
+                    template(slot="headers"  slot-scope="props")
+                        tr
+                            th Uploaded(*)
+                            th Network Hashes
+                            th Result
+                            th Games
+                            th SPRT
+                    
+                    template(slot="items"  slot-scope="props")
+                        tr
+                            td.time-ago {{ props.item.time | timeAgo }}
+                            td
+                                v-tooltip(top)
+                                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network1.hash}.gz`") {{ props.item.network1.hash.slice(0,6) }}
+                                    span {{ props.item.network1.training_count | abbr(4) }} +{{ props.item.network1.training_steps | abbr(3)}}
+                                v-btn(flat small :href="`/match-games/${props.item._id}`" id="vs") VS
+                                v-tooltip(top)
+                                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network2.hash}.gz`") {{ props.item.network2.hash.slice(0,6) }}
+                                    span {{ props.item.network2.training_count | abbr(4) }} +{{ props.item.network2.training_steps | abbr(3)}}
+                            td {{ `${props.item.network1_wins} : ${props.item.network1_losses}` }} {{ `(${getWinrate(props.item)}%)` }}
+                            td {{ `${props.item.network1_wins + props.item.network1_losses} / ${props.item.number_to_play}` }}
+                            td
+                                span.caption(v-if="props.item.SPRT === true || props.item.SPRT === false" :class="props.item.SPRT ? 'green white--text pa-1' : 'black white--text pa-1'")
+                                    b {{ props.item.SPRT ? 'Pass' : 'Failed' }}
+                                v-progress-linear(v-else v-model="props.item.SPRT")
