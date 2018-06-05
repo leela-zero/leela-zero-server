@@ -13,12 +13,6 @@ block script
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 matches: !{ JSON.stringify(matches) },
                 stats: !{ JSON.stringify(stats) },
-            },
-            methods: {
-                getWinrate(match) {
-                    let winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
-                    return winrate.toFixed(2);
-                }
             }
         })
 

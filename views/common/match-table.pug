@@ -20,7 +20,7 @@ v-data-table(:items="matches" item-key="_id" hide-actions)
                 v-tooltip(top)
                     v-btn(slot="activator" flat small :href="`/network-profiles/${props.item.network2.hash}`" style="min-width: 0; text-transform: lowercase;") {{ props.item.network2.hash.slice(0, 8) }}
                     span {{ props.item.network2.training_count | abbr(4) }} +{{ props.item.network2.training_steps | abbr(3)}}
-            td {{ `${props.item.network1_wins} : ${props.item.network1_losses}` }} {{ `(${getWinrate(props.item)}%)` }}
+            td {{ props.item.network1_wins }} : {{ props.item.network1_losses }} ({{ props.item.winrate }}%)
             td {{ `${props.item.network1_wins + props.item.network1_losses} / ${props.item.number_to_play}` }}
             td
                 span.caption(v-if="props.item.SPRT === true || props.item.SPRT === false" :class="props.item.SPRT ? 'green white--text pa-1' : 'black white--text pa-1'")

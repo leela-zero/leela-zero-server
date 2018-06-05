@@ -19,6 +19,7 @@ async function get_matches(db, { limit = 100, network } = {}) {
         if (match.SPRT === null) {
             match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);
         }
+        match.winrate = (match.network1_wins && match.network1_wins * 100 / (match.network1_wins + match.network1_losses)).toFixed(2);
     });
 
     return matches;
