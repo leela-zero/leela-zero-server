@@ -37,19 +37,19 @@ block content
                                 div.green LZ##{network.networkID}
                             b #{title} 
                         a.btn.btn-light.btn-block.border-dark(href=`${http_host}/networks/${network.hash}.gz`) Download
-                        v-list
+                        v-list(two-line)
                             v-list-tile
-                                div Architecture
-                                v-spacer
-                                div #{network.filters}x#{network.blocks}
+                                v-list-tile-content
+                                    v-list-tile-sub-title Architecture
+                                    v-list-tile-title.text-xs-right #{network.filters}x#{network.blocks}
                             v-list-tile
-                                div Training 
-                                v-spacer
-                                div #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
+                                v-list-tile-content
+                                    v-list-tile-sub-title Training
+                                    v-list-tile-title.text-xs-right #{network.training_count.abbr(4)} #{network.training_steps ? "+" + network.training_steps.abbr(3) : ""}
                             v-list-tile
-                                div Since
-                                v-spacer
-                                div.time-ago #{network._id.getTimestamp().getTime()}
+                                v-list-tile-content
+                                    v-list-tile-sub-title Since
+                                    v-list-tile-title.text-xs-right #{network._id.getTimestamp().toLocaleDateString()} #{network._id.getTimestamp().toLocaleTimeString()}
                             v-list-tile #{network.description}
             
             v-flex(xs9)
