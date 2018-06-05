@@ -31,7 +31,7 @@ block content
         | {{ stats.match_total }} total match games ({{ stats.match_24hr }} in past 24 hours, {{ stats.match_1hr }} in past hour).
     v-container(grid-list-md)
         v-card
-            h1(class="text-xs-center") Matches
+            h1(class="text-xs-center") Recent 10 Matches
             .ml-3 (*) Times are displayed in {{ timezone }} time zone
             v-card-text(class="text-xs-center")
                 include common/match-table.pug

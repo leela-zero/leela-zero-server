@@ -19,6 +19,7 @@ const path = require("path");
 const discord = require("./classes/discord");
 const morgan = require("morgan");
 const rfs = require("rotating-file-stream");
+const dbutils = require("./classes/dbutils");
 
 /**
  * Request Logging
@@ -914,6 +915,14 @@ app.post("/submit", (req, res) => {
     }
 });
 
+app.get("/matches", asyncMiddleware(async(req, res) => {
+    const pug_data = {
+        matches: await dbutils.get_matches(db, 100)
+    };
+
+    res.render("matches", pug_data);
+}));
+
 app.get("/network-profiles", asyncMiddleware(async(req, res) => {
     const networks = await db.collection("networks")
         .find({
@@ -976,25 +985,9 @@ app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async(req, res) => {
     const pug_data = {
         network,
         http_host: req.protocol + "://" + req.get("host"),
-        matches: await db.collection("matches")
-            .aggregate([
-                { $match: { $or: [{ network1: network.hash }, { network2: network.hash }] } },
-                { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "network2" } }, { $unwind: "$network2" },
-                { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "network1" } }, { $unwind: "$network1" },
-                { $sort: { _id: -1 } },
-                { $limit: 100 }
-            ]).toArray(),
+        matches: await dbutils.get_matches(db, 100),
         menu: "network-profiles"
     };
-
-    // Calculate SPRT (Pass / Failed / Percentage %)
-    pug_data.matches.forEach(match => {
-        match.time = match._id.getTimestamp().getTime();
-        match.SPRT = SPRT(match.network1_wins, match.network1_losses);
-        if (match.SPRT === null) {
-            match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);
-        }
-    });
 
     res.render("networks/profile", pug_data);
 }));
@@ -1032,14 +1025,6 @@ app.get("/rss", asyncMiddleware(async(req, res) => {
 }));
 
 app.get("/home", asyncMiddleware(async(req, res) => {
-    const matches = await db.collection("matches")
-        .aggregate([
-            { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "network2" } }, { $unwind: "$network2" },
-            { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "network1" } }, { $unwind: "$network1" },
-            { $sort: { _id: -1 } },
-            { $limit: 100 }
-        ]).toArray();
-
     const client_list_24hr = await cacheIP24hr.wrap(
         "IP24hr", "5m",
         () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } })));
@@ -1056,16 +1041,8 @@ app.get("/home", asyncMiddleware(async(req, res) => {
 
     const match_1hr = await db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count();
 
-    matches.forEach(match => {
-        match.time = match._id.getTimestamp().getTime();
-        match.SPRT = SPRT(match.network1_wins, match.network1_losses);
-        if (match.SPRT === null) {
-            match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);
-        }
-    });
-
     const pug_data = {
-        matches,
+        matches: await dbutils.get_matches(db, 10),
         stats: {
             client_24hr: client_list_24hr.length,
             client_1hr: client_list_1hr.length,
