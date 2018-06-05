@@ -33,12 +33,13 @@ block content
                             th Download
                     template(slot="items"  slot-scope="props")
                         tr
-                            td {{ networks.length - props.index - 1 }}
+                            td LZ{{ networks.length - props.index - 1 }}
                             td {{ props.item.time | timeAgo }}
                             td
                                 a(:href="`/network-profiles/${props.item.hash}`") {{ props.item.hash.slice(0, 8) }}
                             td {{ props.item.filters }} x {{ props.item.blocks }}
-                            td {{ props.item.game_count }}
-                            td {{ props.item.training_count | abbr(4) }} +{{ props.item.training_steps | abbr(3)}}
+                            td {{ props.item.game_count.toLocaleString() }}
+                            td {{ props.item.training_count | abbr(4) }}
+                                span(v-if="props.item.training_steps") +{{ props.item.training_steps | abbr(3)}}
                             td
                                 a(:href="`/networks/${props.item.hash}.gz`") Download
