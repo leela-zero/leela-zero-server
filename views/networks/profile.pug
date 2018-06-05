@@ -1,7 +1,7 @@
 extends ../layout.pug
 
 block meta
-    - var title = network.hash.slice(0,6)
+    - var title = network.hash.slice(0, 8)
     - var identicon = `${http_host}/static/networks/${network.hash}.png`
     meta(property="og:title" content=`${title}`)
     meta(property="og:type" content="website")
@@ -34,7 +34,7 @@ block content
                     v-card-text
                         h2.text-center
                             if(network.networkID != null)
-                                div.green LZ##{network.networkID}
+                                div.green LZ#{network.networkID}
                             b #{title} 
                         a.btn.btn-light.btn-block.border-dark(href=`${http_host}/networks/${network.hash}.gz`) Download
                         v-list(two-line)
