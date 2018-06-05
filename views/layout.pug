@@ -6,6 +6,7 @@ html(lang="en")
         title Leela Zero Server
 
         link(rel="stylesheet" href="https://unpkg.com/vuetify@1.0.18/dist/vuetify.min.css" crossorigin="anonymous")
+        link(rel="stylesheet" href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' crossorigin="anonymous")
 
         block meta
     body
@@ -14,7 +15,8 @@ html(lang="en")
                 v-toolbar(app dark)
                     v-toolbar-title Leela Zero
                     v-toolbar-items
-                        v-btn(flat href="/") Home
+                        v-btn(flat href="/home") Home
+                        v-btn(flat href="/matches") Matches
                         v-btn(flat href="/network-profiles") Networks
                         v-btn(flat href="/opening") Opening
                     v-spacer

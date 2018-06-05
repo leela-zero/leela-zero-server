@@ -1,0 +1,37 @@
+extends ./layout.pug
+
+block meta
+    meta(property="og:title" content=`Leela Zero`)
+    meta(property="og:type" content="website")
+
+block script
+    script(src="/static/timeago.js")
+    script.
+        var app = new Vue({
+            el: 'main',
+            data: {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                matches: !{ JSON.stringify(matches) },
+                stats: !{ JSON.stringify(stats) },
+            },
+            methods: {
+                getWinrate(match) {
+                    let winrate = match.network1_wins * 100 / (match.network1_wins + match.network1_losses);
+                    return winrate.toFixed(2);
+                }
+            }
+        })
+
+block content
+    v-alert(:value="true" color="warning") 2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b>
+    div(class="text-xs-center")
+        iframe(width="950" height="655" seamless frameborder="0" scrolling="no" src="/static/elo.html?0#recent=2500000")
+    v-alert(:value="true" color="info") {{ stats.client_24hr }} clients in past 24 hours, {{ stats.client_1hr }} in past hour.<br/>
+        | {{ stats.selfplay_total }} total self-play games ({{ stats.selfplay_24hr }} in past 24 hours, {{ stats.selfplay_1hr }} in past hour, includes {{ stats.selfplay_elf }} ELF).<br/>
+        | {{ stats.match_total }} total match games ({{ stats.match_24hr }} in past 24 hours, {{ stats.match_1hr }} in past hour).
+    v-container(grid-list-md)
+        v-card
+            h1(class="text-xs-center") Recent 10 Matches
+            .ml-3 (*) Times are displayed in {{ timezone }} time zone
+            v-card-text(class="text-xs-center")
+                include common/match-table.pug
