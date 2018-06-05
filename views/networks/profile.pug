@@ -25,11 +25,6 @@ block script
             }
         })
 
-    style.
-        td > .btn {
-            min-width: 0;
-        }
-
 block content
     v-container(grid-list-md text-xs-center)
         v-layout(row wrap)
@@ -61,30 +56,5 @@ block content
                 v-tabs
                     v-tab(href=`/network-profiles/${network.hash}/matches`) Match Games
                 div.ml-3(class="text-xs-left") (*) Times are displayed in {{ timezone }} time zone
-                v-data-table(:items="matches" item-key="_id" hide-actions)
-                    template(slot="headers"  slot-scope="props")
-                        tr
-                            th Uploaded(*)
-                            th Network Hashes
-                            th Result
-                            th Games
-                            th SPRT
-                    
-                    template(slot="items"  slot-scope="props")
-                        tr
-                            td.time-ago {{ props.item.time | timeAgo }}
-                            td
-                                v-tooltip(top)
-                                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network1.hash}.gz`") {{ props.item.network1.hash.slice(0,6) }}
-                                    span {{ props.item.network1.training_count | abbr(4) }} +{{ props.item.network1.training_steps | abbr(3)}}
-                                v-btn(flat small :href="`/match-games/${props.item._id}`" id="vs") VS
-                                v-tooltip(top)
-                                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network2.hash}.gz`") {{ props.item.network2.hash.slice(0,6) }}
-                                    span {{ props.item.network2.training_count | abbr(4) }} +{{ props.item.network2.training_steps | abbr(3)}}
-                            td {{ `${props.item.network1_wins} : ${props.item.network1_losses}` }} {{ `(${getWinrate(props.item)}%)` }}
-                            td {{ `${props.item.network1_wins + props.item.network1_losses} / ${props.item.number_to_play}` }}
-                            td
-                                span.caption(v-if="props.item.SPRT === true || props.item.SPRT === false" :class="props.item.SPRT ? 'green white--text pa-1' : 'black white--text pa-1'")
-                                    b {{ props.item.SPRT ? 'Pass' : 'Failed' }}
-                                v-progress-linear(v-else v-model="props.item.SPRT")
+                include ../common/match-table.pug
 
