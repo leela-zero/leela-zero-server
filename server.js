@@ -1040,6 +1040,22 @@ app.get("/", asyncMiddleware(async(req, res) => {
             { $limit: 100 }
         ]).toArray();
 
+    const client_list_24hr = await cacheIP24hr.wrap(
+        "IP24hr", "5m",
+        () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } })));
+
+    const client_list_1hr = await cacheIP1hr.wrap("IP1hr", "30s", () => Promise.resolve(db.collection("games").distinct("ip", { _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } })));
+
+    const selfplay_24hr = await db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count();
+
+    const selfplay_1hr = await db.collection("games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count();
+
+    const match_total = await db.collection("match_games").find().count();
+
+    const match_24hr = await db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60 * 24) } }).count();
+
+    const match_1hr = await db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count();
+
     matches.forEach(match => {
         match.time = match._id.getTimestamp().getTime();
         match.SPRT = SPRT(match.network1_wins, match.network1_losses);
@@ -1048,7 +1064,20 @@ app.get("/", asyncMiddleware(async(req, res) => {
         }
     });
 
-    const pug_data = { matches };
+    const pug_data = {
+        matches,
+        stats: {
+            client_24hr: client_list_24hr.length,
+            client_1hr: client_list_1hr.length,
+            selfplay_total: counter,
+            selfplay_24hr,
+            selfplay_1hr,
+            selfplay_elf: elf_counter,
+            match_total,
+            match_24hr,
+            match_1hr
+        }
+    };
 
     res.render("index", pug_data);
 }));

@@ -12,6 +12,7 @@ block script
             data: {
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 matches: !{ JSON.stringify(matches) },
+                stats: !{ JSON.stringify(stats) },
             },
             methods: {
                 getWinrate(match) {
@@ -22,18 +23,16 @@ block script
         })
 
 block content
-    v-alert(:value="true" color="info") Autogtp will automatically download better networks once found. <br/>
-        | Not each trained network will be a strength improvement over the prior one. Patience please. :) <br/>
-        | Match games are played at full strength (only 3200 visits). <br/>
-        | Self-play games are played with some randomness and noise for all moves. <br/>
-        | Training data from self-play games are full strength even if plays appear weak. <br/>
     v-alert(:value="true" color="warning") 2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b>
     div(class="text-xs-center")
         iframe(width="950" height="655" seamless frameborder="0" scrolling="no" src="/static/elo.html?0#recent=2500000")
+    v-alert(:value="true" color="info") {{ stats.client_24hr }} clients in past 24 hours, {{ stats.client_1hr }} in past hour.<br/>
+        | {{ stats.selfplay_total }} total self-play games ({{ stats.selfplay_24hr }} in past 24 hours, {{ stats.selfplay_1hr }} in past hour, includes {{ stats.selfplay_elf }} ELF).<br/>
+        | {{ stats.match_total }} total match games ({{ stats.match_24hr }} in past 24 hours, {{ stats.match_1hr }} in past hour).
     v-container(grid-list-md)
         v-card
             h1(class="text-xs-center") Matches
-            div (*) Times are displayed in {{ timezone }} time zone
+            .ml-3 (*) Times are displayed in {{ timezone }} time zone
             v-card-text(text-xs-center)
                 v-data-table(:items="matches" item-key="_id" hide-actions)
                     template(slot="headers"  slot-scope="props")
