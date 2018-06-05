@@ -58,7 +58,7 @@ block content
                 v-card
                     v-card-text
                         h1 Opening {{ opening._id.slice(0,6) }}
-                        .player(:data-wgo="opening.sgf")
+                        .player(:data-wgo="opening.sgf" data-wgo-move="20" data-wgo-enablewheel="false")
             v-flex(xs6)
                 .chart.w-100(ref="chartNodes" style="height: 100%;min-height:300px")
                 
