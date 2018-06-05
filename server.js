@@ -917,7 +917,7 @@ app.post("/submit", (req, res) => {
 
 app.get("/matches", asyncMiddleware(async(req, res) => {
     const pug_data = {
-        matches: await dbutils.get_matches(db, 100)
+        matches: await dbutils.get_matches(db)
     };
 
     res.render("matches", pug_data);
@@ -985,7 +985,7 @@ app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async(req, res) => {
     const pug_data = {
         network,
         http_host: req.protocol + "://" + req.get("host"),
-        matches: await dbutils.get_matches(db, 100),
+        matches: await dbutils.get_matches(db, { network: network.hash }),
         menu: "network-profiles"
     };
 
@@ -1042,7 +1042,7 @@ app.get("/home", asyncMiddleware(async(req, res) => {
     const match_1hr = await db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count();
 
     const pug_data = {
-        matches: await dbutils.get_matches(db, 10),
+        matches: await dbutils.get_matches(db, { limit: 10 }),
         stats: {
             client_24hr: client_list_24hr.length,
             client_1hr: client_list_1hr.length,

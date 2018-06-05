@@ -3,9 +3,10 @@ const {
     LLR
 } = require("./utilities.js");
 
-async function get_matches(db, limit) {
+async function get_matches(db, { limit = 100, network } = {}) {
     const matches = await db.collection("matches")
         .aggregate([
+            ...(network ? [{ $match: { $or: [{ network1: network }, { network2: network }] } }] : []),
             { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "network2" } }, { $unwind: "$network2" },
             { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "network1" } }, { $unwind: "$network1" },
             { $sort: { _id: -1 } },
