@@ -30,19 +30,15 @@ block content
                             th Architecture
                             th Self Play Games
                             th Training
-                            th Links
+                            th Download
                     template(slot="items"  slot-scope="props")
                         tr
                             td {{ networks.length - props.index - 1 }}
                             td {{ props.item.time | timeAgo }}
-                            td {{ props.item.hash.slice(0, 6) }}
+                            td
+                                a(:href="`/network-profiles/${props.item.hash}`") {{ props.item.hash.slice(0, 8) }}
                             td {{ props.item.filters }} x {{ props.item.blocks }}
                             td {{ props.item.game_count }}
                             td {{ props.item.training_count | abbr(4) }} +{{ props.item.training_steps | abbr(3)}}
                             td
-                                a(:href="`/network-profiles/${props.item.hash}`") Profile
-                                |
-                                .
-                                     | 
-                                |
                                 a(:href="`/networks/${props.item.hash}.gz`") Download

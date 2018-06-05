@@ -12,13 +12,13 @@ v-data-table(:items="matches" item-key="_id" hide-actions)
             td.time-ago {{ props.item.time | timeAgo }}
             td
                 v-tooltip(top)
-                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network1.hash}.gz`") {{ props.item.network1.hash.slice(0,6) }}
+                    v-btn(slot="activator" flat small :href="`/network-profiles/${props.item.network1.hash}`" style="min-width: 0; text-transform: lowercase;") {{ props.item.network1.hash.slice(0, 8) }}
                     span {{ props.item.network1.training_count | abbr(4) }} +{{ props.item.network1.training_steps | abbr(3)}}
                 v-tooltip(top)
-                    v-btn(slot="activator" flat small :href="`/match-games/${props.item._id}`" id="vs" style="min-width:0") VS
+                    v-btn(slot="activator" flat small :href="`/match-games/${props.item._id}`" style="min-width: 0;") VS
                     span {{ props.item.is_test ? "Test Match" : "Regular Match" }}
                 v-tooltip(top)
-                    v-btn(slot="activator" flat small :href="`/networks/${props.item.network2.hash}.gz`") {{ props.item.network2.hash.slice(0,6) }}
+                    v-btn(slot="activator" flat small :href="`/network-profiles/${props.item.network2.hash}`" style="min-width: 0; text-transform: lowercase;") {{ props.item.network2.hash.slice(0, 8) }}
                     span {{ props.item.network2.training_count | abbr(4) }} +{{ props.item.network2.training_steps | abbr(3)}}
             td {{ `${props.item.network1_wins} : ${props.item.network1_losses}` }} {{ `(${getWinrate(props.item)}%)` }}
             td {{ `${props.item.network1_wins + props.item.network1_losses} / ${props.item.number_to_play}` }}
