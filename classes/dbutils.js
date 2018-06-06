@@ -30,7 +30,7 @@ async function get_matches(db, { limit = 100, network } = {}) {
 async function get_access_logs(db, url) {
     const logs = await db.collection("logs")
         .find({
-            url: new RegExp(`^${url}`),
+            url: new RegExp(`^${url}$|^${url}\\?`),
             _id: {
                 $gt: objectIdFromDate(Date.now() - 24 * 60 * 60 * 7 * 1000)
             }
