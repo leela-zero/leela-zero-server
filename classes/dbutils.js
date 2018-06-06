@@ -1,4 +1,5 @@
 const {
+    objectIdFromDate,
     SPRT,
     LLR
 } = require("./utilities.js");
@@ -25,6 +26,23 @@ async function get_matches(db, { limit = 100, network } = {}) {
     return matches;
 }
 
+// Get access log begin with `url`
+async function get_access_logs(db, url) {
+    const logs = await db.collection("logs")
+        .find({
+            url: new RegExp(`^${url}`),
+            _id: {
+                $gt: objectIdFromDate(Date.now() - 24 * 60 * 60 * 7 * 1000)
+            }
+        })
+        .sort({ _id: 1 }).toArray();
+    logs.forEach(log => {
+        log.time = log._id.getTimestamp().getTime();
+    });
+    return logs;
+}
+
 module.exports = {
-    get_matches
+    get_matches,
+    get_access_logs
 };

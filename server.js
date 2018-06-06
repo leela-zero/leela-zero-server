@@ -1722,5 +1722,12 @@ app.get("/opening/:start(\\w+)?", asyncMiddleware(async(req, res) => {
     return res.render("opening", { top10, start, menu: "opening" });
 }));
 
+// Data APIs
+app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
+    const url = req.query.url;
+    const logs = await dbutils.get_access_logs(db, url);
+    res.send(JSON.stringify(logs));
+}));
+
 // Catch all, return 404 page not found
 app.get("*", asyncMiddleware(async(req, res) => res.status(404).render("404")));
