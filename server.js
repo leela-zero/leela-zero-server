@@ -1731,6 +1731,7 @@ app.get("/admin/access-logs", asyncMiddleware(async(req, res) => {
 app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
     const url = req.query.url;
     const logs = await dbutils.get_access_logs(db, url);
+    res.setHeader("Content-Type", "application/json");
     res.send(JSON.stringify(logs));
 }));
 
