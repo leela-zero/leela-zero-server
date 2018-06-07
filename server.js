@@ -1722,6 +1722,11 @@ app.get("/opening/:start(\\w+)?", asyncMiddleware(async(req, res) => {
     return res.render("opening", { top10, start, menu: "opening" });
 }));
 
+app.get("/admin/access-logs", asyncMiddleware(async(req, res) => {
+    const url = req.query.url;
+    res.render("admin/access-logs", { url });
+}));
+
 // Data APIs
 app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
     const url = req.query.url;

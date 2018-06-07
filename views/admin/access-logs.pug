@@ -1,0 +1,62 @@
+extends ../layout.pug
+
+block script
+    script(src="https://www.gstatic.com/charts/loader.js")
+    script(src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1")
+    script.
+        var app = new Vue({
+            el: 'main',
+            data: {
+                url: !{ JSON.stringify(url) },
+                logs: [],
+            },
+            mounted() {
+                google.charts.load('current', {'packages':['corechart', 'line']});
+                google.charts.setOnLoadCallback(this.loadData);
+            },
+            methods: {
+                loadData() {
+                    this.$http.get('/api/access-logs', {
+                        params: {url: this.url},
+                        responseType: "json",
+                    })
+                    .then(response => {
+                        this.logs = response.data;
+                        this.drawChart();
+                    });
+                },
+                drawChart() {
+                    var data = new google.visualization.DataTable();
+                    data.addColumn('date', 'time');
+                    data.addColumn('number', this.url);
+
+                    this.logs.forEach((log, index) => {
+                        data.addRow([new Date(log["time"]), log["response-time"]]);
+                    });
+
+                    var options = {
+                        hAxis: {
+                            title: 'Time',
+                            gridlines: {
+                                count: -1,
+                                units: {
+                                    hours: {format: ['ha']},
+                                }
+                            },
+                        },
+                        vAxis: {
+                            title: 'Milli-seconds',
+                        },
+                    };
+
+                    var chart = new google.visualization.LineChart(this.$refs.chartNode);
+                    chart.draw(data, options);
+                },
+            }
+        })
+
+block content
+    v-container(grid-list-md text-xs-left)
+        v-layout(row)
+            v-flex(xs12)
+                div(ref="chartNode" style="height:600px")
