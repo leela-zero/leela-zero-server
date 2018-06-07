@@ -1,6 +1,10 @@
 const MongoClient = require("mongodb").MongoClient;
 const crypto = require("crypto");
 
+const {
+    objectIdFromDate
+} = require("../classes/utilities.js");
+
 function usage() {
     console.log(
         `Usage:
@@ -124,6 +128,18 @@ if (!help) {
             }
 
             await db.collection("matches").insertOne(match);
+        }
+
+        // Access logs
+        await db.collection("logs").removeMany();
+        for (let i = 0; i < 24 * 60; i++) {
+            await db.collection("logs").insertOne({
+                _id: objectIdFromDate(Date.now() - 1000 * i * 60),
+                method: "GET",
+                url: "/test",
+                status: 200,
+                "response-time": i * 0.5
+            });
         }
 
         db.close();
