@@ -46,12 +46,13 @@ morgan.token("memory", () => {
 
     return usage.join(", ");
 });
+mongoMorgan.token("epochtime", () => Date.now());
 
 // Save access log to `logs` collection
 app.use(
     mongoMorgan(
         MONGODB_URL,
-        "{\"method\": \":method\", \"url\": \":url\", \"status\": :status, \"response-time\": :response-time}",
+        "{\"method\": \":method\", \"url\": \":url\", \"status\": :status, \"response-time\": :response-time, \"time\": :epochtime}",
         { collection: "logs" })
     );
 

@@ -37,7 +37,9 @@ async function get_access_logs(db, url) {
         })
         .sort({ _id: 1 }).toArray();
     logs.forEach(log => {
-        log.time = log._id.getTimestamp().getTime();
+        if (!log.time) {
+            log.time = log._id.getTimestamp().getTime();
+        }
     });
     return logs;
 }
