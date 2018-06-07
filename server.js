@@ -20,6 +20,9 @@ const discord = require("./classes/discord");
 const morgan = require("morgan");
 const rfs = require("rotating-file-stream");
 const dbutils = require("./classes/dbutils");
+const mongoMorgan = require("mongo-morgan");
+
+const MONGODB_URL = "mongodb://localhost/test";
 
 /**
  * Request Logging
@@ -43,6 +46,15 @@ morgan.token("memory", () => {
 
     return usage.join(", ");
 });
+
+// Save access log to `logs` collection
+app.use(
+    mongoMorgan(
+        MONGODB_URL,
+        "{\"method\": \":method\", \"url\": \":url\", \"status\": :status, \"response-time\": :response-time}",
+        { collection: "logs" })
+    );
+
 app.use(morgan("-->Before :memory", { stream: logStream, immediate: true }));
 app.use(morgan(":method :url :status :req[content-length] :response-time ms", { stream: logStream, immediate: false }));
 app.use(morgan("-->After  :memory", { stream: logStream, immediate: false }));
@@ -300,7 +312,7 @@ setInterval(() => {
     }
 }, 1000 * 60 * 1);
 
-MongoClient.connect("mongodb://localhost/test", (err, database) => {
+MongoClient.connect(MONGODB_URL, (err, database) => {
     if (err) return console.log(err);
 
     db = database;
@@ -1708,6 +1720,13 @@ app.get("/opening/:start(\\w+)?", asyncMiddleware(async(req, res) => {
     const top10 = JSON.parse(fs.readFileSync(path.join(__dirname, "static", files[start])));
 
     return res.render("opening", { top10, start, menu: "opening" });
+}));
+
+// Data APIs
+app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
+    const url = req.query.url;
+    const logs = await dbutils.get_access_logs(db, url);
+    res.send(JSON.stringify(logs));
 }));
 
 // Catch all, return 404 page not found
