@@ -1295,6 +1295,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
         page += "Leela Zero is available from: <a href=\"https://github.com/gcp/leela-zero\">Github</a>.<br>";
         page += "Check out the <a href=\"https://github.com/gcp/leela-zero/blob/master/FAQ.md\">FAQ</a> and ";
         page += "<a href=\"https://github.com/gcp/leela-zero/blob/master/README.md\">README</a>.<br>";
+        page += "<br>A new front page is being tested at <a href=\"http://zero.sjeng.org/home\">http://zero.sjeng.org/home</a>. Please review and provide feedback <a href=\"https://github.com/gcp/leela-zero-server/issues/170\">here</a>.<br>";
         page += "<br>Autogtp will automatically download better networks once found.<br>";
         page += "Not each trained network will be a strength improvement over the prior one. Patience please. :)<br>";
         page += "Match games are played at full strength (only 3200 visits).<br>";
