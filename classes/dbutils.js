@@ -14,6 +14,14 @@ async function get_matches_from_db(db, { limit = 100, network } = {}) {
             { $lookup: { localField: "network2", from: "networks", foreignField: "hash", as: "network2" } }, { $unwind: "$network2" },
             { $lookup: { localField: "network1", from: "networks", foreignField: "hash", as: "network1" } }, { $unwind: "$network1" },
             { $sort: { _id: -1 } },
+            {
+                $project: {
+                    "network1._id": 0,
+                    "network1.ip": 0,
+                    "network2._id": 0,
+                    "network2.ip": 0
+                }
+            },
             { $limit: limit }
         ]).toArray();
 
