@@ -1061,7 +1061,7 @@ app.get("/home", asyncMiddleware(async(req, res) => {
     const match_1hr = await db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count();
 
     const pug_data = {
-        matches: await dbutils.get_matches_from_cache(db, { limit: 10 }),
+        matches: await dbutils.get_matches_from_cache(db, 10),
         stats: {
             client_24hr: client_list_24hr.length,
             client_1hr: client_list_1hr.length,
