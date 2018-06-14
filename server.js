@@ -482,6 +482,9 @@ app.post("/request-match", (req, res) => {
 
     db.collection("matches").insertOne(match)
     .then(() => {
+        // Update cache
+        dbutils.new_matches_cache(db, match.network1);
+
         // Client only accepts strings for now
         Object.keys(match.options).map(key => {
             match.options[key] = String(match.options[key]);
@@ -736,7 +739,8 @@ app.post("/submit-match", asyncMiddleware(async(req, res) => {
 
     // prepare $inc
     const $inc = { game_count: 1 };
-    if (match.network1 == req.body.winnerhash)
+    const is_network1_win = (match.network1 == req.body.winnerhash);
+    if (is_network1_win)
         $inc.network1_wins = 1;
     else
         $inc.network1_losses = 1;
@@ -807,6 +811,7 @@ app.post("/submit-match", asyncMiddleware(async(req, res) => {
         discord.network_promotion_notify(req.body.winnerhash);
     }
 
+    dbutils.update_matches_stats_cache(db, match._id, is_network1_win);
     cachematches.clear(() => console.log("Cleared match cache."));
 }));
 
@@ -930,7 +935,7 @@ app.post("/submit", (req, res) => {
 
 app.get("/matches", asyncMiddleware(async(req, res) => {
     const pug_data = {
-        matches: await dbutils.get_matches(db)
+        matches: await dbutils.get_matches_from_cache(db)
     };
 
     res.render("matches", pug_data);
@@ -998,7 +1003,8 @@ app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async(req, res) => {
     const pug_data = {
         network,
         http_host: req.protocol + "://" + req.get("host"),
-        matches: await dbutils.get_matches(db, { network: network.hash }),
+        // Have to fetch from db since we only cache 100 recent matches
+        matches: await dbutils.get_matches_from_db(db, { network: network.hash }),
         menu: "network-profiles"
     };
 
@@ -1055,7 +1061,7 @@ app.get("/home", asyncMiddleware(async(req, res) => {
     const match_1hr = await db.collection("match_games").find({ _id: { $gt: objectIdFromDate(Date.now() - 1000 * 60 * 60) } }).count();
 
     const pug_data = {
-        matches: await dbutils.get_matches(db, { limit: 10 }),
+        matches: await dbutils.get_matches_from_cache(db, { limit: 10 }),
         stats: {
             client_24hr: client_list_24hr.length,
             client_1hr: client_list_1hr.length,
