@@ -5,7 +5,7 @@ const {
     LLR
 } = require("./utilities.js");
 
-const cache_matches = new Cacheman();
+const cache_matches = new Cacheman("matches", { ttl: "1y" });
 
 async function get_matches_from_db(db, { limit = 100, network } = {}) {
     const matches = await db.collection("matches")
