@@ -1,4 +1,5 @@
 const Cacheman = require("cacheman");
+const AwaitLock = require("await-lock");
 const {
     objectIdFromDate,
     SPRT,
@@ -6,6 +7,7 @@ const {
 } = require("./utilities.js");
 
 const cache_matches = new Cacheman("matches", { ttl: "1y" });
+const lock_cache_matches = new AwaitLock();
 
 async function get_matches_from_db(db, { limit = 100, network } = {}) {
     const matches = await db.collection("matches")
@@ -37,33 +39,53 @@ async function get_matches_from_db(db, { limit = 100, network } = {}) {
     return matches;
 }
 
-async function get_matches_from_cache(db, limit = 100) {
+async function _get_matches_from_cache(db, limit = 100) {
     const matches = await cache_matches.wrap("matches", () => get_matches_from_db(db));
     return matches.slice(0, limit);
 }
 
+// External use only, wrapped with lock
+async function get_matches_from_cache(db, limit = 100) {
+    await lock_cache_matches.acquireAsync();
+    try {
+        return await _get_matches_from_cache(db, limit);
+    } finally {
+        lock_cache_matches.release();
+    }
+}
+
 // Win/Lose count of a match changed
 async function update_matches_stats_cache(db, match_id, is_network1_win) {
-    const matches = await get_matches_from_cache(db);
-    const match = matches.find(item => item._id.toString() == match_id);
-    match.game_count += 1;
-    if (is_network1_win) {
-        match.network1_wins += 1;
-    } else {
-        match.network1_losses += 1;
+    await lock_cache_matches.acquireAsync();
+    try {
+        const matches = await _get_matches_from_cache(db);
+        const match = matches.find(item => item._id.toString() == match_id);
+        match.game_count += 1;
+        if (is_network1_win) {
+            match.network1_wins += 1;
+        } else {
+            match.network1_losses += 1;
+        }
+        cache_matches.set("matches", matches);
+    } finally {
+        lock_cache_matches.release();
     }
-    cache_matches.set("matches", matches);
 }
 
 // New match requested: get the latest match and push it into cache
 async function new_matches_cache(db, network) {
-    const matches = await get_matches_from_cache(db);
-    const new_match = await get_matches_from_db(db, { limit: 1, network });
-    if (matches[0]._id.toString() != new_match[0]._id.toString()) {
-        // Update only if cache is out of date
-        console.log("Push new match into cache");
-        matches.unshift(new_match[0]);
-        cache_matches.set("matches", matches);
+    await lock_cache_matches.acquireAsync();
+    try {
+        const matches = await _get_matches_from_cache(db);
+        const new_match = await get_matches_from_db(db, { limit: 1, network });
+        if (matches[0]._id.toString() != new_match[0]._id.toString()) {
+            // Update only if cache is out of date
+            console.log("Push new match into cache");
+            matches.unshift(new_match[0]);
+            cache_matches.set("matches", matches);
+        }
+    } finally {
+        lock_cache_matches.release();
     }
 }
 
