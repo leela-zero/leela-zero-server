@@ -7,6 +7,16 @@ const {
 
 const cache_matches = new Cacheman("matches", { ttl: "1y" });
 
+function _update_winrate(matches) {
+    matches.forEach(match => {
+        match.SPRT = SPRT(match.network1_wins, match.network1_losses);
+        if (match.SPRT === null) {
+            match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);
+        }
+        match.winrate = (match.network1_wins && match.network1_wins * 100 / (match.network1_wins + match.network1_losses)).toFixed(2);
+    });
+}
+
 async function get_matches_from_db(db, { limit = 100, network } = {}) {
     const matches = await db.collection("matches")
         .aggregate([
@@ -27,12 +37,8 @@ async function get_matches_from_db(db, { limit = 100, network } = {}) {
 
     matches.forEach(match => {
         match.time = match._id.getTimestamp().getTime();
-        match.SPRT = SPRT(match.network1_wins, match.network1_losses);
-        if (match.SPRT === null) {
-            match.SPRT = Math.round(100 * (2.9444389791664403 + LLR(match.network1_wins, match.network1_losses, 0, 35)) / 5.88887795833);
-        }
-        match.winrate = (match.network1_wins && match.network1_wins * 100 / (match.network1_wins + match.network1_losses)).toFixed(2);
     });
+    _update_winrate(matches);
 
     return matches;
 }
@@ -52,6 +58,7 @@ async function update_matches_stats_cache(db, match_id, is_network1_win) {
     } else {
         match.network1_losses += 1;
     }
+    _update_winrate(matches.slice(0, 1));
     cache_matches.set("matches", matches);
 }
 
