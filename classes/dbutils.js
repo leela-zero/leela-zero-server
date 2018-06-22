@@ -55,16 +55,8 @@ async function update_matches_stats_cache(db, match_id, is_network1_win) {
     cache_matches.set("matches", matches);
 }
 
-// New match requested: get the latest match and push it into cache
-async function new_matches_cache(db, network) {
-    const matches = await get_matches_from_cache(db);
-    const new_match = await get_matches_from_db(db, { limit: 1, network });
-    if (matches[0]._id.toString() != new_match[0]._id.toString()) {
-        // Update only if cache is out of date
-        console.log("Push new match into cache");
-        matches.unshift(new_match[0]);
-        cache_matches.set("matches", matches);
-    }
+function clear_matches_cache() {
+    cache_matches.clear(() => console.log("Cleared new match cache."));
 }
 
 // Get access log begin with `url`
@@ -89,6 +81,6 @@ module.exports = {
     get_matches_from_db,
     get_matches_from_cache,
     update_matches_stats_cache,
-    new_matches_cache,
+    clear_matches_cache,
     get_access_logs
 };
