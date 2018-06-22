@@ -21,8 +21,16 @@ const morgan = require("morgan");
 const rfs = require("rotating-file-stream");
 const dbutils = require("./classes/dbutils");
 const mongoMorgan = require("mongo-morgan");
+const Raven = require("raven");
+const config = require("./config");
 
 const MONGODB_URL = "mongodb://localhost/test";
+
+if (config.RAVEN_DSN) {
+    console.log("init raven");
+    Raven.config(config.RAVEN_DSN, { captureUnhandledRejections: true }).install();
+    app.use(Raven.requestHandler());
+}
 
 /**
  * Request Logging
@@ -1743,5 +1751,19 @@ app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
     res.send(JSON.stringify(logs));
 }));
 
+app.get("/debug/exception", asyncMiddleware(async(req, res) => {
+    throw new Error("handler error test" + Date.now());
+}));
+
+app.get("/debug/promise", (req, res) => {
+    const foo = async() => Promise.reject("Unhandled Exception " + Date.now());
+    foo();
+    res.send("ok");
+});
+
 // Catch all, return 404 page not found
 app.get("*", asyncMiddleware(async(req, res) => res.status(404).render("404")));
+
+if (config.RAVEN_DSN) {
+    app.use(Raven.errorHandler());
+}
