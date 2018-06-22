@@ -483,7 +483,7 @@ app.post("/request-match", (req, res) => {
     db.collection("matches").insertOne(match)
     .then(() => {
         // Update cache
-        dbutils.new_matches_cache(db, match.network1);
+        dbutils.clear_matches_cache();
 
         // Client only accepts strings for now
         Object.keys(match.options).map(key => {
@@ -1419,6 +1419,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
                         res.send("ERROR: /get-task setting network2: " + err);
                         return;
                     }
+                    dbutils.clear_matches_cache();
                     console.log("Match " + match._id + " set network2 to best: " + match.network2);
             });
         }
