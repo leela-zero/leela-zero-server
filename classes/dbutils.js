@@ -58,7 +58,7 @@ async function update_matches_stats_cache(db, match_id, is_network1_win) {
     } else {
         match.network1_losses += 1;
     }
-    _update_winrate(matches.slice(0, 1));
+    _update_winrate([match]);
     cache_matches.set("matches", matches);
 }
 
