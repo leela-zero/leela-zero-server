@@ -29,7 +29,6 @@ const MONGODB_URL = "mongodb://localhost/test";
 if (config.RAVEN_DSN) {
     console.log("init raven");
     Raven.config(config.RAVEN_DSN, { captureUnhandledRejections: true }).install();
-    app.use(Raven.requestHandler());
 }
 
 /**
