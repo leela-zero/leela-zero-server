@@ -1459,8 +1459,6 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         // {"cmd": "selfplay", "hash": "xxx", "playouts": 1000, "resignation_percent": 3.0}
         const task = { cmd: "selfplay", hash: "", required_client_version, minimum_autogtp_version: required_client_version, random_seed, minimum_leelaz_version: required_leelaz_version };
 
-        // TODO In time we'll change this to a visits default instead of options default, for new --visits command
-        //
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
         const options = { playouts: "0", visits: "3201", resignation_percent: "5", noise: "true", randomcnt: "999" };
 
@@ -1470,10 +1468,12 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
 
         // For now, have newer autogtp and leelaz play some self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < 0.25) {
-            task.hash = ELF_NETWORK;
-            options.resignation_percent = "5";
-        }
+        //
+        // We have enough ELF selfplay games to full half the training window, no more are needed.
+        //if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < 0.25) {
+        //    task.hash = ELF_NETWORK;
+        //    options.resignation_percent = "5";
+        //}
 
         //task.options_hash = checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
         task.options_hash = get_options_hash(options);
