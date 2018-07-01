@@ -72,10 +72,10 @@ function check_match_verification(data) {
  *      add `white_hash_gzip_hash` & `black_hash_gzip_hash` to match task
  */
 async function add_gzip_hash(task) {
-    if(task.hash) {
+    if (task.hash) {
         // self-play task
         task.hash_gzip_hash = await compute_gzip_hash(task.hash);
-    } else if(task.white_hash && task.black_hash) {
+    } else if (task.white_hash && task.black_hash) {
         // match task
         task.white_hash_gzip_hash = await compute_gzip_hash(task.white_hash);
         task.black_hash_gzip_hash = await compute_gzip_hash(task.black_hash);
@@ -92,15 +92,14 @@ async function add_gzip_hash(task) {
  *                   error occured during computation.
  */
 function compute_gzip_hash(hash) {
-    if(network_exists(hash)) {
+    if (network_exists(hash)) {
         const network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
         const sha256 = crypto.createHash("sha256");
 
-        return new Promise(resolve =>
-            fs.createReadStream(network_file)
-            .pipe(sha256)
-            .on('finish', () => resolve(sha256.read().toString('hex')))
-            .on('error', () => resolve(null))
+        return new Promise(resolve => fs.createReadStream(network_file)
+                .pipe(sha256)
+                .on("finish", () => resolve(sha256.read().toString("hex")))
+                .on("error", () => resolve(null))
         );
     }
     return null;
@@ -316,5 +315,5 @@ module.exports = {
     objectIdFromDate,
     process_games_list,
     seed_from_mongolong,
-    set_task_verification_secret,
+    set_task_verification_secret
 };
