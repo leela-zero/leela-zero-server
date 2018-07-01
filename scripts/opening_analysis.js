@@ -192,6 +192,7 @@ async function analyze_sgf() {
     }
 
     cursor.close();
+    db.close();
 }
 
 async function export_result(analysis) {
