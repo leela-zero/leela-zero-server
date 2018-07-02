@@ -86,7 +86,8 @@ const {
     SPRT,
     LLR,
     asyncMiddleware,
-    how_many_games_to_queue
+    how_many_games_to_queue,
+    add_gzip_hash
 } = require("./classes/utilities.js");
 
 const ELF_NETWORK = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
@@ -1442,6 +1443,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         }
 
         add_match_verification(task);
+        add_gzip_hash(task);
         res.send(JSON.stringify(task));
 
         match.requests.push({ timestamp: now, seed: random_seed });
@@ -1478,7 +1480,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         //task.options_hash = checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
         task.options_hash = get_options_hash(options);
         task.options = options;
-
+        add_gzip_hash(task);
         res.send(JSON.stringify(task));
 
         console.log(`${req.ip} (${req.headers["x-real-ip"]}) got task: selfplay ${JSON.stringify(task)}`);
@@ -1751,7 +1753,7 @@ app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
     res.send(JSON.stringify(logs));
 }));
 
-app.get("/debug/exception", asyncMiddleware(async(req, res) => {
+app.get("/debug/exception", asyncMiddleware(async() => {
     throw new Error("handler error test" + Date.now());
 }));
 
