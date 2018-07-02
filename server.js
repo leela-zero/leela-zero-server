@@ -1443,7 +1443,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         }
 
         add_match_verification(task);
-        add_gzip_hash(task);
+        await add_gzip_hash(task);
         res.send(JSON.stringify(task));
 
         match.requests.push({ timestamp: now, seed: random_seed });
@@ -1480,7 +1480,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         //task.options_hash = checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
         task.options_hash = get_options_hash(options);
         task.options = options;
-        add_gzip_hash(task);
+        await add_gzip_hash(task);
         res.send(JSON.stringify(task));
 
         console.log(`${req.ip} (${req.headers["x-real-ip"]}) got task: selfplay ${JSON.stringify(task)}`);
