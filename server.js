@@ -1751,7 +1751,7 @@ app.get("/api/access-logs", asyncMiddleware(async(req, res) => {
     res.send(JSON.stringify(logs));
 }));
 
-app.get("/debug/exception", asyncMiddleware(async(req, res) => {
+app.get("/debug/exception", asyncMiddleware(async() => {
     throw new Error("handler error test" + Date.now());
 }));
 
