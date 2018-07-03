@@ -93,12 +93,27 @@ async function add_gzip_hash(task) {
  */
 function compute_gzip_hash(hash) {
     if (network_exists(hash)) {
+        // Local cache initialization
+        if (!this.cache) {
+            this.cache = {};
+        }
+
+        // Cache hit, return immediately
+        if (this.cache[hash]) {
+            return this.cache[hash];
+        }
+
+        // Cache miss, let's compute gzip hash
         const network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
         const sha256 = crypto.createHash("sha256");
 
         return new Promise(resolve => fs.createReadStream(network_file)
                 .pipe(sha256)
-                .on("finish", () => resolve(sha256.read().toString("hex")))
+                .on("finish", () => {
+                    const gzip_hash = sha256.read().toString("hex");
+                    this.cache[hash] = gzip_hash;
+                    resolve(gzip_hash);
+                })
                 .on("error", () => resolve(null))
         );
     }
