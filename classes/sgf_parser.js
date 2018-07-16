@@ -2,7 +2,6 @@ const {
     Writable
 } = require("stream");
 const crypto = require("crypto");
-const fs = require('fs-extra');
 
 class sgf_parser extends Writable {
     constructor(options) {
@@ -144,8 +143,8 @@ class sgf_parser extends Writable {
             }
         }
 
-        if(this.buffer) {
-            let tmp = Buffer.alloc(this.buffer.length + chunk.length - start);
+        if (this.buffer) {
+            const tmp = Buffer.alloc(this.buffer.length + chunk.length - start);
             this.buffer.copy(tmp, 0, 0, this.buffer.length);
             chunk.copy(tmp, this.buffer.length, start, chunk.length);
             this.buffer = tmp;
