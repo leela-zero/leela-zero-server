@@ -441,7 +441,7 @@ app.post("/request-match", (req, res) => {
 
     if (!req.body.playouts && !req.body.visits)
         //req.body.playouts = 1600;
-        req.body.visits = 3200;
+        req.body.visits = 1600;
         //return res.status(400).send('No playouts specified.');
 
     if (!req.body.resignation_percent)
@@ -1312,10 +1312,11 @@ app.get("/", asyncMiddleware(async(req, res) => {
         page += "<br>A new front page is being tested at <a href=\"http://zero.sjeng.org/home\">http://zero.sjeng.org/home</a>. Please review and provide feedback <a href=\"https://github.com/gcp/leela-zero-server/issues/170\">here</a>.<br>";
         page += "<br>Autogtp will automatically download better networks once found.<br>";
         page += "Not each trained network will be a strength improvement over the prior one. Patience please. :)<br>";
-        page += "Match games are played at full strength (only 3200 visits).<br>";
+        page += "Match games are played at full strength (only 1600 visits).<br>";
         page += "Self-play games are played with some randomness and noise for all moves.<br>";
         page += "Training data from self-play games are full strength even if plays appear weak.<br>";
         page += "<br>";
+        page += "2018-07-28 Force promoted V20-2 as new 20 block starting point network. Selfplay and matches now use 1600 visits.<br>";
         page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b><br>";
         page += "<br>";
 
