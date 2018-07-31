@@ -90,7 +90,10 @@ const {
     add_gzip_hash
 } = require("./classes/utilities.js");
 
-const ELF_NETWORK = "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9";
+const ELF_NETWORKS = [
+    "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9",
+    "d13c40993740cb77d85c838b82c08cc9c3f0fbc7d8c3761366e5d59e8f371cbd"
+];
 
 const auth_key = String(fs.readFileSync(__dirname + "/auth_key")).trim();
 set_task_verification_secret(String(fs.readFileSync(__dirname + "/task_secret")).trim());
@@ -337,7 +340,7 @@ MongoClient.connect(MONGODB_URL, (err, database) => {
                 _id: {
                     type: {
                         $cond: {
-                            if: { $eq: ["$hash", ELF_NETWORK] },
+                            if: { $in: ["$hash", ELF_NETWORKS] },
                             then: "ELF",
                             else: "LZ"
                         }
@@ -906,7 +909,7 @@ app.post("/submit", (req, res) => {
                                 res.send("Game data " + sgfhash + " stored in database\n");
                             } else {
                                 let message = `in ${Math.round(Date.now() / 1000 - req.body.task_time)}s `;
-                                if (networkhash == ELF_NETWORK) {
+                                if (ELF_NETWORKS.includes(networkhash)) {
                                     elf_counter++;
                                     message += `ELF game #${elf_counter}`;
                                 } else {
@@ -925,7 +928,7 @@ app.post("/submit", (req, res) => {
                         { },
                         err => {
                             if (err) {
-                                if (networkhash == ELF_NETWORK)
+                                if (ELF_NETWORKS.includes(networkhash))
                                     console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " uploaded ELF game #" + elf_counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
                                 else
                                     console.log(req.ip + " (" + req.headers["x-real-ip"] + ") " + " uploaded LZ game #" + counter + ": " + sgfhash + " INCREMENT ERROR: " + err);
@@ -952,7 +955,7 @@ app.get("/matches", asyncMiddleware(async(req, res) => {
 app.get("/network-profiles", asyncMiddleware(async(req, res) => {
     const networks = await db.collection("networks")
         .find({
-            hash: { $ne: ELF_NETWORK },
+            hash: { $not: { $in: ELF_NETWORKS } },
             $or: [
                 { game_count: { $gt: 0 } },
                 { hash: get_best_network_hash() }
@@ -979,12 +982,12 @@ app.get("/network-profiles/:hash(\\w+)", asyncMiddleware(async(req, res) => {
     }
 
     // If it's one of the best network, then find it's #
-    if ((network.game_count > 0 || network.hash == get_best_network_hash()) && network.hash != ELF_NETWORK) {
+    if ((network.game_count > 0 || network.hash == get_best_network_hash()) && !ELF_NETWORKS.includes(network.hash)) {
         network.networkID = await db.collection("networks")
             .count({
                 _id: { $lt: network._id },
                 game_count: { $gt: 0 },
-                hash: { $ne: ELF_NETWORK }
+                hash: { $not: { $in: ELF_NETWORKS } }
             });
     }
 
@@ -1038,7 +1041,7 @@ app.get("/rss", asyncMiddleware(async(req, res) => {
     if (should_generate || req.query.force) {
         const hash = await get_best_network_hash();
         const networks = await db.collection("networks")
-            .find({ $or: [{ game_count: { $gt: 0 } }, { hash }], hash: { $ne: ELF_NETWORK } })
+            .find({ $or: [{ game_count: { $gt: 0 } }, { hash }], hash: { $not: { $in: ELF_NETWORKS } } })
             .sort({ _id: 1 })
             .toArray();
 
@@ -1127,7 +1130,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
         .then(count => `${count} in past hour).<br>`),
         db.collection("networks").aggregate([
             // Exclude ELF network
-            { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $ne: ELF_NETWORK } }] } },
+            { $match: { $and: [{ game_count: { $gt: 0 } }, { hash: { $not: { $in: ELF_NETWORKS } } }] } },
             { $sort: { _id: 1 } },
             { $group: { _id: 1, networks: { $push: { _id: "$_id", hash: "$hash", game_count: "$game_count", training_count: "$training_count", filters: "$filters", blocks: "$blocks" } } } },
             { $unwind: { path: "$networks", includeArrayIndex: "networkID" } },
@@ -1143,7 +1146,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
 
                 totalgames.count -= item.game_count;
 
-                if (item.hash != ELF_NETWORK) network_table += "<tr><td>"
+                if (!ELF_NETWORKS.includes(item.hash)) network_table += "<tr><td>"
                     + item.networkID
                     + "</td><td>"
                     + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm")
@@ -1362,13 +1365,7 @@ function shouldScheduleMatch(req, now) {
   let i = pending_matches.length;
   while (--i >= 0) {
     match = pending_matches[i];
-
-    // For now, only allow newer autogtp and leelaz to take any match while
-    // older clients can take a match that don't include ELF (network v2).
-    if (req.params.autogtp >= 16 || req.params.leelaz >= 0.14
-        || match.network1 != ELF_NETWORK && match.network2 != ELF_NETWORK) {
-      break;
-    }
+    break;
   }
 
   // Don't schedule if we ran out of potential matches for this client
@@ -1471,12 +1468,10 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
 
         // For now, have newer autogtp and leelaz play some self-play with
         // Facebook's ELF Open Go network, which uses network version 2.
-        //
-        // We have enough ELF selfplay games to full half the training window, no more are needed.
-        //if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < 0.25) {
-        //    task.hash = ELF_NETWORK;
-        //    options.resignation_percent = "5";
-        //}
+        if ((req.params.autogtp >= 16 || req.params.leelaz >= 0.14) && Math.random() < 0.25) {
+            task.hash = ELF_NETWORKS[1];
+            options.resignation_percent = "5";
+        }
 
         //task.options_hash = checksum("" + options.playouts + options.resignation_percent + options.noise + options.randomcnt).slice(0,6);
         task.options_hash = get_options_hash(options);
@@ -1620,7 +1615,7 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
             totalgames.count -= item.game_count || 0;
 
             // The ELF network has games but is not actually best
-            const best = item.game_count && !ELF_NETWORK.startsWith(item.hash);
+            const best = item.game_count && !ELF_NETWORKS.some(n => n.startsWith(item.hash));
             if (best)
                 bestRatings.set(item.hash, 0);
 
@@ -1659,8 +1654,8 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
                 elo = CalculateEloFromPercent(fakewins / fakecount);
             }
 
-            if (match.network1 == "d13c40993740cb77d85c838b82c08cc9c3f0fbc7d8c3761366e5d59e8f371cbd"
-                && match.network2 == "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9") {
+            // Hide ELF-vs-ELF test matches
+            if (ELF_NETWORKS.includes(match.network1) && ELF_NETWORKS.includes(match.network2)) {
                 elo = 0;
             }
 
@@ -1689,7 +1684,7 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
                 bestRatings.set(match.network1, rating);
 
             // Use opponent's net for ELF as its training_count is arbitrary
-            const net = match.network1 == ELF_NETWORK && match.merged.training_count;
+            const net = ELF_NETWORKS.includes(match.network1) && match.merged.training_count;
 
             // Chain together previous infos if we have any
             const previous = ratingsMap.get(match.network1);
