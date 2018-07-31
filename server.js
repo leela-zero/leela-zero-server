@@ -1659,6 +1659,11 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
                 elo = CalculateEloFromPercent(fakewins / fakecount);
             }
 
+            if (match.network1 == "d13c40993740cb77d85c838b82c08cc9c3f0fbc7d8c3761366e5d59e8f371cbd"
+                && match.network2 == "62b5417b64c46976795d10a6741801f15f857e5029681a42d02c9852097df4b9") {
+                elo = 0;
+            }
+
             const isBest = bestRatings.has(match.network1);
             switch (isBest || SPRT(match.network1_wins, match.network1_losses)) {
                 case false:
