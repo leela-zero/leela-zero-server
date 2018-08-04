@@ -1676,7 +1676,6 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
             // Force the match to show up as a test instead of the usual SPRT
             if (match.is_test) {
                 sprt = "TEST";
-                isBest = false;
             }
 
             // Save ratings of best networks
@@ -1705,7 +1704,7 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
                 net: Math.max(0.0, Number((info.net || item.net) + rating / 100000)),
                 sprt: info.sprt,
                 hash: item.hash.slice(0, 6),
-                best: item.best && info.sprt !== "TEST"
+                best: item.best
             });
 
             // Add additional result for multiple matches
