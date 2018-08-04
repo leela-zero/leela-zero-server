@@ -1247,7 +1247,9 @@ app.get("/", asyncMiddleware(async(req, res) => {
                     + "<td>" + item.game_count + " / " + item.number_to_play + "</td>"
                     + "<td>";
 
-                switch (bestRatings.has(item.network1) || SPRT(item.network1_wins, item.network1_losses)) {
+                // Treat non-test match that has been promoted as PASS
+                const promotedMatch = bestRatings.has(item.network1) && !item.is_test;
+                switch (promotedMatch || SPRT(item.network1_wins, item.network1_losses)) {
                     case true:
                         match_table += "<b>PASS</b>";
                         break;
@@ -1680,7 +1682,7 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
 
             // Save ratings of best networks
             const rating = elo + network2_rating;
-            if (isBest)
+            if (isBest && !match.is_test)
                 bestRatings.set(match.network1, rating);
 
             // Use opponent's net for ELF as its training_count is arbitrary
@@ -1704,7 +1706,7 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
                 net: Math.max(0.0, Number((info.net || item.net) + rating / 100000)),
                 sprt: info.sprt,
                 hash: item.hash.slice(0, 6),
-                best: item.best
+                best: item.best && info.sprt !== "TEST"
             });
 
             // Add additional result for multiple matches
