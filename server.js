@@ -1193,6 +1193,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
         .then(list => {
             let match_table = "<table class=\"matches-table\" border=1><tr><th colspan=5>Test Matches (100 Most Recent)</th></tr>\n";
             match_table += "<tr><th>Start Date</th><th>Network Hashes</th><th>Wins / Losses</th><th>Games</th><th>SPRT</th></tr>\n";
+            styles += ".match-test { background-color: rgba(0,0,0,0.1); font-style: italic; }\n";
 
             for (const item of list) {
                 // The aggregate query above should not return any null network2 matches, but let's be safe.
@@ -1209,7 +1210,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
                     win_percent = " (" + win_percent + "%)";
                 }
 
-                match_table += "<tr>"
+                match_table += `<tr class="match-${item.is_test ? "test" : "regular"}">`
                     + "<td>" + itemmoment.utcOffset(1).format("YYYY-MM-DD HH:mm") + "</td>"
                     + "<td>"
                     + "<div class=\"tooltip\">"
