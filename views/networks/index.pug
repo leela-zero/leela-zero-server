@@ -37,7 +37,7 @@ block content
                             td {{ props.item.time | timeAgo }}
                             td
                                 a(:href="`/network-profiles/${props.item.hash}`") {{ props.item.hash.slice(0, 8) }}
-                            td {{ props.item.filters }} x {{ props.item.blocks }}
+                            td {{ props.item.blocks }} x {{ props.item.filters }}
                             td {{ props.item.game_count.toLocaleString() }}
                             td {{ props.item.training_count | abbr(4) }}
                                 span(v-if="props.item.training_steps") +{{ props.item.training_steps | abbr(3)}}

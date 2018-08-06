@@ -628,7 +628,7 @@ app.post("/submit-network", asyncMiddleware((req, res) => {
                     res.end(err.message);
                     console.error(err);
                 } else {
-                    const msg = "Network weights (" + filters + " x " + blocks + ") " + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
+                    const msg = "Network weights (" + blocks + " x " + filters + ") " + hash + " (" + training_count + ") " + (dbres.upsertedCount == 0 ? "exists" : "uploaded") + "!";
                     res.end(msg);
                     console.log(msg);
                     log_memory_stats("submit network ends");
@@ -1155,7 +1155,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
                     + ".gz\">"
                     + item.hash.slice(0, 8)
                     + "</a></td><td>"
-                    + (item.filters && item.blocks ? `${item.filters}x${item.blocks}` : "TBD")
+                    + (item.filters && item.blocks ? `${item.blocks}x${item.filters}` : "TBD")
                     + "</td><td>"
                     + ~~bestRatings.get(item.hash)
                     + "</td><td>"
@@ -1218,7 +1218,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
                     + "<span class=\"tooltiptextleft\">"
                     + item.merged1.training_count.abbr(4)
                     + (item.merged1.training_steps ? "+" + item.merged1.training_steps.abbr(3) : "")
-                    + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.filters}x${item.merged1.blocks}` : "")
+                    + (item.merged1.filters && item.merged1.blocks ? `<br/>${item.merged1.blocks}x${item.merged1.filters}` : "")
                     + (item.merged1.description ? `<br/>${item.merged1.description}` : "")
                     + "</span></div>&nbsp;"
                     + "<div class=\"tooltip\">"
@@ -1235,7 +1235,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
                         + "<span class=\"tooltiptextright\">"
                         + item.merged.training_count.abbr(4)
                         + (item.merged.training_steps ? "+" + item.merged.training_steps.abbr(3) : "")
-                        + (item.merged.filters && item.merged.blocks ? `<br/>${item.merged.filters}x${item.merged.blocks}` : "")
+                        + (item.merged.filters && item.merged.blocks ? `<br/>${item.merged.blocks}x${item.merged.filters}` : "")
                         + (item.merged.description ? `<br/>${item.merged.description}` : "")
                         + "</span></div>";
                 } else {
