@@ -1657,8 +1657,8 @@ app.get("/data/elograph.json", asyncMiddleware(async(req, res) => {
                 elo = CalculateEloFromPercent(fakewins / fakecount);
             }
 
-            // Hide ELF-vs-ELF test matches
-            if (ELF_NETWORKS.includes(match.network1) && ELF_NETWORKS.includes(match.network2)) {
+            // Hide *-vs-ELF test matches as there's no meaningful Elo reference
+            if (ELF_NETWORKS.includes(match.network2)) {
                 elo = 0;
             }
 
