@@ -1322,6 +1322,7 @@ app.get("/", asyncMiddleware(async(req, res) => {
         page += "Self-play games are played with some randomness and noise for all moves.<br>";
         page += "Training data from self-play games are full strength even if plays appear weak.<br>";
         page += "<br>";
+        page += "2018-10-31 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.16 + AutoGTP v17</a>.<br>";
         page += "2018-07-28 Force promoted V20-2 as new 20 block starting point network. Selfplay and matches now use 1600 visits.<br>";
         page += "2018-05-09 <a href=\"https://github.com/gcp/leela-zero/releases\">Leela Zero 0.15 + AutoGTP v16</a>. <b>Update required.</b><br>";
         page += "<br>";
