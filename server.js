@@ -801,15 +801,10 @@ app.post("/submit-match", asyncMiddleware(async(req, res) => {
     }
 
     // Lastly, promotion check!!
-    // Check if network2 == best_network_hash and if so, check SPRT. If SPRT pass, promote network1 as new best-network.
-    // This is for the case where a match comes in to promote us, after it is no longer the active match in queue.
-    //
     const best_network_hash = await get_best_network_hash();
     if (
-        // Best network has lost
-        req.body.loserhash == best_network_hash
-        // Best network was being challenged, it was not the victorious challenger
-        && req.body.loserhash == match.network2
+        // Best network was being challenged
+        match.network2 == best_network_hash
         // This is not a test match
         && !match.is_test
         // SPRT passed OR it has reach 55% after 400 games (stick to the magic number)
@@ -817,9 +812,11 @@ app.post("/submit-match", asyncMiddleware(async(req, res) => {
             sprt_result === true
             || (match.game_count >= 400 && match.network1_wins / match.game_count >= 0.55)
         )) {
-        fs.copyFileSync(__dirname + "/network/" + req.body.winnerhash + ".gz", __dirname + "/network/best-network.gz");
-        console.log("New best network copied from (normal check): " + __dirname + "/network/" + req.body.winnerhash + ".gz");
-        discord.network_promotion_notify(req.body.winnerhash);
+        const promote_hash = match.network1;
+        const promote_file = `${__dirname}/network/${promote_hash}.gz`;
+        fs.copyFileSync(promote_file, __dirname + "/network/best-network.gz");
+        console.log(`New best network copied from ${promote_file}`);
+        discord.network_promotion_notify(promote_hash);
     }
 
     dbutils.update_matches_stats_cache(db, match._id, is_network1_win);
