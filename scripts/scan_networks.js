@@ -47,7 +47,7 @@ const weight_parser = require("../classes/weight_parser.js");
                 { $set: architecture }
             );
 
-            console.log(`Network ${network.hash} is ${architecture.filters}x${architecture.blocks} and updated in database`);
+            console.log(`Network ${network.hash} is ${architecture.blocks}x${architecture.filters} and updated in database`);
         }
     } catch (err) {
         console.error(err);
