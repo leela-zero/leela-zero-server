@@ -1461,7 +1461,7 @@ app.get("/get-task/:autogtp(\\d+)(?:/:leelaz([.\\d]+)?)", asyncMiddleware(async(
         const task = { cmd: "selfplay", hash: "", required_client_version, minimum_autogtp_version: required_client_version, random_seed, minimum_leelaz_version: required_leelaz_version };
 
         //var options = {"playouts": "1600", "resignation_percent": "10", "noise": "true", "randomcnt": "30"};
-        const options = { playouts: "0", visits: "1601", resignation_percent: "5", noise: "true", randomcnt: "999" };
+        const options = { playouts: "800", visits: "0", resignation_percent: "5", noise: "true", randomcnt: "30" };
 
         if (Math.random() < 0.1) options.resignation_percent = "0";
 
