@@ -949,6 +949,14 @@ app.get("/matches", asyncMiddleware(async(req, res) => {
     res.render("matches", pug_data);
 }));
 
+app.get("/matches-all", asyncMiddleware(async(req, res) => {
+    const pug_data = {
+        matches: await dbutils.get_matches_from_db(db, { limit: 0 })
+    };
+
+    res.render("matches-all", pug_data);
+}));
+
 app.get("/network-profiles", asyncMiddleware(async(req, res) => {
     const networks = await db.collection("networks")
         .find({
