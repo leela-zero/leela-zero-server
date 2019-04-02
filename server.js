@@ -951,7 +951,7 @@ app.get("/matches", asyncMiddleware(async(req, res) => {
 
 app.get("/matches-all", asyncMiddleware(async(req, res) => {
     const pug_data = {
-        matches: await dbutils.get_matches_from_db(db, { limit: 0 })
+        matches: await dbutils.get_matches_from_db(db, { limit: 1000000 })
     };
 
     res.render("matches-all", pug_data);
