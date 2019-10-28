@@ -1,0 +1,24 @@
+extends ./layout.pug
+
+block meta
+    meta(property="og:title" content=`Leela Zero`)
+    meta(property="og:type" content="website")
+
+block script
+    script(src="/static/timeago.js")
+    script.
+        var app = new Vue({
+            el: 'main',
+            data: {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                matches: !{ JSON.stringify(matches) },
+            }
+        })
+
+block content
+    v-container(grid-list-md text-xs-center)
+        v-card
+            h1 All Matches
+            .ml-3.text-xs-left (*) Times are displayed in {{ timezone }} time zone
+            v-card-text
+                include common/match-table.pug

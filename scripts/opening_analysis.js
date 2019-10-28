@@ -186,12 +186,14 @@ async function analyze_sgf() {
         }
 
         if (i % 10000 == 0) {
-            console.log("[" + new Date().toLocaleTimeString() + "]: game #" + i);
+            console.log("[" + new Date().toLocaleTimeString() + "][analyze]: game #" + i);
         }
         i++;
     }
 
+    console.log("[" + new Date().toLocaleTimeString() + "][analyze]: game #" + i);
     cursor.close();
+    db.close();
 }
 
 async function export_result(analysis) {

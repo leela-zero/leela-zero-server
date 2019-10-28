@@ -63,6 +63,63 @@ function check_match_verification(data) {
     return provided === expected || provided === expected2;
 }
 
+/**
+ * Add Gzip hash to Task
+ *
+ * @param task {object} Could be self-play or match task
+ * @returns {void}
+ *      add `hash_gzip_hash` to self-play task
+ *      add `white_hash_gzip_hash` & `black_hash_gzip_hash` to match task
+ */
+async function add_gzip_hash(task) {
+    if (task.hash) {
+        // self-play task
+        task.hash_gzip_hash = await compute_gzip_hash(task.hash);
+    } else if (task.white_hash && task.black_hash) {
+        // match task
+        task.white_hash_gzip_hash = await compute_gzip_hash(task.white_hash);
+        task.black_hash_gzip_hash = await compute_gzip_hash(task.black_hash);
+    } else {
+        // do nothing
+    }
+}
+
+/**
+ * Compute Gzip hash from Network hash
+ *
+ * @param hash {string} Network hash
+ * @returns {string} Gzip hash, return null if Network hash is not found or
+ *                   error occured during computation.
+ */
+function compute_gzip_hash(hash) {
+    if (network_exists(hash)) {
+        // Local cache initialization
+        if (!this.cache) {
+            this.cache = {};
+        }
+
+        // Cache hit, return immediately
+        if (this.cache[hash]) {
+            return this.cache[hash];
+        }
+
+        // Cache miss, let's compute gzip hash
+        const network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
+        const sha256 = crypto.createHash("sha256");
+
+        return new Promise(resolve => fs.createReadStream(network_file)
+                .pipe(sha256)
+                .on("finish", () => {
+                    const gzip_hash = sha256.read().toString("hex");
+                    this.cache[hash] = gzip_hash;
+                    resolve(gzip_hash);
+                })
+                .on("error", () => resolve(null))
+        );
+    }
+    return null;
+}
+
 function network_exists(hash) {
     const network_file = path.join(__dirname, "..", "network", `${hash}.gz`);
     return fs.pathExistsSync(network_file);
@@ -256,21 +313,22 @@ function how_many_games_to_queue(max_games, w_obs, l_obs, pessimistic_rate, isBe
 }
 
 module.exports = {
-    set_task_verification_secret,
-    compute_task_verification,
-    add_match_verification,
-    check_match_verification,
-    network_exists,
-    checksum,
-    make_seed,
-    get_timestamp_from_seed,
-    seed_from_mongolong,
-    process_games_list,
     CalculateEloFromPercent,
-    objectIdFromDate,
-    log_memory_stats,
-    SPRT,
     LLR,
+    SPRT,
+    add_gzip_hash,
+    add_match_verification,
     asyncMiddleware,
-    how_many_games_to_queue
+    check_match_verification,
+    checksum,
+    compute_task_verification,
+    get_timestamp_from_seed,
+    how_many_games_to_queue,
+    log_memory_stats,
+    make_seed,
+    network_exists,
+    objectIdFromDate,
+    process_games_list,
+    seed_from_mongolong,
+    set_task_verification_secret
 };

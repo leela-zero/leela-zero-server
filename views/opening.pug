@@ -28,7 +28,7 @@ block script
 
                         var options = {
                             title: `Seen total ${this.top10[index].count} times`,
-                            hAxis: {title: 'Networks by Training #', minValue: 0, maxValue: 8000000},
+                            hAxis: {title: 'Networks by Training #', viewWindow: { min: 0, max: 8265319} },
                             vAxis: {title: 'Frequency'},
                             tooltip: {isHtml: true},
                             legend: { position : 'none'},
@@ -41,14 +41,14 @@ block script
                 },
             }
         })
-        
+
 
 block content
     v-container(grid-list-md text-xs-left)
         v-layout(row)
             v-flex(xs12)
-                h1 Leela Zero Opening Analysis
-                p Total 361,908 match games as of 23-May-2018
+                h1 Leela Zero Joseki Analysis
+                p Total 440,664 match games as of 2018-Jul-26
 
                 v-tabs(v-model="start")
                     v-tab(v-for="tab in tabs" :href="`/opening/${tab}`" :key="tab") {{ `${tab[0]}-${tab[1]} Point` }}
@@ -57,9 +57,8 @@ block content
             v-flex(xs6)
                 v-card
                     v-card-text
-                        h1 Opening {{ opening._id.slice(0,6) }}
+                        h1 Joseki {{ opening._id.slice(0,6) }}
                         .player(:data-wgo="opening.sgf" data-wgo-move="20" data-wgo-enablewheel="false")
             v-flex(xs6)
                 .chart.w-100(ref="chartNodes" style="height: 100%;min-height:300px")
-                
-            
+

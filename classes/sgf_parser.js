@@ -84,15 +84,13 @@ class sgf_parser extends Writable {
     }
 
     _write(chunk, encoding, next) {
-        (async() => {
-            await this.write_internal(chunk);
-            next();
-        })();
+        this.write_internal(chunk).then(next);
     }
 
-    async _final(next) {
+    _final(next) {
         if (this.buffer) {
-            await this.process_sgf(this.buffer);
+            this.process_sgf(this.buffer).then(next);
+        } else {
             next();
         }
     }
@@ -113,12 +111,9 @@ class sgf_parser extends Writable {
         if (!this.num)
             this.num = 0;
 
-        if (!this.games)
-            this.games = [];
-
         this.num++;
-        if (this.num % 1000 == 0)
-            console.log("game #" + this.num);
+        if (this.num % 10000 == 0)
+            console.log("[" + new Date().toLocaleTimeString() + "][extract]: game #" + this.num);
         game._id = hash;
         await this.db.collection("opening").updateOne({ _id: hash }, { $set: game }, { upsert: true });
     }
@@ -132,14 +127,10 @@ class sgf_parser extends Writable {
 
                 if (start !== null) {
                     // a complete sgf within this chunk
-                    sgf_buffer = Buffer.alloc(i - start);
-                    chunk.copy(sgf_buffer, 0, start, i);
+                    sgf_buffer = Buffer.from(chunk.buffer, start, i - start + 1);
                 } else if (this.buff) {
                     // a complete sgf from internal buffer + this chunk
-                    sgf_buffer = Buffer.alloc(this.buffer.length + i);
-                    this.buffer.copy(sgf_buffer, 0, 0, this.buffer.length);
-                    chunk.copy(sgf_buffer, this.buffer.length, 0, i);
-                    this.buffer = null;
+                    sgf_buffer = Buffer.concat(this.buffer.buffer, Buffer.from(chunk, 0, i + 1));
                 }
 
                 // we got a complete sgf!
@@ -152,9 +143,16 @@ class sgf_parser extends Writable {
             }
         }
 
-        // save incomplete sgf internally
-        this.buffer = Buffer.alloc(chunk.length - start);
-        chunk.copy(this.buffer, 0, start, chunk.length);
+        if (this.buffer) {
+            const tmp = Buffer.alloc(this.buffer.length + chunk.length - start);
+            this.buffer.copy(tmp, 0, 0, this.buffer.length);
+            chunk.copy(tmp, this.buffer.length, start, chunk.length);
+            this.buffer = tmp;
+        } else {
+            // save incomplete sgf internally
+            this.buffer = Buffer.alloc(chunk.length - start);
+            chunk.copy(this.buffer, 0, start, chunk.length);
+        }
     }
 }
 
