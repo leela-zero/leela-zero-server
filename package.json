@@ -28,7 +28,7 @@
     "extend": "^3.0.2",
     "fs-extra": "^4.0.2",
     "hex2dec": "^1.0.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.13",
     "maxmind": "^2.3.0",
     "moment": "^2.21.0",
     "mongo-morgan": "^2.0.3",
