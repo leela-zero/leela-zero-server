@@ -37,4 +37,4 @@ Your project folder should look like this
 
 # License
 
-The code is released under the AGPLv3 or later.
+The code is released under the AGPLv3 or later. See the [LICENSE](LICENSE) file for details.
