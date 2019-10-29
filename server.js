@@ -292,6 +292,7 @@ app.use("/viewmatch/player", express.static("static/eidogo-player-1.2/player"));
 app.use("/view/wgo", express.static("static/wgo"));
 app.use("/viewmatch/wgo", express.static("static/wgo"));
 app.use("/static", express.static("static", { maxage: "365d", etag: true }));
+app.use('/networks',express.static('network'));
 
 // This is async but we don't need it to start the server. I'm calling it during startup so it'll get the value cached right away
 // instead of when the first /best-network request comes in, in case a lot of those requests come in at once when server
