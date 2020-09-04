@@ -32,7 +32,7 @@
     "maxmind": "^2.3.0",
     "moment": "^2.21.0",
     "mongo-morgan": "^2.0.3",
-    "mongodb": "^2.2.33",
+    "mongodb": "^3.1.13",
     "morgan": "^1.9.1",
     "nodemon": "^1.18.10",
     "npm": "^6.14.6",
