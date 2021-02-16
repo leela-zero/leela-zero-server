@@ -1318,6 +1318,11 @@ app.get("/", asyncMiddleware(async(req, res) => {
         page += "</style>\n";
         page += "</head><body>\n";
 
+        page += "Leela Zero is entering retirement and the server is closing soon.<br>";
+        page += "Please consider donating your GPU power to one of these projects, both support high handicap and will explore ladders better than Leela Zero:<br><br>";
+        page += "<a href=\"http://sai.unich.it/\">SAI</a>: Originally a variable-komi fork of Leela Zero. Drop in compatible with LZ, can use LZ networks, may play stronger than LZ with same network.<br>";
+        page += "<a href=\"https://katagotraining.org/\">KataGo</a>: Supports multiple rulesets and board sizes, predicts score and territory, from a single network.<br>";
+        page += "<br>";
         page += "Leela Zero is available from: <a href=\"https://github.com/gcp/leela-zero\">Github</a>.<br>";
         page += "Check out the <a href=\"https://github.com/gcp/leela-zero/blob/master/FAQ.md\">FAQ</a> and ";
         page += "<a href=\"https://github.com/gcp/leela-zero/blob/master/README.md\">README</a>.<br>";
