@@ -16,7 +16,7 @@
   "author": "",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "async": "^2.5.0",
+    "async": "^3.2.2",
     "async-lock": "^1.1.2",
     "body-parser": "^1.18.2",
     "busboy": "^0.2.14",
